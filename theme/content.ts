@@ -1,28 +1,17 @@
-import { ruPlural } from "@/lib/plural";
-
 const SITE_CONTACT_EMAIL = "test@mail.ru";
 
 export const content = {
   site: {
-    name: "foxgeek",
-    shortName: "foxgeek",
-    tagline: "Сообщество (тестовая ниша)",
-    description: "Тестовый инстанс скелета. Замените текстами своей ниши в theme/content.ts.",
+    name: "Прокат",
+    shortName: "Прокат",
+    tagline: "Каталог прокатов: инструмент, спорт, платья, фототехника",
+    description:
+      "Сервис-каталог прокатов. Владельцы размещают позиции, клиенты находят их и оставляют заявки на бронь.",
     contactEmail: SITE_CONTACT_EMAIL,
   },
   nav: {
-    home: "Лента",
-    new: "Написать пост",
-    tags: "Темы",
-    drafts: "Драфты",
-    profile: "Профиль",
+    home: "Главная",
     login: "Войти",
-  },
-  feed: {
-    prev: "← Назад",
-    next: "Вперёд →",
-    page: (n: number) => `Страница ${n}`,
-    readingTime: (min: number) => `${min} мин чтения`,
   },
   auth: {
     loginTitle: "Войти",
@@ -38,73 +27,12 @@ export const content = {
     errorTaken: "Этот username уже занят",
     backToHome: "На главную",
   },
-  empty: {
-    feed: "Пока нет постов. Будьте первым!",
-    drafts: "У вас нет черновиков",
-    tag: "Постов по этой теме пока нет",
-    userFeed: "У автора пока нет публикаций.",
-  },
-  tags: {
-    indexTitle: "Все темы",
-    indexEmpty: "Темы ещё не созданы.",
-    postCount: (n: number) => `${n} постов`,
-  },
-  profile: {
-    registeredSince: (monthYear: string) => `с ${monthYear}`,
-    postsCount: (n: number) => `${n} постов`,
-  },
   footer: {
     about: "О проекте",
     rules: "Правила",
     contacts: "Контакты",
     disclaimer: "Используем cookies и Яндекс.Метрика для аналитики.",
     privacyLink: "Политика",
-  },
-  consent: {
-    text: "Сайт использует cookies для аналитики.",
-    accept: "Принять",
-    decline: "Только необходимые",
-  },
-  comments: {
-    heading: "Обсуждение",
-    countLabel: (n: number) => `${n} ${ruPlural(n, "комментарий", "комментария", "комментариев")}`,
-    empty: "Будьте первым, кто оставит комментарий.",
-    placeholder: "Ваш комментарий...",
-    submit: "Отправить",
-    edit: "Изменить",
-    save: "Сохранить",
-    cancel: "Отмена",
-    delete: "Удалить",
-    deleteConfirm: "Удалить комментарий?",
-    deletedByAuthor: "Комментарий удалён автором",
-    deletedByAdmin: "Комментарий удалён администратором",
-    bannedAuthor: "автор заблокирован",
-    loginToComment: "Войдите, чтобы оставить комментарий",
-    editWindowClosed: "Окно редактирования (15 минут) закрыто.",
-    rateLimitHit: (sec: number) => `Слишком часто. Попробуйте через ${sec} с.`,
-    charCount: (n: number) => `${n} / 2000`,
-    reply: "Ответить",
-  },
-  moderation: {
-    postMenuLabel: "Действия модератора",
-    hidePost: "Скрыть пост",
-    unhidePost: "Показать пост",
-    deletePost: "Удалить пост",
-    deletePostConfirm: "Удалить пост? Восстановить сможете в админ-меню.",
-    restorePost: "Восстановить",
-    banUser: "Заблокировать автора",
-    banReasonLabel: "Причина блокировки (обязательно)",
-    banReasonPlaceholder: "Минимум 5 символов",
-    banSubmit: "Заблокировать",
-    unbanUser: "Разблокировать",
-    hiddenByAdmin: "Скрыт администратором",
-    hiddenBannerOwner: "Этот пост скрыт администратором. Он недоступен публично.",
-    hiddenBannerAdmin: (username: string) => `Скрыт администратором @${username}.`,
-    hiddenBannerAdminUnknown: "Скрыт администратором.",
-    adminDeleteComment: "Удалить",
-    adminRestoreComment: "Восстановить",
-    userMenuLabel: "Действия модератора над пользователем",
-    unbanUserConfirm: "Разблокировать этого пользователя?",
   },
   banned: {
     heading: "Ваша учётная запись заблокирована",
@@ -115,26 +43,24 @@ export const content = {
   },
   privacy: {
     title: "Политика конфиденциальности",
-    intro: "Этот сайт — небольшой блог на платформе foxgeek. Ниже описано, какие данные собираем и зачем.",
+    intro: "Этот сайт — каталог прокатов. Ниже описано, какие данные собираем и зачем.",
     section: {
       whoWeAre: "Кто мы",
-      whoWeAreBody: `foxgeek — независимый проект. По вопросам обработки персональных данных пишите на ${SITE_CONTACT_EMAIL}.`,
+      whoWeAreBody: `Независимый проект-каталог прокатов. По вопросам обработки персональных данных пишите на ${SITE_CONTACT_EMAIL}.`,
       whatWeCollect: "Какие данные собираем",
-      whatWeCollectBody: "Email и публичный профиль (имя, никнейм, аватар) при входе через OAuth-провайдеры (Yandex, VK, Google, GitHub). Контент, который вы публикуете (посты, комментарии, темы). Технические данные через Яндекс.Метрика — IP, User-Agent, путь, реферер, длительность сессии (без webvisor).",
+      whatWeCollectBody:
+        "Email и публичный профиль (имя, никнейм, аватар) при входе через OAuth-провайдеры (Yandex, VK). Данные, которые вы указываете в заявках на бронь (телефон, комментарий). Технические данные через Яндекс.Метрика — IP, User-Agent, путь, реферер, длительность сессии (без webvisor).",
       cookies: "Cookies",
-      cookiesBody: "Используем cookies для авторизации (next-auth) и Яндекс.Метрика (anonymous-ID, рекламные cookies не ставим).",
+      cookiesBody:
+        "Используем cookies для авторизации (next-auth) и Яндекс.Метрика (anonymous-ID, рекламные cookies не ставим).",
       delete: "Как удалить аккаунт",
       deleteBody: `Чтобы удалить аккаунт, напишите на ${SITE_CONTACT_EMAIL} — удалим в течение 7 дней.`,
       contact: "Контакты",
     },
     contact: `По вопросам обработки данных пишите: ${SITE_CONTACT_EMAIL}`,
-    updatedAt: "Обновлено: 2026-06-29",
+    updatedAt: "Обновлено: 2026-07-15",
   },
-  write: {
-    label: "Написать",
-    cta: "Написать пост",
-  },
-  copyright: `© ${new Date().getFullYear()} foxgeek`,
+  copyright: `© ${new Date().getFullYear()} Прокат`,
 } as const;
 
 export type ContentSchema = typeof content;

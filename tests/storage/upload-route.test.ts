@@ -119,7 +119,6 @@ describe("POST /api/upload", () => {
       expect(dbInsert).toHaveBeenCalledTimes(1);
       expect(dbInsertValues).toHaveBeenCalledWith(expect.objectContaining({
         userId: "01HQUSER",
-        postId: null,
         mime: "image/webp",
         width: 200,
         height: 200,

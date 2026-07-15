@@ -1,11 +1,11 @@
-# foxgeek — Deployment Guide
+# prokat — Deployment Guide
 
 > Целевая платформа: **Timeweb Cloud VPS** 1×5GHz / 1GB / 15GB. Один сервер,
 > docker-compose (caddy + app + db + backup), Let's Encrypt автоматически.
 >
 > Гайд проверен пилотным деплоем (июль 2026, тогда домен был fuddly.ru).
 > Шаги идут в правильном порядке — SSH-ключ и DNS раньше всего, т.к. у них
-> внешние задержки. `example.ru` в примерах = твой домен (foxgeek.ru).
+> внешние задержки. `example.ru` в примерах = твой домен (prokat.ru).
 
 ## 0. Pre-deploy smoke (на локальной машине)
 
@@ -23,7 +23,7 @@ Timeweb привязывает ключ на этапе создания сер�
 
 ```bash
 # Если ключа ещё нет:
-ssh-keygen -t ed25519 -C "foxgeek-vps" -f ~/.ssh/id_ed25519
+ssh-keygen -t ed25519 -C "prokat-vps" -f ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
 ```
 
@@ -151,8 +151,8 @@ localhost-URI — отдельное приложение не обязател�
 
 ```bash
 cd /opt
-git clone https://github.com/<you>/foxgeek.git foxgeek   # имя папки любое
-cd foxgeek
+git clone https://github.com/<you>/prokat.git prokat   # имя папки любое
+cd prokat
 ```
 
 ### 7.1. Прод `.env`
@@ -251,7 +251,7 @@ dev-стека и сыпать "Failed to find Server Action"):
 ### 8.1. IndexNow verification file
 
 ```bash
-cd /opt/foxgeek
+cd /opt/prokat
 echo "<INDEXNOW_KEY>" > "public/<INDEXNOW_KEY>.txt"
 docker compose up -d --build app
 curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
@@ -284,7 +284,7 @@ curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
 ### Обновление кода
 
 ```bash
-cd /opt/foxgeek
+cd /opt/prokat
 git pull
 docker compose build app && docker compose up -d app
 ```

@@ -1,4 +1,4 @@
-# foxgeek — Disaster Recovery
+# prokat — Disaster Recovery
 
 > Восстановление БД из бэкапа в Timeweb S3 Cold (bucket из `BACKUP_S3_BUCKET`).
 

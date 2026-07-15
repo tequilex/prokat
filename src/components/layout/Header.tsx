@@ -46,13 +46,15 @@ export async function Header() {
               {/* Лента/Темы на mobile — это BottomNav. Sheet оставлен только под
                * профиль/логин, чтобы кнопка-гамбургер вела куда-то осмысленное. */}
               <nav className="flex flex-col gap-4 mt-8">
-                <SheetClose asChild>
-                  {user?.username
-                    ? <Link href={`/u/${user.username}`} className="text-base text-foreground">@{user.username}</Link>
-                    : user
+                {user?.username ? (
+                  <span className="text-base text-foreground">@{user.username}</span>
+                ) : (
+                  <SheetClose asChild>
+                    {user
                       ? <Link href="/welcome" className="text-base text-foreground">{content.auth.chooseUsername}</Link>
                       : <Link href="/login" className="text-base text-foreground">{content.nav.login}</Link>}
-                </SheetClose>
+                  </SheetClose>
+                )}
               </nav>
             </SheetContent>
           </Sheet>

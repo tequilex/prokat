@@ -1,7 +1,6 @@
 "use client";
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
-import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -30,9 +29,8 @@ export function UserMenu({ username, name, image }: Props) {
         <Avatar src={image} name={name} username={username} size={36} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[180px]">
-        <DropdownMenuItem asChild>
-          <Link href={`/u/${username}`}>@{username}</Link>
-        </DropdownMenuItem>
+        {/* Ссылка на профиль появится вместе с кабинетом покупателя (этап 7). */}
+        <DropdownMenuItem disabled>@{username}</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isSigningOut}

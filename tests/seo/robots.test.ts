@@ -22,7 +22,7 @@ describe("robots()", () => {
     expect(rule.allow).toBe("/");
     const disallow = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow!];
     expect(disallow).toEqual(expect.arrayContaining([
-      "/drafts", "/edit/", "/new", "/admin", "/banned", "/auth/", "/api/", "/dev/",
+      "/admin", "/banned", "/auth/", "/api/", "/dev/",
     ]));
   });
 

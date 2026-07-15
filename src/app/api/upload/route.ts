@@ -61,7 +61,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await getDb().insert(uploads).values({
       id,
       userId: session.user.id,
-      postId: null,
       key,
       publicUrl,
       mime: "image/webp",

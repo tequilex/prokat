@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Маршруты, на которые анон не должен попадать вообще.
-// Префикс-match: '/drafts' покрывает '/drafts', '/drafts?tab=archived' и т.д.
-const PROTECTED_PREFIXES = ["/drafts", "/new", "/edit/"];
+// Маршруты, на которые анон не должен попадать вообще (префикс-match).
+// Кабинеты покупателя/владельца добавятся на этапах 5–7.
+const PROTECTED_PREFIXES: string[] = [];
 
 // Auth.js v5 в production использует префикс `__Secure-`, в dev — голый.
 // Имя самой cookie — `authjs.session-token` (NextAuth v5 переименовал из next-auth).

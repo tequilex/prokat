@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1781023656658,
-      "tag": "0000_pretty_blink",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1781346439743,
-      "tag": "0001_harsh_the_order",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1781542719138,
-      "tag": "0002_rare_stone_men",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1782065997815,
-      "tag": "0003_powerful_lilandra",
+      "when": 1784140547198,
+      "tag": "0000_blue_stick",
       "breakpoints": true
     }
   ]
