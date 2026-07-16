@@ -13,6 +13,7 @@
     "check-theme": "tsx scripts/check-theme.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
+    "db:seed": "tsx --env-file=.env scripts/seed.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

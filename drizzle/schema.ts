@@ -1,6 +1,6 @@
 import {
-  pgTable, text, varchar, integer, bigint, timestamp, pgEnum,
-  index, primaryKey,
+  pgTable, text, varchar, integer, bigint, timestamp, pgEnum, jsonb,
+  boolean, date, doublePrecision, index, primaryKey, uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const userRole = pgEnum("user_role", ["user", "moderator", "admin"]);
@@ -68,4 +68,161 @@ export const uploads = pgTable("uploads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({
   userIdx: index("uploads_user_idx").on(t.userId, t.createdAt),
+}));
+
+// ============================== Каталог ==============================
+// URL-структура публичной части: /{city}/{category}[/{subcategory}]/,
+// /{city}/{provider}/, /{city}/{provider}/{listing}/.
+
+export const cities = pgTable("cities", {
+  id: text("id").primaryKey(),                        // ULID, newId()
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 80 }).notNull().unique(),
+  region: varchar("region", { length: 100 }),
+  lat: doublePrecision("lat"),
+  lon: doublePrecision("lon"),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+// Дерево 2 уровня: parent_id NULL = корневая категория, иначе — подкатегория.
+// vertical — грубая группировка ниш (tools / sport / dresses / photo / kids ...).
+export const categories = pgTable("categories", {
+  id: text("id").primaryKey(),
+  parentId: text("parent_id"),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 80 }).notNull().unique(),
+  vertical: varchar("vertical", { length: 40 }),
+}, (t) => ({
+  parentIdx: index("categories_parent_idx").on(t.parentId),
+}));
+
+export const providerPlan = pgEnum("provider_plan", ["free", "pro", "promo"]);
+
+// providers — профиль проката. Роль «владелец» определяется наличием
+// провайдера у user'а, а не полем в users.
+export const providers = pgTable("providers", {
+  id: text("id").primaryKey(),
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  cityId: text("city_id").notNull().references(() => cities.id),
+  name: varchar("name", { length: 150 }).notNull(),
+  slug: varchar("slug", { length: 80 }).notNull(),
+  description: text("description"),
+  address: text("address"),
+  lat: doublePrecision("lat"),
+  lon: doublePrecision("lon"),
+  phones: jsonb("phones").notNull().default([]),      // string[]
+  workHoursJson: jsonb("work_hours_json"),
+  isClaimed: boolean("is_claimed").notNull().default(true),
+  isVerified: boolean("is_verified").notNull().default(false),
+  plan: providerPlan("plan").notNull().default("free"),
+  planExpiresAt: timestamp("plan_expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  // slug уникален в пределах города — он часть URL /{city}/{provider}/.
+  citySlugUq: uniqueIndex("providers_city_slug_uq").on(t.cityId, t.slug),
+  ownerIdx: index("providers_owner_idx").on(t.ownerUserId),
+}));
+
+export const depositType = pgEnum("deposit_type", ["money", "document", "none"]);
+export const listingStatus = pgEnum("listing_status", [
+  "active", "hidden", "archived", "on_moderation",
+]);
+
+// Цены в рублях за период; NULL = не сдаётся на этот период.
+export const listings = pgTable("listings", {
+  id: text("id").primaryKey(),
+  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
+  categoryId: text("category_id").notNull().references(() => categories.id),
+  title: varchar("title", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 80 }).notNull(),
+  description: text("description"),
+  priceDay: integer("price_day"),
+  priceHour: integer("price_hour"),
+  priceWeek: integer("price_week"),
+  depositAmount: integer("deposit_amount"),
+  depositType: depositType("deposit_type").notNull().default("none"),
+  quantity: integer("quantity").notNull().default(1),
+  photosJson: jsonb("photos_json").notNull().default([]),  // { url, width, height }[]
+  status: listingStatus("status").notNull().default("on_moderation"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => ({
+  // slug уникален в пределах проката — URL /{city}/{provider}/{listing}/.
+  providerSlugUq: uniqueIndex("listings_provider_slug_uq").on(t.providerId, t.slug),
+  categoryStatusIdx: index("listings_category_status_idx").on(t.categoryId, t.status),
+  providerIdx: index("listings_provider_idx").on(t.providerId),
+}));
+
+// availability — по строке на (listing, дата). Свободно = quantity - booked - blocked.
+// Строки создаются лениво: отсутствие строки = день полностью свободен.
+// blocked_qty — ручные закрытия владельцем («сдал по телефону», «в ремонте»).
+export const availability = pgTable("availability", {
+  listingId: text("listing_id").notNull().references(() => listings.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  bookedQty: integer("booked_qty").notNull().default(0),
+  blockedQty: integer("blocked_qty").notNull().default(0),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.listingId, t.date] }),
+}));
+
+export const bookingStatus = pgEnum("booking_status", [
+  "new", "confirmed", "declined", "expired", "completed", "no_show", "cancelled",
+]);
+
+// Заявка на бронь. Денег сервис не проводит; подтверждение — за владельцем.
+// expires_at — протухание new-заявки (по умолчанию +24ч от created_at).
+export const bookingRequests = pgTable("booking_requests", {
+  id: text("id").primaryKey(),
+  listingId: text("listing_id").notNull().references(() => listings.id, { onDelete: "cascade" }),
+  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
+  customerUserId: text("customer_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  dateFrom: date("date_from").notNull(),
+  dateTo: date("date_to").notNull(),
+  qty: integer("qty").notNull().default(1),
+  status: bookingStatus("status").notNull().default("new"),
+  customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+  customerComment: text("customer_comment"),
+  providerComment: text("provider_comment"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+  expiresAt: timestamp("expires_at").notNull(),
+}, (t) => ({
+  providerStatusIdx: index("booking_requests_provider_status_idx").on(t.providerId, t.status, t.createdAt),
+  customerIdx: index("booking_requests_customer_idx").on(t.customerUserId, t.createdAt),
+  listingIdx: index("booking_requests_listing_idx").on(t.listingId),
+}));
+
+// ==================== Заложено на будущее (v1 не использует) ====================
+
+export const subscriptions = pgTable("subscriptions", {
+  id: text("id").primaryKey(),
+  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
+  plan: providerPlan("plan").notNull(),
+  price: integer("price").notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  status: varchar("status", { length: 20 }).notNull(),
+});
+
+export const promotions = pgTable("promotions", {
+  id: text("id").primaryKey(),
+  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
+  listingId: text("listing_id").references(() => listings.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 40 }).notNull(),
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at").notNull(),
+});
+
+// events — сырые продуктовые события (view_listing, view_phone, submit_request...).
+// Основа статистики для владельца; агрегатов в v1 нет.
+export const events = pgTable("events", {
+  id: text("id").primaryKey(),
+  entityType: varchar("entity_type", { length: 40 }).notNull(),
+  entityId: text("entity_id").notNull(),
+  event: varchar("event", { length: 60 }).notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  metaJson: jsonb("meta_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  entityIdx: index("events_entity_idx").on(t.entityType, t.entityId, t.createdAt),
 }));
