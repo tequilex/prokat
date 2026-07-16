@@ -35,6 +35,9 @@ export function UserMenu({ username, name, image }: Props) {
         <DropdownMenuItem asChild>
           <Link href={"/requests" as never}>Мои заявки</Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={"/cabinet" as never}>Кабинет проката</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isSigningOut}

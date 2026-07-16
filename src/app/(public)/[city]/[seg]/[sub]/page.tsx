@@ -27,6 +27,9 @@ import { auth } from "@/lib/auth";
 import { buildEdgeConfig } from "@/lib/auth/config.edge";
 import { getEnv } from "@/lib/env";
 import { getUserPhone } from "@/server/booking";
+import { getDb } from "@/lib/db";
+import { events } from "@db/schema";
+import { newId } from "@/lib/id";
 
 export const dynamic = "force-dynamic";
 
@@ -173,6 +176,20 @@ async function ListingPage({
 
   // Выбор дат/qty из URL (восстанавливается после OAuth-redirect).
   const selection = parseBookingParams(searchParams, { today: from, maxQty: listing.quantity });
+
+  // view_listing — сырьё для статистики владельца. Ошибка записи не должна
+  // ронять страницу.
+  try {
+    await getDb().insert(events).values({
+      id: newId(),
+      entityType: "listing",
+      entityId: listing.id,
+      event: "view_listing",
+      userId: session?.user?.id ?? null,
+    });
+  } catch (e) {
+    console.error("[events] view_listing insert failed:", e);
+  }
 
   const crumbs = [
     { label: "Главная", href: "/" },

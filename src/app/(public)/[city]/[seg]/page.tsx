@@ -126,9 +126,13 @@ async function RootCategoryPage({
 async function ProviderPage({ city, provider }: { city: City; provider: Provider }) {
   const items = await getProviderListings(provider.id);
   const phones = Array.isArray(provider.phones) ? (provider.phones as string[]) : [];
-  const hours = provider.workHoursJson && typeof provider.workHoursJson === "object"
-    ? Object.entries(provider.workHoursJson as Record<string, string>)
-    : [];
+  // work_hours_json: {text: "..."} из формы кабинета или Record<период, часы> из сидов.
+  const wh = provider.workHoursJson;
+  const hoursText = wh && typeof wh === "object"
+    ? (typeof (wh as Record<string, unknown>).text === "string"
+        ? String((wh as Record<string, unknown>).text)
+        : Object.entries(wh as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(", "))
+    : "";
 
   const from = todayStr();
   const availRows = await getAvailabilityRows(items.map((l) => l.id), from, addDaysStr(from, 6));
@@ -175,10 +179,10 @@ async function ProviderPage({ city, provider }: { city: City; provider: Provider
             <a href={`tel:${ph.replace(/[^+\d]/g, "")}`} className="hover:text-foreground">{ph}</a>
           </p>
         ))}
-        {hours.length > 0 && (
+        {hoursText && (
           <p className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {hours.map(([k, v]) => `${k}: ${v}`).join(", ")}
+            {hoursText}
           </p>
         )}
       </div>
