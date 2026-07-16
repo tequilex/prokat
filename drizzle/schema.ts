@@ -11,6 +11,10 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified"),
   username: varchar("username", { length: 20 }).unique(),
   name: varchar("name", { length: 100 }),
+  // Телефон запрашивается в первой заявке на бронь, дальше предзаполняется.
+  // СМС-верификации в v1 нет: phone_verified_at заложен, всегда NULL.
+  phone: varchar("phone", { length: 20 }),
+  phoneVerifiedAt: timestamp("phone_verified_at"),
   image: text("image"),
   bio: text("bio"),
   role: userRole("role").notNull().default("user"),

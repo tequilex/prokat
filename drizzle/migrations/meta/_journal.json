@@ -15,6 +15,13 @@
       "when": 1784140982689,
       "tag": "0001_colorful_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784220209262,
+      "tag": "0002_chubby_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

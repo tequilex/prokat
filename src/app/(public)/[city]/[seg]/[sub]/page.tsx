@@ -26,6 +26,7 @@ import { BookingWidget } from "@/components/booking/BookingWidget";
 import { auth } from "@/lib/auth";
 import { buildEdgeConfig } from "@/lib/auth/config.edge";
 import { getEnv } from "@/lib/env";
+import { getUserPhone } from "@/server/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -151,6 +152,7 @@ async function ListingPage({
 
   const session = await auth();
   const isAuthed = Boolean(session?.user);
+  const initialPhone = session?.user?.id ? (await getUserPhone(session.user.id)) ?? "" : "";
   const env = getEnv();
   const nextAuthProviders = (buildEdgeConfig().providers ?? []).flatMap((p) => {
     const id = (p as { id?: string }).id;
@@ -239,6 +241,9 @@ async function ListingPage({
 
         <aside className="md:sticky md:top-20 md:self-start">
           <BookingWidget
+            listingId={listing.id}
+            listingTitle={listing.title}
+            initialPhone={initialPhone}
             pathname={`/${city.slug}/${provider.slug}/${listing.slug}`}
             initial={selection}
             today={from}

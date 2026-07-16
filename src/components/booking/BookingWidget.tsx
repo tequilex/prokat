@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "@/components/auth/LoginDialog";
+import { BookingFormDialog } from "@/components/booking/BookingFormDialog";
 import {
   buildBookingQuery, rentalDaysCount, type BookingSelection,
 } from "@/lib/booking/params";
@@ -21,6 +22,9 @@ import { formatDayMonth } from "@/lib/catalog/dates";
 import { formatPrice } from "@/lib/catalog/format";
 
 export interface BookingWidgetProps {
+  listingId: string;
+  listingTitle: string;
+  initialPhone: string;         // из профиля; пусто до первой заявки
   pathname: string;             // /kazan/prokatmaster/perforator
   initial: BookingSelection;    // уже провалидировано сервером (parseBookingParams)
   today: string;
@@ -44,6 +48,7 @@ export interface BookingWidgetProps {
 export function BookingWidget(props: BookingWidgetProps) {
   const [sel, setSel] = useState<BookingSelection>(props.initial);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
 
   // to не может быть раньше from: сдвигаем автоматически.
   const set = (patch: Partial<BookingSelection>) => {
@@ -78,15 +83,11 @@ export function BookingWidget(props: BookingWidgetProps) {
 
   const onBook = () => {
     if (hasConflict) return;
-    if (!props.isAuthed) setLoginOpen(true);
-    // Авторизованный флоу (форма заявки) — следующий этап.
+    if (props.isAuthed) setFormOpen(true);
+    else setLoginOpen(true);
   };
 
-  const bookButton = (extra: string) => props.isAuthed ? (
-    <Button className={extra} disabled title="Отправка заявок откроется совсем скоро">
-      Заявки скоро
-    </Button>
-  ) : (
+  const bookButton = (extra: string) => (
     <Button className={extra} onClick={onBook} disabled={hasConflict}>Забронировать</Button>
   );
 
@@ -202,6 +203,16 @@ export function BookingWidget(props: BookingWidgetProps) {
         nextAuthProviders={props.nextAuthProviders}
         vkEnabled={props.vkEnabled}
         isDev={props.isDev}
+      />
+
+      <BookingFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        listingId={props.listingId}
+        listingTitle={props.listingTitle}
+        sel={sel}
+        priceDay={props.priceDay}
+        initialPhone={props.initialPhone}
       />
     </>
   );

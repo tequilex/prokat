@@ -1,7 +1,7 @@
 // In-memory rate limiter — single-instance деплой (Hetzner V1).
 // TODO(phase-2): persistent backend (Redis/Postgres) при scale-out.
 
-export type LimitKind = "comment" | "post";
+export type LimitKind = "comment" | "post" | "booking";
 export type LimitResult =
   | { ok: true }
   | { ok: false; retryAfterSec: number; reason: "gap" | "window" };
@@ -11,6 +11,8 @@ interface Rule { windowMs: number; maxInWindow: number; gapMs: number; }
 const RULES: Record<LimitKind, Rule> = {
   comment: { windowMs: 60 * 60 * 1000, maxInWindow: 20, gapMs: 10_000 },
   post:    { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 30_000 },
+  // Антиспам заявок вместо СМС-верификации (по ТЗ): 5 заявок в час, пауза 30с.
+  booking: { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 30_000 },
 };
 
 const MAX_KEYS = 10_000;

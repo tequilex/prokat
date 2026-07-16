@@ -1,0 +1,31 @@
+// Валидация формы заявки на бронь. Телефон обязателен (без СМС-верификации
+// в v1), нормализуется к +7XXXXXXXXXX для российских номеров.
+
+import { z } from "zod";
+
+// Убирает всё кроме цифр и ведущего +; 8XXXXXXXXXX приводит к +7.
+export function normalizePhone(raw: string): string {
+  const stripped = raw.replace(/[^\d+]/g, "");
+  const plusless = stripped.startsWith("+") ? stripped.slice(1) : stripped;
+  if (!/^\d{10,15}$/.test(plusless)) return "";
+  if (plusless.length === 11 && (plusless.startsWith("8") || plusless.startsWith("7"))) {
+    return `+7${plusless.slice(1)}`;
+  }
+  return `+${plusless}`;
+}
+
+export const bookingFormSchema = z.object({
+  listingId: z.string().min(1),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  qty: z.coerce.number().int().min(1).max(1000),
+  phone: z.string().transform(normalizePhone).refine((p) => p.length > 0, {
+    message: "Укажите телефон в формате +7 900 000-00-00",
+  }),
+  comment: z.string().trim().max(500).optional().default(""),
+  // Honeypot: скрытое поле, люди его не заполняют. Непустое значение — бот.
+  website: z.string().optional().default(""),
+});
+
+export type BookingFormInput = z.input<typeof bookingFormSchema>;
+export type BookingForm = z.output<typeof bookingFormSchema>;
