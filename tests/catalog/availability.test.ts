@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  eachDate, freeQty, canBook, applyBookingDelta,
+  eachDate, freeQty, canBook, applyBookingDelta, unavailableDates,
   type AvailabilityMap,
 } from "@/lib/catalog/availability";
 
@@ -66,6 +66,29 @@ describe("canBook()", () => {
 
   it("false для qty < 1", () => {
     expect(canBook(3, map, "2026-07-20", "2026-07-20", 0)).toBe(false);
+  });
+});
+
+describe("unavailableDates()", () => {
+  const map: AvailabilityMap = new Map([
+    ["2026-07-17", { bookedQty: 1, blockedQty: 0 }], // занята единственная единица
+    ["2026-07-18", { bookedQty: 1, blockedQty: 0 }],
+    ["2026-07-19", { bookedQty: 1, blockedQty: 0 }],
+  ]);
+
+  it("возвращает занятые дни диапазона", () => {
+    expect(unavailableDates(1, map, "2026-07-16", "2026-07-20", 1)).toEqual([
+      "2026-07-17", "2026-07-18", "2026-07-19",
+    ]);
+  });
+
+  it("пустой массив, когда всё свободно", () => {
+    expect(unavailableDates(1, map, "2026-07-21", "2026-07-25", 1)).toEqual([]);
+  });
+
+  it("учитывает qty: две единицы при quantity=2 и одной занятой не влезают", () => {
+    expect(unavailableDates(2, map, "2026-07-17", "2026-07-17", 2)).toEqual(["2026-07-17"]);
+    expect(unavailableDates(2, map, "2026-07-17", "2026-07-17", 1)).toEqual([]);
   });
 });
 

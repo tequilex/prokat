@@ -54,6 +54,18 @@ export function canBook(
   return eachDate(dateFrom, dateTo).every((d) => freeQty(quantity, map.get(d)) >= qty);
 }
 
+// Дни диапазона, в которые qty единиц не набирается. Пустой массив = бронь возможна.
+// Используется виджетом брони для подсветки конфликта и сервером при создании заявки.
+export function unavailableDates(
+  quantity: number,
+  map: AvailabilityMap,
+  dateFrom: string,
+  dateTo: string,
+  qty: number,
+): string[] {
+  return eachDate(dateFrom, dateTo).filter((d) => freeQty(quantity, map.get(d)) < qty);
+}
+
 // Дельта бронирования на диапазон: +qty при подтверждении, -qty при освобождении.
 // Возвращает новую карту (вход не мутирует); bookedQty не уходит ниже нуля —
 // защита от двойного release.

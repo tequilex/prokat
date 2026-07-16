@@ -159,11 +159,15 @@ async function ListingPage({
   const vkEnabled = Boolean(env.VK_CLIENT_ID && env.VK_CLIENT_SECRET);
   const isDev = env.NODE_ENV !== "production";
 
+  // Занятость на весь горизонт бронирования: календарь показывает первые
+  // 4 недели, виджет валидирует выбор дат по всем 90 дням.
   const from = todayStr();
-  const rows = await getAvailabilityRows([listing.id], from, addDaysStr(from, 27));
+  const rows = await getAvailabilityRows([listing.id], from, addDaysStr(from, BOOKING_HORIZON_DAYS));
   const map: AvailabilityMap = new Map(
     rows.map((row) => [row.date, { bookedQty: row.bookedQty, blockedQty: row.blockedQty }]),
   );
+  // Map не сериализуется через RSC-границу — клиентскому виджету отдаём plain object.
+  const availabilityRecord = Object.fromEntries(map);
 
   // Выбор дат/qty из URL (восстанавливается после OAuth-redirect).
   const selection = parseBookingParams(searchParams, { today: from, maxQty: listing.quantity });
@@ -239,6 +243,7 @@ async function ListingPage({
             initial={selection}
             today={from}
             maxDate={addDaysStr(from, BOOKING_HORIZON_DAYS)}
+            availability={availabilityRecord}
             quantity={listing.quantity}
             priceDay={listing.priceDay}
             priceWeek={listing.priceWeek}

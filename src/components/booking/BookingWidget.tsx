@@ -16,6 +16,8 @@ import { LoginDialog } from "@/components/auth/LoginDialog";
 import {
   buildBookingQuery, rentalDaysCount, type BookingSelection,
 } from "@/lib/booking/params";
+import { unavailableDates, type DayLoad } from "@/lib/catalog/availability";
+import { formatDayMonth } from "@/lib/catalog/dates";
 import { formatPrice } from "@/lib/catalog/format";
 
 export interface BookingWidgetProps {
@@ -23,6 +25,8 @@ export interface BookingWidgetProps {
   initial: BookingSelection;    // уже провалидировано сервером (parseBookingParams)
   today: string;
   maxDate: string;              // горизонт бронирования
+  // Занятость по дням на весь горизонт (plain object: Map не проходит RSC-границу).
+  availability: Record<string, DayLoad>;
   quantity: number;
   priceDay: number | null;
   priceWeek: number | null;
@@ -63,7 +67,17 @@ export function BookingWidget(props: BookingWidgetProps) {
     return props.priceDay * days * sel.qty;
   }, [props.priceDay, days, sel.qty]);
 
+  // Дни выбранного диапазона, где не набирается qty свободных единиц.
+  // Нативный date-input не умеет блокировать отдельные даты, поэтому
+  // конфликт ловим после выбора: сообщение + заблокированная кнопка.
+  const conflicts = useMemo(() => {
+    const map = new Map(Object.entries(props.availability));
+    return unavailableDates(props.quantity, map, sel.from, sel.to, sel.qty);
+  }, [props.availability, props.quantity, sel]);
+  const hasConflict = conflicts.length > 0;
+
   const onBook = () => {
+    if (hasConflict) return;
     if (!props.isAuthed) setLoginOpen(true);
     // Авторизованный флоу (форма заявки) — следующий этап.
   };
@@ -73,8 +87,16 @@ export function BookingWidget(props: BookingWidgetProps) {
       Заявки скоро
     </Button>
   ) : (
-    <Button className={extra} onClick={onBook}>Забронировать</Button>
+    <Button className={extra} onClick={onBook} disabled={hasConflict}>Забронировать</Button>
   );
+
+  const conflictMessage = hasConflict ? (
+    <p className="text-sm text-destructive" role="alert">
+      {sel.qty > 1 ? `Нет ${sel.qty} свободных единиц` : "Занято"}:{" "}
+      {conflicts.map(formatDayMonth).join(", ")}. Выберите другие даты
+      {props.quantity > 1 && sel.qty > 1 ? " или меньшее количество" : ""}.
+    </p>
+  ) : null;
 
   return (
     <>
@@ -146,6 +168,8 @@ export function BookingWidget(props: BookingWidgetProps) {
               {days} дн. × {sel.qty} шт. ≈ <span className="font-medium text-foreground">{formatPrice(estimate)}</span>
             </p>
           )}
+
+          {conflictMessage}
 
           {bookButton("mt-1 hidden w-full md:inline-flex")}
         </div>
