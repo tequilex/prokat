@@ -1,0 +1,77 @@
+import { describe, it, expect } from "vitest";
+import {
+  buildBookingQuery, parseBookingParams, rentalDaysCount,
+} from "@/lib/booking/params";
+
+const TODAY = "2026-07-16";
+const OPTS = { today: TODAY, maxQty: 3 };
+
+describe("parseBookingParams()", () => {
+  it("пустой ввод — дефолты: сегодня, 1 шт", () => {
+    expect(parseBookingParams({}, OPTS)).toEqual({ from: TODAY, to: TODAY, qty: 1 });
+  });
+
+  it("валидный выбор проходит как есть", () => {
+    const sel = parseBookingParams({ from: "2026-07-20", to: "2026-07-22", qty: "2" }, OPTS);
+    expect(sel).toEqual({ from: "2026-07-20", to: "2026-07-22", qty: 2 });
+  });
+
+  it("прошлое подтягивается к сегодня", () => {
+    const sel = parseBookingParams({ from: "2026-07-01", to: "2026-07-02" }, OPTS);
+    expect(sel.from).toBe(TODAY);
+    expect(sel.to).toBe(TODAY);
+  });
+
+  it("to раньше from — схлопывается в from", () => {
+    const sel = parseBookingParams({ from: "2026-07-20", to: "2026-07-18" }, OPTS);
+    expect(sel.to).toBe("2026-07-20");
+  });
+
+  it("за горизонтом 90 дней — кламп к горизонту", () => {
+    const sel = parseBookingParams({ from: "2027-01-01", to: "2027-02-01" }, OPTS);
+    expect(sel.from).toBe("2026-10-14"); // today + 90
+    expect(sel.to).toBe("2026-10-14");
+  });
+
+  it("qty ограничен наличием и не меньше 1", () => {
+    expect(parseBookingParams({ qty: "99" }, OPTS).qty).toBe(3);
+    expect(parseBookingParams({ qty: "0" }, OPTS).qty).toBe(1);
+    expect(parseBookingParams({ qty: "-2" }, OPTS).qty).toBe(1);
+  });
+
+  it("мусор в датах и qty — дефолты", () => {
+    const sel = parseBookingParams({ from: "garbage", to: "2026-99-99", qty: "abc" }, OPTS);
+    expect(sel).toEqual({ from: TODAY, to: TODAY, qty: 1 });
+  });
+});
+
+describe("buildBookingQuery()", () => {
+  it("дефолтный выбор — пустой query", () => {
+    expect(buildBookingQuery({ from: TODAY, to: TODAY, qty: 1 }, TODAY)).toBe("");
+  });
+
+  it("выбранные даты и qty попадают в query", () => {
+    const qs = buildBookingQuery({ from: "2026-07-20", to: "2026-07-22", qty: 2 }, TODAY);
+    expect(qs).toContain("from=2026-07-20");
+    expect(qs).toContain("to=2026-07-22");
+    expect(qs).toContain("qty=2");
+  });
+
+  it("roundtrip: parse(build(sel)) == sel", () => {
+    const sel = { from: "2026-07-20", to: "2026-07-25", qty: 3 };
+    const qs = new URLSearchParams(buildBookingQuery(sel, TODAY));
+    const back = parseBookingParams({
+      from: qs.get("from") ?? undefined,
+      to: qs.get("to") ?? undefined,
+      qty: qs.get("qty") ?? undefined,
+    }, OPTS);
+    expect(back).toEqual(sel);
+  });
+});
+
+describe("rentalDaysCount()", () => {
+  it("границы включительно", () => {
+    expect(rentalDaysCount({ from: "2026-07-20", to: "2026-07-22", qty: 1 })).toBe(3);
+    expect(rentalDaysCount({ from: "2026-07-20", to: "2026-07-20", qty: 1 })).toBe(1);
+  });
+});

@@ -64,7 +64,10 @@ export async function GET(req: NextRequest) {
   const expires = new Date(Date.now() + sessionTtlSeconds * 1000);
   await db.insert(sessions).values({ sessionToken, userId, expires });
 
-  const res = NextResponse.redirect(new URL("/", req.url));
+  // callbackUrl — только same-origin relative path (без open redirect даже в dev).
+  const cb = req.nextUrl.searchParams.get("callbackUrl");
+  const target = cb && cb.startsWith("/") && !cb.startsWith("//") ? cb : "/";
+  const res = NextResponse.redirect(new URL(target, req.url));
   res.cookies.set(sessionCookieName(), sessionToken, {
     httpOnly: true,
     sameSite: "lax",

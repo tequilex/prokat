@@ -4,7 +4,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { ImageOff } from "lucide-react";
 import { seo } from "@theme/seo";
 import {
@@ -18,17 +17,22 @@ import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { FullCalendar } from "@/components/catalog/AvailabilityCalendar";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
-import { Button } from "@/components/ui/button";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
 import { siteConfig } from "@/lib/site-config";
 import { freeQty } from "@/lib/catalog/availability";
+import { BOOKING_HORIZON_DAYS, parseBookingParams } from "@/lib/booking/params";
+import { BookingWidget } from "@/components/booking/BookingWidget";
+import { auth } from "@/lib/auth";
+import { buildEdgeConfig } from "@/lib/auth/config.edge";
+import { getEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ city: string; seg: string; sub: string }>;
-  searchParams: Promise<CategorySearchParams>;
+  // Категорийные фильтры + выбор дат брони (from/to/qty) на странице позиции.
+  searchParams: Promise<CategorySearchParams & { from?: string; to?: string; qty?: string }>;
 }
 
 type Resolved =
@@ -83,7 +87,7 @@ export default async function CitySubPage({ params, searchParams }: Props) {
   if (r.kind === "subcategory") {
     return <SubcategoryPage r={r} searchParams={await searchParams} />;
   }
-  return <ListingPage r={r} />;
+  return <ListingPage r={r} searchParams={await searchParams} />;
 }
 
 async function SubcategoryPage({
@@ -135,16 +139,34 @@ async function SubcategoryPage({
   );
 }
 
-async function ListingPage({ r }: { r: Extract<Resolved, { kind: "listing" }> }) {
+async function ListingPage({
+  r, searchParams,
+}: {
+  r: Extract<Resolved, { kind: "listing" }>;
+  searchParams: { from?: string; to?: string; qty?: string };
+}) {
   const { city, provider, listing } = r;
   const photos = listingPhotos(listing);
   const category = await getCategoryById(listing.categoryId);
+
+  const session = await auth();
+  const isAuthed = Boolean(session?.user);
+  const env = getEnv();
+  const nextAuthProviders = (buildEdgeConfig().providers ?? []).flatMap((p) => {
+    const id = (p as { id?: string }).id;
+    return id ? [id] : [];
+  });
+  const vkEnabled = Boolean(env.VK_CLIENT_ID && env.VK_CLIENT_SECRET);
+  const isDev = env.NODE_ENV !== "production";
 
   const from = todayStr();
   const rows = await getAvailabilityRows([listing.id], from, addDaysStr(from, 27));
   const map: AvailabilityMap = new Map(
     rows.map((row) => [row.date, { bookedQty: row.bookedQty, blockedQty: row.blockedQty }]),
   );
+
+  // Выбор дат/qty из URL (восстанавливается после OAuth-redirect).
+  const selection = parseBookingParams(searchParams, { today: from, maxQty: listing.quantity });
 
   const crumbs = [
     { label: "Главная", href: "/" },
@@ -212,62 +234,25 @@ async function ListingPage({ r }: { r: Extract<Resolved, { kind: "listing" }> })
         </div>
 
         <aside className="md:sticky md:top-20 md:self-start">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <dl className="flex flex-col gap-2 text-sm">
-              {listing.priceDay !== null && (
-                <div className="flex items-baseline justify-between">
-                  <dt className="text-muted-foreground">Сутки</dt>
-                  <dd className="text-lg font-semibold">{formatPrice(listing.priceDay)}</dd>
-                </div>
-              )}
-              {listing.priceWeek !== null && (
-                <div className="flex items-baseline justify-between">
-                  <dt className="text-muted-foreground">Неделя</dt>
-                  <dd className="font-medium">{formatPrice(listing.priceWeek)}</dd>
-                </div>
-              )}
-              {listing.priceHour !== null && (
-                <div className="flex items-baseline justify-between">
-                  <dt className="text-muted-foreground">Час</dt>
-                  <dd className="font-medium">{formatPrice(listing.priceHour)}</dd>
-                </div>
-              )}
-              <div className="flex items-baseline justify-between border-t border-border pt-2">
-                <dt className="text-muted-foreground">Залог</dt>
-                <dd>{formatDeposit(listing.depositType, listing.depositAmount)}</dd>
-              </div>
-              {listing.quantity > 1 && (
-                <div className="flex items-baseline justify-between">
-                  <dt className="text-muted-foreground">В наличии</dt>
-                  <dd>{listing.quantity} шт.</dd>
-                </div>
-              )}
-            </dl>
-
-            {/* Заявки включаются на этапе флоу брони; сейчас кнопка-заглушка */}
-            <Button className="mt-4 hidden w-full md:inline-flex" disabled title="Заявки скоро откроются">
-              Забронировать
-            </Button>
-
-            <p className="mt-4 text-xs text-muted-foreground">
-              Прокат{" "}
-              <Link href={`/${city.slug}/${provider.slug}` as never} className="text-foreground hover:underline underline-offset-2">
-                {provider.name}
-              </Link>
-              {provider.address ? ` · ${provider.address}` : null}
-            </p>
-          </div>
+          <BookingWidget
+            pathname={`/${city.slug}/${provider.slug}/${listing.slug}`}
+            initial={selection}
+            today={from}
+            maxDate={addDaysStr(from, BOOKING_HORIZON_DAYS)}
+            quantity={listing.quantity}
+            priceDay={listing.priceDay}
+            priceWeek={listing.priceWeek}
+            priceHour={listing.priceHour}
+            depositLabel={formatDeposit(listing.depositType, listing.depositAmount)}
+            providerName={provider.name}
+            providerHref={`/${city.slug}/${provider.slug}`}
+            providerAddress={provider.address}
+            isAuthed={isAuthed}
+            nextAuthProviders={nextAuthProviders}
+            vkEnabled={vkEnabled}
+            isDev={isDev}
+          />
         </aside>
-      </div>
-
-      {/* Mobile: прилипшая к низу кнопка брони */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-1">
-          <span className="text-sm font-semibold">
-            {listing.priceDay !== null ? `${formatPrice(listing.priceDay)}/сутки` : ""}
-          </span>
-          <Button disabled title="Заявки скоро откроются">Забронировать</Button>
-        </div>
       </div>
     </main>
   );

@@ -25,13 +25,20 @@ const ROW_CLASS = "flex w-full items-center justify-between rounded-xl px-5 py-3
 export function ProviderButtons({
   nextAuthProviders,
   vkEnabled,
+  callbackUrl = "/",
 }: {
   nextAuthProviders: string[];
   vkEnabled: boolean;
+  // Куда вернуть пользователя после входа (relative path + query).
+  // Точка брони передаёт сюда URL позиции с выбранными датами.
+  callbackUrl?: string;
 }) {
   const buttons: Button[] = [
     ...nextAuthProviders.flatMap((id) => NEXTAUTH_EXPANSION[id] ?? []),
-    ...(vkEnabled ? VK_BUTTONS : []),
+    ...(vkEnabled ? VK_BUTTONS.map((b) => ({
+      ...b,
+      href: `${b.href}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+    })) : []),
   ];
   if (buttons.length === 0) return null;
 
@@ -72,7 +79,7 @@ export function ProviderButtons({
             key={id}
             type="button"
             disabled={lock.isLocked}
-            onClick={() => { lock.lock(id); signIn(b.providerId, { callbackUrl: "/" }); }}
+            onClick={() => { lock.lock(id); signIn(b.providerId, { callbackUrl }); }}
             style={{ backgroundColor: b.bg, color: b.fg }}
             className={`${ROW_CLASS}${dim} disabled:cursor-not-allowed`}
           >
