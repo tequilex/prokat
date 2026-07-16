@@ -194,6 +194,23 @@ export async function getCategoryById(id: string): Promise<Category | null> {
   return rows[0] ?? null;
 }
 
+// Все активные позиции с полным путём слагов — для sitemap.
+export async function getAllActiveListingPaths(): Promise<
+  Array<{ citySlug: string; providerSlug: string; listingSlug: string; updatedAt: Date }>
+> {
+  return getDb()
+    .select({
+      citySlug: cities.slug,
+      providerSlug: providers.slug,
+      listingSlug: listings.slug,
+      updatedAt: listings.updatedAt,
+    })
+    .from(listings)
+    .innerJoin(providers, eq(providers.id, listings.providerId))
+    .innerJoin(cities, and(eq(cities.id, providers.cityId), eq(cities.isActive, true)))
+    .where(eq(listings.status, "active"));
+}
+
 export interface AvailabilityRow {
   listingId: string;
   date: string;

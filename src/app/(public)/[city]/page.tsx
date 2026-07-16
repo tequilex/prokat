@@ -9,6 +9,7 @@ import {
 } from "@/server/catalog";
 import { listingsCountLabel } from "@/lib/catalog/format";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
+import { siteConfig } from "@/lib/site-config";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: seo.titleTemplate(`Прокат вещей в ${city.name}`),
     description: `Прокаты ${city.name}: инструмент, спорт, платья и другое. Каталог с ценами и заявкой на бронь онлайн.`,
+    alternates: { canonical: `${siteConfig.url}/${city.slug}` },
   };
 }
 

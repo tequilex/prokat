@@ -6,10 +6,11 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { Pool } from "pg";
 import {
-  users, cities, categories, providers, listings,
+  users, cities, categories, providers, listings, availability,
 } from "../drizzle/schema";
 import { newId } from "../src/lib/id";
 import { slugify } from "../src/lib/slugify";
+import { addDaysStr, todayStr } from "../src/lib/catalog/dates";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -111,9 +112,12 @@ async function main() {
     [4, dressesId, "Платье для фотосессии со шлейфом", 2000, 6000, "money", 1],
   ];
 
+  const listingIds: string[] = [];
   for (const [pIdx, categoryId, title, priceDay, depositAmount, depositType, quantity] of listingDefs) {
+    const id = newId();
+    listingIds.push(id);
     await db.insert(listings).values({
-      id: newId(),
+      id,
       providerId: providerIds[pIdx],
       categoryId,
       title,
@@ -128,8 +132,36 @@ async function main() {
     });
   }
 
+  // Демо-занятость: у каждой третьей позиции заняты ближайшие дни,
+  // у каждой пятой — ручное закрытие. Календари в UI сразу «живые».
+  const today = todayStr();
+  let availRows = 0;
+  for (let i = 0; i < listingIds.length; i++) {
+    const quantity = listingDefs[i][6];
+    if (i % 3 === 0) {
+      for (let d = 1; d <= 3; d++) {
+        await db.insert(availability).values({
+          listingId: listingIds[i],
+          date: addDaysStr(today, d),
+          bookedQty: Math.min(quantity, i % 2 === 0 ? quantity : 1), // часть — полностью занята
+        });
+        availRows++;
+      }
+    }
+    if (i % 5 === 0) {
+      for (let d = 7; d <= 8; d++) {
+        await db.insert(availability).values({
+          listingId: listingIds[i],
+          date: addDaysStr(today, d),
+          blockedQty: quantity, // «в ремонте» / «сдал по телефону»
+        });
+        availRows++;
+      }
+    }
+  }
+
   await pool.end();
-  console.log(`Seeded: 1 city, 7 categories, ${providerDefs.length} providers, ${listingDefs.length} listings`);
+  console.log(`Seeded: 1 city, 7 categories, ${providerDefs.length} providers, ${listingDefs.length} listings, ${availRows} availability rows`);
 }
 
 main().catch((err) => {

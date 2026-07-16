@@ -17,6 +17,9 @@ import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
 import { ListingCard } from "@/components/catalog/ListingCard";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildBreadcrumbJsonLd, buildLocalBusinessJsonLd } from "@/lib/jsonld";
+import { siteConfig } from "@/lib/site-config";
 
 export const dynamic = "force-dynamic";
 
@@ -37,17 +40,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug, seg } = await params;
   const r = await resolve(citySlug, seg);
   if (!r) return {};
+  const canonical = `${siteConfig.url}/${r.city.slug}/${seg}`;
   if (r.resolved.kind === "category") {
     const cat = r.resolved.category;
     return {
       title: seo.titleTemplate(`Аренда: ${cat.name.toLowerCase()} в ${r.city.name}`),
       description: `${cat.name} напрокат в ${r.city.name}: каталог позиций с ценами, залогами и календарём занятости.`,
+      alternates: { canonical },
     };
   }
   const p = r.resolved.provider;
   return {
     title: seo.titleTemplate(`${p.name} — прокат в ${r.city.name}`),
     description: p.description ?? `Прокат «${p.name}» в ${r.city.name}: позиции, цены, контакты.`,
+    alternates: { canonical },
   };
 }
 
@@ -92,6 +98,11 @@ async function RootCategoryPage({
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
+      <JsonLd data={buildBreadcrumbJsonLd([
+        { name: "Главная", url: "/" },
+        { name: city.name, url: `/${city.slug}` },
+        { name: category.name, url: basePath },
+      ], siteConfig.url)} />
       <Breadcrumbs items={[
         { label: "Главная", href: "/" },
         { label: city.name, href: `/${city.slug}` },
@@ -130,6 +141,21 @@ async function ProviderPage({ city, provider }: { city: City; provider: Provider
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
+      <JsonLd data={buildLocalBusinessJsonLd({
+        name: provider.name,
+        description: provider.description,
+        url: `${siteConfig.url}/${city.slug}/${provider.slug}`,
+        cityName: city.name,
+        address: provider.address,
+        lat: provider.lat,
+        lon: provider.lon,
+        phones,
+      })} />
+      <JsonLd data={buildBreadcrumbJsonLd([
+        { name: "Главная", url: "/" },
+        { name: city.name, url: `/${city.slug}` },
+        { name: provider.name, url: `/${city.slug}/${provider.slug}` },
+      ], siteConfig.url)} />
       <Breadcrumbs items={[
         { label: "Главная", href: "/" },
         { label: city.name, href: `/${city.slug}` },

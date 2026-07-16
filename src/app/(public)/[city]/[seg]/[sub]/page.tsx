@@ -19,6 +19,10 @@ import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { FullCalendar } from "@/components/catalog/AvailabilityCalendar";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
 import { Button } from "@/components/ui/button";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
+import { siteConfig } from "@/lib/site-config";
+import { freeQty } from "@/lib/catalog/availability";
 
 export const dynamic = "force-dynamic";
 
@@ -54,10 +58,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug, seg, sub } = await params;
   const r = await resolve(citySlug, seg, sub);
   if (!r) return {};
+  const canonical = `${siteConfig.url}/${r.city.slug}/${seg}/${sub}`;
   if (r.kind === "subcategory") {
     return {
       title: seo.titleTemplate(`Аренда: ${r.sub.name.toLowerCase()} в ${r.city.name}`),
       description: `${r.sub.name} напрокат в ${r.city.name}: цены, залоги, календарь занятости.`,
+      alternates: { canonical },
     };
   }
   const priceBit = r.listing.priceDay !== null ? ` от ${formatPrice(r.listing.priceDay)}/сутки` : "";
@@ -65,6 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: seo.titleTemplate(`${r.listing.title} — аренда в ${r.city.name}${priceBit}`),
     description: r.listing.description ??
       `${r.listing.title} напрокат в ${r.city.name} — прокат «${r.provider.name}».`,
+    alternates: { canonical },
   };
 }
 
@@ -100,6 +107,12 @@ async function SubcategoryPage({
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
+      <JsonLd data={buildBreadcrumbJsonLd([
+        { name: "Главная", url: "/" },
+        { name: city.name, url: `/${city.slug}` },
+        { name: root.name, url: categoryBasePath },
+        { name: sub.name, url: `${categoryBasePath}/${sub.slug}` },
+      ], siteConfig.url)} />
       <Breadcrumbs items={[
         { label: "Главная", href: "/" },
         { label: city.name, href: `/${city.slug}` },
@@ -140,8 +153,26 @@ async function ListingPage({ r }: { r: Extract<Resolved, { kind: "listing" }> })
     { label: listing.title },
   ];
 
+  // Продукт «в наличии», если в ближайшую неделю есть хотя бы один свободный день.
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDaysStr(from, i));
+  const available = weekDates.some((d) => freeQty(listing.quantity, map.get(d)) > 0);
+  const listingUrl = `${siteConfig.url}/${city.slug}/${provider.slug}/${listing.slug}`;
+
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6 pb-24 md:pb-6">
+      <JsonLd data={buildProductJsonLd({
+        title: listing.title,
+        description: listing.description,
+        priceDay: listing.priceDay,
+        photoUrls: photos.map((p) => p.url),
+        url: listingUrl,
+        providerName: provider.name,
+        available,
+      })} />
+      <JsonLd data={buildBreadcrumbJsonLd(
+        crumbs.map((c) => ({ name: c.label, url: c.href })),
+        siteConfig.url,
+      )} />
       <Breadcrumbs items={crumbs} />
 
       <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
