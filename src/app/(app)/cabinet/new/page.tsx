@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { requireAuthState } from "@/lib/auth/guard";
+import { getOwnerProvider } from "@/server/owner";
 import { getActiveCities } from "@/server/catalog";
 import { ProviderForm } from "@/components/cabinet/ProviderForm";
 
@@ -6,6 +9,10 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Создать прокат", robots: { index: false } };
 
 export default async function ProviderOnboardingPage() {
+  const session = await requireAuthState();
+  if (!session) redirect("/login?from=/cabinet");
+  if (await getOwnerProvider(session.user.id)) redirect("/cabinet/requests");
+
   const cities = await getActiveCities();
   return (
     <main>
