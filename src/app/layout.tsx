@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Глобальный progress-bar поверх <html>: даёт моментальный visual
            * feedback на любой client-side навигации (Link/router.push), пока
            * RSC грузит новую страницу. Цвет — токен --color-primary. */}
-          <NextTopLoader color="#2970FF" height={3} showSpinner={false} />
+          <NextTopLoader color="#087A41" height={3} showSpinner={false} />
           <Header />
           <div className="flex-1">{children}</div>
           <Footer />
