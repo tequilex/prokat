@@ -10,7 +10,7 @@ import {
 import { parseFilters, type CategorySearchParams } from "@/lib/catalog/filters";
 import { todayStr, addDaysStr } from "@/lib/catalog/dates";
 import { formatPrice, listingsCountLabel, providersCountLabel } from "@/lib/catalog/format";
-import type { AvailabilityMap } from "@/lib/catalog/availability";
+import { buildAvailabilityByListing } from "@/lib/catalog/availability";
 import { ListingCard } from "@/components/catalog/ListingCard";
 import { ListingFilters, type FilterState } from "@/components/catalog/ListingFilters";
 
@@ -37,12 +37,7 @@ export async function CategoryListing({
   const from = todayStr();
   const to = addDaysStr(from, 6);
   const availRows = await getAvailabilityRows(items.map((i) => i.listing.id), from, to);
-  const availByListing = new Map<string, AvailabilityMap>();
-  for (const r of availRows) {
-    const m = availByListing.get(r.listingId) ?? new Map();
-    m.set(r.date, { bookedQty: r.bookedQty, blockedQty: r.blockedQty });
-    availByListing.set(r.listingId, m);
-  }
+  const availByListing = buildAvailabilityByListing(availRows);
 
   const filterState: FilterState = {
     priceMin: filters.priceMin, priceMax: filters.priceMax, sort: filters.sort,
