@@ -2,7 +2,7 @@
 // Все функции принимают уже разрезолвленные id (страницы резолвят слаги сами).
 
 import {
-  and, asc, desc, eq, gte, inArray, lte, sql,
+  and, asc, desc, eq, gte, ilike, inArray, lte, or, sql,
 } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
@@ -108,6 +108,52 @@ export async function getListingsForCategories(
     eq(providers.cityId, cityId),
     eq(listings.status, "active"),
     inArray(listings.categoryId, categoryIds),
+  ];
+  if (filters.priceMin !== undefined) conds.push(gte(listings.priceDay, filters.priceMin));
+  if (filters.priceMax !== undefined) conds.push(lte(listings.priceDay, filters.priceMax));
+  const where = and(...conds);
+
+  const order =
+    filters.sort === "price_asc" ? asc(listings.priceDay) :
+    filters.sort === "price_desc" ? desc(listings.priceDay) :
+    desc(listings.createdAt);
+
+  const [items, totalRows] = await Promise.all([
+    db.select({ listing: listings, providerName: providers.name, providerSlug: providers.slug })
+      .from(listings)
+      .innerJoin(providers, eq(providers.id, listings.providerId))
+      .where(where)
+      .orderBy(order, asc(listings.id))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ cnt: sql<number>`count(*)::int` })
+      .from(listings)
+      .innerJoin(providers, eq(providers.id, listings.providerId))
+      .where(where),
+  ]);
+
+  return { items, total: totalRows[0]?.cnt ?? 0 };
+}
+
+// Текстовый поиск по позициям в пределах города: ILIKE по названию и описанию.
+// Пустой запрос → пустой результат (страница показывает подсказку). Форма фильтров,
+// сортировки и пагинации — как у getListingsForCategories.
+export async function searchListings(
+  cityId: string,
+  q: string,
+  filters: ListingFilters = {},
+): Promise<{ items: ListingWithProvider[]; total: number }> {
+  const query = q.trim();
+  if (query === "") return { items: [], total: 0 };
+  const db = getDb();
+  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
+  const page = Math.max(1, filters.page ?? 1);
+  const like = `%${query}%`;
+
+  const conds = [
+    eq(providers.cityId, cityId),
+    eq(listings.status, "active"),
+    or(ilike(listings.title, like), ilike(listings.description, like)),
   ];
   if (filters.priceMin !== undefined) conds.push(gte(listings.priceDay, filters.priceMin));
   if (filters.priceMax !== undefined) conds.push(lte(listings.priceDay, filters.priceMax));
