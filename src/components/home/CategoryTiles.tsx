@@ -5,7 +5,7 @@ import { verticalIcon } from "./categoryIcon";
 export interface CategoryTile {
   slug: string;
   name: string;
-  vertical: string;
+  vertical: string | null;
   count?: number;
 }
 

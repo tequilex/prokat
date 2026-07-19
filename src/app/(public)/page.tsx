@@ -1,12 +1,14 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { MapPin } from "lucide-react";
-import { content } from "@theme/content";
 import { seo } from "@theme/seo";
+import { content } from "@theme/content";
+import { auth } from "@/lib/auth";
 import {
   getActiveCities, getAllCategories, getListingCountsByCategory, rollupToRoots,
 } from "@/server/catalog";
-import { listingsCountLabel } from "@/lib/catalog/format";
+import { Hero } from "@/components/home/Hero";
+import { CategoryTiles } from "@/components/home/CategoryTiles";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { ListYourItemBand } from "@/components/home/ListYourItemBand";
 
 export const dynamic = "force-dynamic";
 
@@ -16,60 +18,49 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [citiesList, cats] = await Promise.all([getActiveCities(), getAllCategories()]);
-  const roots = cats.filter((c) => c.parentId === null);
+  const [session, cities, cats] = await Promise.all([
+    auth(),
+    getActiveCities(),
+    getAllCategories(),
+  ]);
 
-  // Пока город один — категории на главной ведут сразу в него.
-  const onlyCity = citiesList.length === 1 ? citiesList[0] : null;
-  const rootCounts = onlyCity
-    ? rollupToRoots(cats, await getListingCountsByCategory(onlyCity.id))
+  // Категории завязаны на город (роуты /[city]/[seg]). Берём «город по умолчанию» —
+  // единственный активный, иначе первый; переключение — через CitySelector в шапке.
+  const defaultCity = cities[0] ?? null;
+  const roots = cats.filter((c) => c.parentId === null);
+  const counts = defaultCity
+    ? rollupToRoots(cats, await getListingCountsByCategory(defaultCity.id))
     : null;
 
+  const chips = roots.slice(0, 5).map((c) => ({ slug: c.slug, name: c.name }));
+  const tiles = roots.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    vertical: c.vertical,
+    count: counts?.get(c.id),
+  }));
+
+  const user = session?.user;
+  const placeHref = !user ? "/login" : user.username ? "/cabinet/listings/new" : "/welcome";
+
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-4 py-8">
-      <section className="py-8 text-center md:py-14">
-        <h1 className="font-display text-2xl font-bold md:text-3xl">{content.site.tagline}</h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Найдите нужную вещь в своём городе и оставьте заявку на бронь —
-          владелец проката свяжется с вами.
-        </p>
-      </section>
+    <main>
+      <Hero citySlug={defaultCity?.slug} chips={chips} />
 
-      <section aria-labelledby="cities-heading" className="mt-4">
-        <h2 id="cities-heading" className="mb-3 text-lg font-semibold">Города</h2>
-        <div className="flex flex-wrap gap-3">
-          {citiesList.map((c) => (
-            <Link
-              key={c.id}
-              href={`/${c.slug}` as never}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 hover:border-primary"
-            >
-              <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <span className="font-medium">{c.name}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <div className="mx-auto w-full max-w-[1200px] space-y-12 px-4 py-12">
+        {defaultCity && (
+          <section>
+            <h2 className="mb-5 text-xl font-semibold text-foreground">
+              {content.home.categoriesHeading}
+            </h2>
+            <CategoryTiles citySlug={defaultCity.slug} categories={tiles} />
+          </section>
+        )}
 
-      {onlyCity && rootCounts && (
-        <section aria-labelledby="cats-heading" className="mt-10">
-          <h2 id="cats-heading" className="mb-3 text-lg font-semibold">Категории</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {roots.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/${onlyCity.slug}/${cat.slug}` as never}
-                className="rounded-lg border border-border bg-card p-4 hover:border-primary"
-              >
-                <span className="font-medium">{cat.name}</span>
-                <span className="mt-1 block text-sm text-muted-foreground">
-                  {listingsCountLabel(rootCounts.get(cat.id) ?? 0)}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+        <HowItWorks />
+
+        <ListYourItemBand href={placeHref} />
+      </div>
     </main>
   );
 }

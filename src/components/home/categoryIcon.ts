@@ -6,6 +6,6 @@ const MAP: Record<string, LucideIcon> = {
   dresses: Shirt,
 };
 
-export function verticalIcon(vertical: string): LucideIcon {
-  return MAP[vertical] ?? Package;
+export function verticalIcon(vertical: string | null | undefined): LucideIcon {
+  return (vertical ? MAP[vertical] : undefined) ?? Package;
 }
