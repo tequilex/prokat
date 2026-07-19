@@ -4,7 +4,7 @@ export const content = {
   site: {
     name: "Прокат",
     shortName: "Прокат",
-    tagline: "Каталог прокатов: инструмент, спорт, платья, фототехника",
+    tagline: "Арендуй что угодно рядом — или сдавай своё",
     description:
       "Сервис-каталог прокатов. Владельцы размещают позиции, клиенты находят их и оставляют заявки на бронь.",
     contactEmail: SITE_CONTACT_EMAIL,
@@ -12,6 +12,11 @@ export const content = {
   nav: {
     home: "Главная",
     login: "Войти",
+    place: "Разместить",
+    search: "Найти",
+    searchPlaceholder: "Что арендуем?",
+    city: "Город",
+    allCities: "Все города",
   },
   auth: {
     loginTitle: "Войти",
