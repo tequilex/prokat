@@ -5,35 +5,16 @@ import Link from "next/link";
 import {
   getAvailabilityRows, getCategoryStats, getListingsForCategories,
   DEFAULT_PAGE_SIZE,
-  type Category, type City, type ListingFilters as Filters,
+  type Category, type City,
 } from "@/server/catalog";
+import { parseFilters, type CategorySearchParams } from "@/lib/catalog/filters";
 import { todayStr, addDaysStr } from "@/lib/catalog/dates";
 import { formatPrice, listingsCountLabel, providersCountLabel } from "@/lib/catalog/format";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { ListingCard } from "@/components/catalog/ListingCard";
 import { ListingFilters, type FilterState } from "@/components/catalog/ListingFilters";
 
-export interface CategorySearchParams {
-  price_min?: string;
-  price_max?: string;
-  sort?: string;
-  page?: string;
-}
-
-export function parseFilters(sp: CategorySearchParams): Filters {
-  const num = (s: string | undefined) => {
-    const n = Number(s);
-    return s !== undefined && Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
-  };
-  const sort = sp.sort === "price_asc" || sp.sort === "price_desc" ? sp.sort : undefined;
-  const page = num(sp.page);
-  return {
-    priceMin: num(sp.price_min),
-    priceMax: num(sp.price_max),
-    sort,
-    page: page && page > 0 ? page : 1,
-  };
-}
+export type { CategorySearchParams } from "@/lib/catalog/filters";
 
 export async function CategoryListing({
   city, categoryIds, basePath, categoryBasePath, subcategories, activeSubSlug, searchParams,
