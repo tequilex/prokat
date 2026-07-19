@@ -8,6 +8,14 @@ export interface CategorySearchParams {
   price_max?: string;
   sort?: string;
   page?: string;
+  q?: string;
+  city?: string;
+}
+
+// Поисковый запрос из GET-параметров. Отдельно от parseFilters, т.к. категорийные
+// страницы его не используют, а /search — да.
+export function parseQuery(sp: { q?: string }): string {
+  return (sp.q ?? "").trim();
 }
 
 // NB: пустая строка — НЕ ноль. Браузер отправляет незаполненные поля формы

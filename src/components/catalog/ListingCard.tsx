@@ -19,7 +19,7 @@ export function ListingCard({
   const href = `/${citySlug}/${providerSlug}/${listing.slug}`;
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-transform hover:border-primary active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100">
       <Link href={href as never} className="relative block aspect-[4/3] bg-muted">
         {photo ? (
           <Image
@@ -44,7 +44,7 @@ export function ListingCard({
           </Link>
         </h3>
 
-        <p className="text-base font-semibold">
+        <p className="text-base font-bold tracking-tight">
           {listing.priceDay !== null ? (
             <>{formatPrice(listing.priceDay)}<span className="text-sm font-normal text-muted-foreground">/сутки</span></>
           ) : listing.priceHour !== null ? (

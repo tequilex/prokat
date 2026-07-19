@@ -37,6 +37,20 @@ export function eachDate(dateFrom: string, dateTo: string): string[] {
   return out;
 }
 
+// Строки availability (по одной на listing+date) → карта listingId → AvailabilityMap.
+// Общий для страниц каталога/поиска и провайдера, чтобы не дублировать цикл.
+export function buildAvailabilityByListing(
+  rows: Array<{ listingId: string; date: string; bookedQty: number; blockedQty: number }>,
+): Map<string, AvailabilityMap> {
+  const out = new Map<string, AvailabilityMap>();
+  for (const r of rows) {
+    const m = out.get(r.listingId) ?? new Map();
+    m.set(r.date, { bookedQty: r.bookedQty, blockedQty: r.blockedQty });
+    out.set(r.listingId, m);
+  }
+  return out;
+}
+
 export function freeQty(quantity: number, load: DayLoad | undefined): number {
   const used = (load?.bookedQty ?? 0) + (load?.blockedQty ?? 0);
   return Math.max(0, quantity - used);

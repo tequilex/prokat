@@ -13,7 +13,7 @@ import {
 import { formatPrice } from "@/lib/catalog/format";
 import { todayStr, addDaysStr } from "@/lib/catalog/dates";
 import { getAvailabilityRows } from "@/server/catalog";
-import type { AvailabilityMap } from "@/lib/catalog/availability";
+import { buildAvailabilityByListing } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
 import { ListingCard } from "@/components/catalog/ListingCard";
@@ -136,12 +136,7 @@ async function ProviderPage({ city, provider }: { city: City; provider: Provider
 
   const from = todayStr();
   const availRows = await getAvailabilityRows(items.map((l) => l.id), from, addDaysStr(from, 6));
-  const availByListing = new Map<string, AvailabilityMap>();
-  for (const row of availRows) {
-    const m = availByListing.get(row.listingId) ?? new Map();
-    m.set(row.date, { bookedQty: row.bookedQty, blockedQty: row.blockedQty });
-    availByListing.set(row.listingId, m);
-  }
+  const availByListing = buildAvailabilityByListing(availRows);
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">

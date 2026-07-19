@@ -1,8 +1,9 @@
 // Фильтры листинга. Обычная GET-форма без клиентского JS: SSR перечитывает
-// searchParams. На мобиле сворачивается в <details> («шторка» без скриптов).
+// searchParams. На мобиле форма прячется в bottom-sheet (FiltersSheet).
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FiltersSheet } from "@/components/catalog/FiltersSheet";
 import type { Category } from "@/server/catalog";
 
 export interface FilterState {
@@ -11,9 +12,24 @@ export interface FilterState {
   sort?: string;
 }
 
-function FormInner({ basePath, state }: { basePath: string; state: FilterState }) {
+function FormInner({
+  basePath, state, hidden,
+}: {
+  basePath: string;
+  state: FilterState;
+  hidden?: Record<string, string>;
+}) {
+  const hiddenEntries = Object.entries(hidden ?? {}).filter(([, v]) => v !== "");
+  // «Сбросить» очищает фильтры, но сохраняет контекст поиска (q, city).
+  const resetQs = new URLSearchParams(hiddenEntries).toString();
+  const resetHref = resetQs ? `${basePath}?${resetQs}` : basePath;
+
   return (
     <form method="GET" action={basePath} className="flex flex-col gap-3">
+      {hiddenEntries.map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
+
       <fieldset className="flex items-center gap-2">
         <legend className="mb-1 text-xs font-medium text-muted-foreground">Цена за сутки, ₽</legend>
         <input
@@ -44,7 +60,7 @@ function FormInner({ basePath, state }: { basePath: string; state: FilterState }
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm">Показать</Button>
         <Button asChild variant="ghost" size="sm">
-          <Link href={basePath as never}>Сбросить</Link>
+          <Link href={resetHref as never}>Сбросить</Link>
         </Button>
       </div>
     </form>
@@ -52,7 +68,7 @@ function FormInner({ basePath, state }: { basePath: string; state: FilterState }
 }
 
 export function ListingFilters({
-  basePath, state, subcategories, categoryBasePath, activeSubSlug,
+  basePath, state, subcategories, categoryBasePath, activeSubSlug, hidden,
 }: {
   basePath: string;
   state: FilterState;
@@ -60,6 +76,8 @@ export function ListingFilters({
   // Путь корневой категории: /{city}/{category}. Чипы подкатегорий строятся от него.
   categoryBasePath: string;
   activeSubSlug?: string;
+  // Доп. GET-параметры (q, city), которые надо сохранить при сабмите формы.
+  hidden?: Record<string, string>;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -81,15 +99,14 @@ export function ListingFilters({
         </nav>
       )}
 
-      {/* Desktop: фильтры видимы; mobile: складываются в details-шторку */}
-      <details className="group rounded-md border border-border p-3 md:hidden">
-        <summary className="cursor-pointer select-none text-sm font-medium">Фильтры</summary>
-        <div className="pt-3">
-          <FormInner basePath={basePath} state={state} />
-        </div>
-      </details>
+      {/* Mobile: форма прячется в bottom-sheet; desktop: инлайн. */}
+      <div className="md:hidden">
+        <FiltersSheet>
+          <FormInner basePath={basePath} state={state} hidden={hidden} />
+        </FiltersSheet>
+      </div>
       <div className="hidden md:block">
-        <FormInner basePath={basePath} state={state} />
+        <FormInner basePath={basePath} state={state} hidden={hidden} />
       </div>
     </div>
   );
