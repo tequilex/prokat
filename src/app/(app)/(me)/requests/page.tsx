@@ -25,15 +25,13 @@ export default async function RequestsPage() {
   const rows = await getCustomerRequests(session.user.id);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6">
-      <h1 className="font-display text-2xl font-bold">Мои заявки</h1>
-
+    <section aria-label="Мои заявки">
       {rows.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">
           Пока нет заявок. Найдите нужную вещь в каталоге и выберите даты.
         </p>
       ) : (
-        <ul className="mt-5 flex flex-col gap-3">
+        <ul className="flex flex-col gap-3">
           {rows.map(({ request, listingTitle, listingSlug, providerName, providerSlug, providerPhones, citySlug }) => {
             const status = request.status as BookingStatus;
             const phones = Array.isArray(providerPhones) ? (providerPhones as string[]) : [];
@@ -94,6 +92,6 @@ export default async function RequestsPage() {
           })}
         </ul>
       )}
-    </main>
+    </section>
   );
 }

@@ -24,7 +24,12 @@ export async function Header() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           {user?.username ? (
-            <UserMenu username={user.username} name={user.name ?? null} image={user.image ?? null} />
+            <UserMenu
+              username={user.username}
+              name={user.name ?? null}
+              image={user.image ?? null}
+              isAdmin={user.role === "admin"}
+            />
           ) : user ? (
             <Button asChild variant="default" size="sm" className="hidden md:inline-flex">
               <Link href="/welcome">{content.auth.chooseUsername}</Link>

@@ -14,9 +14,10 @@ type Props = {
   username: string;
   name: string | null;
   image: string | null;
+  isAdmin?: boolean;
 };
 
-export function UserMenu({ username, name, image }: Props) {
+export function UserMenu({ username, name, image, isAdmin = false }: Props) {
   // signOut делает XHR + redirect, без feedback'а пункт меню «зависает».
   // useTransition держит pending до окончания навигации.
   const [isSigningOut, startSignOut] = useTransition();
@@ -30,14 +31,20 @@ export function UserMenu({ username, name, image }: Props) {
         <Avatar src={image} name={name} username={username} size={36} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[180px]">
-        {/* Ссылка на профиль появится вместе с кабинетом покупателя (этап 7). */}
-        <DropdownMenuItem disabled>@{username}</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={"/profile" as never}>@{username}</Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href={"/requests" as never}>Мои заявки</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href={"/cabinet" as never}>Кабинет проката</Link>
         </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href={"/admin" as never}>Админка</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isSigningOut}

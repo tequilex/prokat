@@ -1,30 +1,35 @@
-// Каркас кабинета владельца: заголовок и табы. НИКАКИХ redirect'ов здесь:
-// layout кэшируется при client-side навигации и не имеет надёжного pathname —
-// redirect из layout ловил цикл. Онбординг-гейт живёт в страницах:
-// каждая страница кабинета сама редиректит на /cabinet/new без провайдера,
-// а /cabinet/new — на /cabinet/requests, если прокат уже есть.
+// Каркас кабинета владельца. НИКАКИХ redirect'ов здесь: layout кэшируется
+// при client-side навигации — гейты живут в страницах (нет провайдера →
+// /cabinet/new, /cabinet/new с провайдером → /cabinet/requests).
 
 import { requireAuthState } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
 import { countNewRequests, getOwnerProvider } from "@/server/owner";
-import { CabinetNav } from "@/components/cabinet/CabinetNav";
+import { AccountShell } from "@/components/account/AccountShell";
 
 export default async function CabinetLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
 
   const provider = await getOwnerProvider(session.user.id);
-  const newCount = provider ? await countNewRequests(provider.id) : 0;
+  if (!provider) {
+    return <div className="mx-auto w-full max-w-5xl px-4 py-6">{children}</div>;
+  }
+
+  const newCount = await countNewRequests(provider.id);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6">
-      {provider && (
-        <>
-          <h1 className="font-display text-2xl font-bold">{provider.name}</h1>
-          <CabinetNav newCount={newCount} />
-        </>
-      )}
-      <div className="mt-5">{children}</div>
-    </div>
+    <AccountShell
+      title={provider.name}
+      items={[
+        { href: "/cabinet/requests", label: "Заявки", badge: newCount },
+        { href: "/cabinet/calendar", label: "Календарь" },
+        { href: "/cabinet/listings", label: "Позиции" },
+        { href: "/cabinet/stats", label: "Статистика" },
+        { href: "/cabinet/settings", label: "Настройки" },
+      ]}
+    >
+      {children}
+    </AccountShell>
   );
 }
