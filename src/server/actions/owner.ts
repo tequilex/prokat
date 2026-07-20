@@ -1,7 +1,7 @@
 "use server";
 
-// Server actions кабинета владельца: прокат, позиции, решения по заявкам,
-// ручное закрытие дат.
+// Server actions кабинета: товары, решения по заявкам, ручное закрытие дат.
+// «Владелец» — любой залогиненный юзер с товарами; отдельной сущности нет.
 //
 // Инварианты (см. lib/catalog/booking-status):
 // - подтверждение заявки увеличивает bookedQty на диапазон в ТОЙ ЖЕ транзакции,
@@ -14,14 +14,12 @@ import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import {
-  availability, bookingRequests, categories, events, listings, providers,
+  availability, bookingRequests, events, listings,
 } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slugify";
-import {
-  listingFormSchema, providerFormSchema, RESERVED_SLUGS,
-} from "@/lib/owner/validation";
+import { listingFormSchema } from "@/lib/owner/validation";
 import {
   unavailableDates, eachDate, type AvailabilityMap,
 } from "@/lib/catalog/availability";
@@ -31,122 +29,36 @@ export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-async function requireOwner() {
+async function requireUser(): Promise<{ userId: string } | null> {
   const session = await auth();
   if (!session?.user?.id || session.user.bannedAt) return null;
-  const rows = await getDb().select().from(providers)
-    .where(eq(providers.ownerUserId, session.user.id))
-    .limit(1);
-  return { userId: session.user.id, provider: rows[0] ?? null };
+  return { userId: session.user.id };
 }
 
-// ============================== Прокат ==============================
-
-export async function createProvider(input: unknown): Promise<ActionResult<{ slug: string }>> {
-  const session = await auth();
-  if (!session?.user?.id || session.user.bannedAt) return { ok: false, error: "auth_required" };
-
-  const parsed = providerFormSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
-  const form = parsed.data;
-
-  const db = getDb();
-  const existing = await db.select({ id: providers.id }).from(providers)
-    .where(eq(providers.ownerUserId, session.user.id)).limit(1);
-  if (existing.length > 0) return { ok: false, error: "already_has_provider" };
-
-  // Слаг не должен конфликтовать с категориями (category-first резолвинг URL),
-  // зарезервированными путями и прокатами этого города.
-  const base = slugify(form.name);
-  if (!base) return { ok: false, error: "Название должно содержать буквы или цифры" };
-  const catSlugs = new Set((await db.select({ slug: categories.slug }).from(categories)).map((c) => c.slug));
-  let slug = base;
-  for (let i = 2; i <= 50; i++) {
-    const taken =
-      RESERVED_SLUGS.has(slug) || catSlugs.has(slug) ||
-      (await db.select({ id: providers.id }).from(providers)
-        .where(and(eq(providers.cityId, form.cityId), eq(providers.slug, slug)))
-        .limit(1)).length > 0;
-    if (!taken) break;
-    slug = `${base}-${i}`;
-    if (i === 50) return { ok: false, error: "slug_collision" };
-  }
-
-  await db.insert(providers).values({
-    id: newId(),
-    ownerUserId: session.user.id,
-    cityId: form.cityId,
-    name: form.name,
-    slug,
-    description: form.description || null,
-    address: form.address || null,
-    phones: form.phones,
-    workHoursJson: form.workHours ? { text: form.workHours } : null,
-  });
-
-  revalidatePath("/cabinet");
-  return { ok: true, data: { slug } };
-}
-
-export async function updateProvider(input: unknown): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (!owner?.provider) return { ok: false, error: "no_provider" };
-
-  const parsed = providerFormSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
-  const form = parsed.data;
-
-  // Город и слаг после создания не меняются (v1): слаг — часть публичного URL.
-  await getDb().update(providers)
-    .set({
-      name: form.name,
-      description: form.description || null,
-      address: form.address || null,
-      phones: form.phones,
-      workHoursJson: form.workHours ? { text: form.workHours } : null,
-    })
-    .where(eq(providers.id, owner.provider.id));
-
-  revalidatePath("/cabinet/settings");
-  return { ok: true, data: undefined };
-}
-
-// ============================== Позиции ==============================
-
-async function uniqueListingSlug(providerId: string, title: string): Promise<string | null> {
-  const db = getDb();
-  const base = slugify(title);
-  if (!base) return null;
-  for (let i = 1; i <= 50; i++) {
-    const candidate = i === 1 ? base : `${base}-${i}`;
-    const taken = (await db.select({ id: listings.id }).from(listings)
-      .where(and(eq(listings.providerId, providerId), eq(listings.slug, candidate)))
-      .limit(1)).length > 0;
-    if (!taken) return candidate;
-  }
-  return null;
-}
+// ============================== Товары ==============================
 
 export async function createListing(input: unknown): Promise<ActionResult<{ listingId: string }>> {
-  const owner = await requireOwner();
-  if (!owner?.provider) return { ok: false, error: "no_provider" };
+  const owner = await requireUser();
+  if (!owner) return { ok: false, error: "auth_required" };
 
   const parsed = listingFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
   const form = parsed.data;
 
-  const slug = await uniqueListingSlug(owner.provider.id, form.title);
+  const slug = slugify(form.title);
   if (!slug) return { ok: false, error: "Название должно содержать буквы или цифры" };
 
   const id = newId();
-  // v1 без премодерации (админка — следующий этап): позиция сразу active.
+  // Без премодерации: товар сразу active. Уникальность URL даёт id в хвосте пути.
   await getDb().insert(listings).values({
     id,
-    providerId: owner.provider.id,
+    ownerUserId: owner.userId,
+    cityId: form.cityId,
     categoryId: form.categoryId,
     title: form.title,
     slug,
     description: form.description || null,
+    location: form.location || null,
     priceDay: form.priceDay,
     priceHour: form.priceHour,
     priceWeek: form.priceWeek,
@@ -162,8 +74,8 @@ export async function createListing(input: unknown): Promise<ActionResult<{ list
 }
 
 export async function updateListing(listingId: string, input: unknown): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (!owner?.provider) return { ok: false, error: "no_provider" };
+  const owner = await requireUser();
+  if (!owner) return { ok: false, error: "auth_required" };
 
   const parsed = listingFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
@@ -171,9 +83,11 @@ export async function updateListing(listingId: string, input: unknown): Promise<
 
   const res = await getDb().update(listings)
     .set({
+      cityId: form.cityId,
       categoryId: form.categoryId,
       title: form.title, // слаг сохраняем: URL позиции не должен ломаться
       description: form.description || null,
+      location: form.location || null,
       priceDay: form.priceDay,
       priceHour: form.priceHour,
       priceWeek: form.priceWeek,
@@ -183,7 +97,7 @@ export async function updateListing(listingId: string, input: unknown): Promise<
       photosJson: form.photos,
       updatedAt: new Date(),
     })
-    .where(and(eq(listings.id, listingId), eq(listings.providerId, owner.provider.id)))
+    .where(and(eq(listings.id, listingId), eq(listings.ownerUserId, owner.userId)))
     .returning({ id: listings.id });
   if (res.length === 0) return { ok: false, error: "not_found" };
 
@@ -195,12 +109,12 @@ export async function setListingStatus(
   listingId: string,
   status: "active" | "hidden" | "archived",
 ): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (!owner?.provider) return { ok: false, error: "no_provider" };
+  const owner = await requireUser();
+  if (!owner) return { ok: false, error: "auth_required" };
 
   const res = await getDb().update(listings)
     .set({ status, updatedAt: new Date() })
-    .where(and(eq(listings.id, listingId), eq(listings.providerId, owner.provider.id)))
+    .where(and(eq(listings.id, listingId), eq(listings.ownerUserId, owner.userId)))
     .returning({ id: listings.id });
   if (res.length === 0) return { ok: false, error: "not_found" };
 
@@ -213,11 +127,11 @@ export async function setListingStatus(
 async function transitionRequest(
   requestId: string,
   to: BookingStatus,
-  providerComment?: string,
+  ownerComment?: string,
 ): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (!owner?.provider) return { ok: false, error: "no_provider" };
-  const providerId = owner.provider.id;
+  const owner = await requireUser();
+  if (!owner) return { ok: false, error: "auth_required" };
+  const userId = owner.userId;
 
   const db = getDb();
   try {
@@ -227,7 +141,7 @@ async function transitionRequest(
         .for("update")
         .limit(1);
       const req = rows[0];
-      if (!req || req.providerId !== providerId) throw new Error("not_found");
+      if (!req || req.ownerUserId !== userId) throw new Error("not_found");
       if (!canTransition(req.status, to)) throw new Error("bad_status");
 
       if (to === "confirmed") {
@@ -264,7 +178,7 @@ async function transitionRequest(
         .set({
           status: to,
           respondedAt: new Date(),
-          ...(providerComment !== undefined ? { providerComment: providerComment || null } : {}),
+          ...(ownerComment !== undefined ? { ownerComment: ownerComment || null } : {}),
         })
         .where(eq(bookingRequests.id, requestId));
 
@@ -273,7 +187,7 @@ async function transitionRequest(
         entityType: "booking_request",
         entityId: requestId,
         event: `request_${to}`,
-        userId: owner.userId,
+        userId,
         metaJson: { fromStatus: req.status },
       });
     });
@@ -313,14 +227,14 @@ export async function setBlockedDates(
   dateTo: string,
   blockedQty: number,
 ): Promise<ActionResult> {
-  const owner = await requireOwner();
-  if (!owner?.provider) return { ok: false, error: "no_provider" };
+  const owner = await requireUser();
+  if (!owner) return { ok: false, error: "auth_required" };
 
   if (!Number.isInteger(blockedQty) || blockedQty < 0) return { ok: false, error: "bad_qty" };
 
   const db = getDb();
   const lrows = await db.select().from(listings)
-    .where(and(eq(listings.id, listingId), eq(listings.providerId, owner.provider.id)))
+    .where(and(eq(listings.id, listingId), eq(listings.ownerUserId, owner.userId)))
     .limit(1);
   const listing = lrows[0];
   if (!listing) return { ok: false, error: "not_found" };
