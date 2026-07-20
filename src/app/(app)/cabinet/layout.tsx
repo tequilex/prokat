@@ -6,6 +6,7 @@ import { requireAuthState } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
 import { countNewRequests, getOwnerProvider } from "@/server/owner";
 import { AccountShell } from "@/components/account/AccountShell";
+import { buildAccountNav } from "@/components/account/accountNav";
 
 export default async function CabinetLayout({ children }: { children: React.ReactNode }) {
   const session = await requireAuthState();
@@ -20,14 +21,8 @@ export default async function CabinetLayout({ children }: { children: React.Reac
 
   return (
     <AccountShell
-      title={provider.name}
-      items={[
-        { href: "/cabinet/requests", label: "Заявки", badge: newCount },
-        { href: "/cabinet/calendar", label: "Календарь" },
-        { href: "/cabinet/listings", label: "Позиции" },
-        { href: "/cabinet/stats", label: "Статистика" },
-        { href: "/cabinet/settings", label: "Настройки" },
-      ]}
+      title="Кабинет"
+      items={buildAccountNav({ hasProvider: true, newRequestsCount: newCount })}
     >
       {children}
     </AccountShell>
