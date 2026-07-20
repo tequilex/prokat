@@ -2,12 +2,14 @@
 
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { bookingRequests, cities, listings, providers, users } from "@db/schema";
+import { bookingRequests, categories, cities, listings, users } from "@db/schema";
 import { expireStaleRequests } from "@/server/actions/booking";
 
 export type CustomerRequestRow = Awaited<ReturnType<typeof getCustomerRequests>>[number];
 
 // Заявки покупателя для /requests. Протухание — лениво, перед чтением.
+// Продавец берётся по денормализованному bookingRequests.ownerUserId; телефон
+// продавца раскрывается на странице после подтверждения заявки.
 export async function getCustomerRequests(userId: string) {
   await expireStaleRequests();
   return getDb()
@@ -15,15 +17,18 @@ export async function getCustomerRequests(userId: string) {
       request: bookingRequests,
       listingTitle: listings.title,
       listingSlug: listings.slug,
-      providerName: providers.name,
-      providerSlug: providers.slug,
-      providerPhones: providers.phones,
+      listingId: listings.id,
+      categorySlug: categories.slug,
       citySlug: cities.slug,
+      ownerName: users.name,
+      ownerUsername: users.username,
+      ownerPhone: users.phone,
     })
     .from(bookingRequests)
     .innerJoin(listings, eq(listings.id, bookingRequests.listingId))
-    .innerJoin(providers, eq(providers.id, bookingRequests.providerId))
-    .innerJoin(cities, eq(cities.id, providers.cityId))
+    .innerJoin(users, eq(users.id, bookingRequests.ownerUserId))
+    .innerJoin(cities, eq(cities.id, listings.cityId))
+    .innerJoin(categories, eq(categories.id, listings.categoryId))
     .where(eq(bookingRequests.customerUserId, userId))
     .orderBy(desc(bookingRequests.createdAt));
 }

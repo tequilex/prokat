@@ -80,7 +80,7 @@ export async function createBookingRequest(
     await tx.insert(bookingRequests).values({
       id: requestId,
       listingId: listing.id,
-      providerId: listing.providerId,
+      ownerUserId: listing.ownerUserId,
       customerUserId: session.user.id,
       dateFrom: sel.from,
       dateTo: sel.to,
@@ -158,7 +158,7 @@ export async function cancelBookingRequest(requestId: string): Promise<ActionRes
 }
 
 // Ленивое протухание: new-заявки с истёкшим expires_at помечаются expired.
-// Дешёвый UPDATE по индексу (provider_status_idx покрывает status).
+// Дешёвый UPDATE по индексу (owner_status_idx покрывает status).
 export async function expireStaleRequests(): Promise<void> {
   await getDb().update(bookingRequests)
     .set({ status: "expired", respondedAt: new Date() })
