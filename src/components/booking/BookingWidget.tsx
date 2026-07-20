@@ -101,12 +101,12 @@ export function BookingWidget(props: BookingWidgetProps) {
 
   return (
     <>
-      <div className="rounded-lg border border-border bg-card p-4">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <dl className="flex flex-col gap-2 text-sm">
           {props.priceDay !== null && (
             <div className="flex items-baseline justify-between">
               <dt className="text-muted-foreground">Сутки</dt>
-              <dd className="text-lg font-semibold">{formatPrice(props.priceDay)}</dd>
+              <dd className="text-xl font-bold tracking-tight">{formatPrice(props.priceDay)}</dd>
             </div>
           )}
           {props.priceWeek !== null && (
