@@ -23,6 +23,7 @@ import { siteConfig } from "@/lib/site-config";
 import { freeQty } from "@/lib/catalog/availability";
 import { BOOKING_HORIZON_DAYS, parseBookingParams } from "@/lib/booking/params";
 import { BookingWidget } from "@/components/booking/BookingWidget";
+import { OwnerCard } from "@/components/booking/OwnerCard";
 import { auth } from "@/lib/auth";
 import { buildEdgeConfig } from "@/lib/auth/config.edge";
 import { getEnv } from "@/lib/env";
@@ -153,6 +154,14 @@ async function ListingPage({
   const photos = listingPhotos(listing);
   const category = await getCategoryById(listing.categoryId);
 
+  // work_hours_json: {text: "..."} из формы кабинета или Record<период, часы> из сидов.
+  const wh = provider.workHoursJson;
+  const hoursText = wh && typeof wh === "object"
+    ? (typeof (wh as Record<string, unknown>).text === "string"
+        ? String((wh as Record<string, unknown>).text)
+        : Object.entries(wh as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(", "))
+    : "";
+
   const session = await auth();
   const isAuthed = Boolean(session?.user);
   const initialPhone = session?.user?.id ? (await getUserPhone(session.user.id)) ?? "" : "";
@@ -224,14 +233,14 @@ async function ListingPage({
         <div>
           {/* Галерея: простая сетка, без каруселей и JS */}
           {photos.length === 0 ? (
-            <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
               <ImageOff className="h-10 w-10" aria-hidden="true" />
               <span className="sr-only">Без фото</span>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {photos.map((p, i) => (
-                <div key={p.url} className={`relative overflow-hidden rounded-lg bg-muted ${i === 0 ? "col-span-2 aspect-[16/9]" : "aspect-[4/3]"}`}>
+                <div key={p.url} className={`relative overflow-hidden rounded-2xl bg-muted ${i === 0 ? "col-span-2 aspect-[16/9]" : "aspect-[4/3]"}`}>
                   <Image
                     src={p.url}
                     alt={`${listing.title} — фото ${i + 1}`}
@@ -256,7 +265,14 @@ async function ListingPage({
           </section>
         </div>
 
-        <aside className="md:sticky md:top-20 md:self-start">
+        <aside className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
+          <OwnerCard
+            name={provider.name}
+            href={`/${city.slug}/${provider.slug}`}
+            isVerified={provider.isVerified}
+            address={provider.address}
+            hoursText={hoursText}
+          />
           <BookingWidget
             listingId={listing.id}
             listingTitle={listing.title}
