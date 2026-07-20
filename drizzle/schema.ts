@@ -1,6 +1,6 @@
 import {
   pgTable, text, varchar, integer, bigint, timestamp, pgEnum, jsonb,
-  boolean, date, doublePrecision, index, primaryKey, uniqueIndex,
+  boolean, date, doublePrecision, index, primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const userRole = pgEnum("user_role", ["user", "moderator", "admin"]);
@@ -11,13 +11,16 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified"),
   username: varchar("username", { length: 20 }).unique(),
   name: varchar("name", { length: 100 }),
-  // Телефон запрашивается в первой заявке на бронь, дальше предзаполняется.
-  // СМС-верификации в v1 нет: phone_verified_at заложен, всегда NULL.
+  // Телефон запрашивается в первой заявке на бронь и служит контактом продавца.
+  // СМС-верификации нет: phone_verified_at заложен, всегда NULL.
   phone: varchar("phone", { length: 20 }),
   phoneVerifiedAt: timestamp("phone_verified_at"),
   image: text("image"),
   bio: text("bio"),
   role: userRole("role").notNull().default("user"),
+  // «Проверенный продавец» — ставится вручную админом (см. Фаза 6).
+  isVerified: boolean("is_verified").notNull().default(false),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   banReason: text("ban_reason"),
   bannedAt: timestamp("banned_at"),
@@ -59,7 +62,6 @@ export const verificationTokens = pgTable("verification_tokens", {
 }));
 
 // uploads — изображения, нормализованные через /api/upload (webp) и положенные в S3.
-// Привязка к сущностям каталога (listings) появится вместе со схемой каталога.
 export const uploads = pgTable("uploads", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -75,8 +77,8 @@ export const uploads = pgTable("uploads", {
 }));
 
 // ============================== Каталог ==============================
-// URL-структура публичной части: /{city}/{category}[/{subcategory}]/,
-// /{city}/{provider}/, /{city}/{provider}/{listing}/.
+// URL-структура публичной части: /{city}/{category}[/{sub}]/ (списки),
+// /{city}/{categorySlug}/{slug}-{id}/ (карточка товара), /u/{username}/ (продавец).
 
 export const cities = pgTable("cities", {
   id: text("id").primaryKey(),                        // ULID, newId()
@@ -100,46 +102,21 @@ export const categories = pgTable("categories", {
   parentIdx: index("categories_parent_idx").on(t.parentId),
 }));
 
-export const providerPlan = pgEnum("provider_plan", ["free", "pro", "promo"]);
-
-// providers — профиль проката. Роль «владелец» определяется наличием
-// провайдера у user'а, а не полем в users.
-export const providers = pgTable("providers", {
-  id: text("id").primaryKey(),
-  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  cityId: text("city_id").notNull().references(() => cities.id),
-  name: varchar("name", { length: 150 }).notNull(),
-  slug: varchar("slug", { length: 80 }).notNull(),
-  description: text("description"),
-  address: text("address"),
-  lat: doublePrecision("lat"),
-  lon: doublePrecision("lon"),
-  phones: jsonb("phones").notNull().default([]),      // string[]
-  workHoursJson: jsonb("work_hours_json"),
-  isClaimed: boolean("is_claimed").notNull().default(true),
-  isVerified: boolean("is_verified").notNull().default(false),
-  plan: providerPlan("plan").notNull().default("free"),
-  planExpiresAt: timestamp("plan_expires_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (t) => ({
-  // slug уникален в пределах города — он часть URL /{city}/{provider}/.
-  citySlugUq: uniqueIndex("providers_city_slug_uq").on(t.cityId, t.slug),
-  ownerIdx: index("providers_owner_idx").on(t.ownerUserId),
-}));
-
 export const depositType = pgEnum("deposit_type", ["money", "document", "none"]);
-export const listingStatus = pgEnum("listing_status", [
-  "active", "hidden", "archived", "on_moderation",
-]);
+export const listingStatus = pgEnum("listing_status", ["active", "hidden", "archived"]);
 
+// Товар принадлежит юзеру напрямую. Город и категория — атрибуты товара.
+// slug читаемый и НЕ уникальный: уникальность URL даёт id в хвосте пути.
 // Цены в рублях за период; NULL = не сдаётся на этот период.
 export const listings = pgTable("listings", {
   id: text("id").primaryKey(),
-  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  cityId: text("city_id").notNull().references(() => cities.id),
   categoryId: text("category_id").notNull().references(() => categories.id),
   title: varchar("title", { length: 200 }).notNull(),
   slug: varchar("slug", { length: 80 }).notNull(),
   description: text("description"),
+  location: varchar("location", { length: 120 }),   // район/ориентир выдачи, опц.
   priceDay: integer("price_day"),
   priceHour: integer("price_hour"),
   priceWeek: integer("price_week"),
@@ -147,14 +124,12 @@ export const listings = pgTable("listings", {
   depositType: depositType("deposit_type").notNull().default("none"),
   quantity: integer("quantity").notNull().default(1),
   photosJson: jsonb("photos_json").notNull().default([]),  // { url, width, height }[]
-  status: listingStatus("status").notNull().default("on_moderation"),
+  status: listingStatus("status").notNull().default("active"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => ({
-  // slug уникален в пределах проката — URL /{city}/{provider}/{listing}/.
-  providerSlugUq: uniqueIndex("listings_provider_slug_uq").on(t.providerId, t.slug),
-  categoryStatusIdx: index("listings_category_status_idx").on(t.categoryId, t.status),
-  providerIdx: index("listings_provider_idx").on(t.providerId),
+  cityCategoryStatusIdx: index("listings_city_category_status_idx").on(t.cityId, t.categoryId, t.status),
+  ownerIdx: index("listings_owner_idx").on(t.ownerUserId),
 }));
 
 // availability — по строке на (listing, дата). Свободно = quantity - booked - blocked.
@@ -174,11 +149,13 @@ export const bookingStatus = pgEnum("booking_status", [
 ]);
 
 // Заявка на бронь. Денег сервис не проводит; подтверждение — за владельцем.
+// owner_user_id денормализован из listing.owner_user_id ради индекса «входящие
+// заявки владельцу» без join; владелец неизменен — рассинхрона нет.
 // expires_at — протухание new-заявки (по умолчанию +24ч от created_at).
 export const bookingRequests = pgTable("booking_requests", {
   id: text("id").primaryKey(),
   listingId: text("listing_id").notNull().references(() => listings.id, { onDelete: "cascade" }),
-  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   customerUserId: text("customer_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   dateFrom: date("date_from").notNull(),
   dateTo: date("date_to").notNull(),
@@ -186,36 +163,15 @@ export const bookingRequests = pgTable("booking_requests", {
   status: bookingStatus("status").notNull().default("new"),
   customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
   customerComment: text("customer_comment"),
-  providerComment: text("provider_comment"),
+  ownerComment: text("owner_comment"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   respondedAt: timestamp("responded_at"),
   expiresAt: timestamp("expires_at").notNull(),
 }, (t) => ({
-  providerStatusIdx: index("booking_requests_provider_status_idx").on(t.providerId, t.status, t.createdAt),
+  ownerStatusIdx: index("booking_requests_owner_status_idx").on(t.ownerUserId, t.status, t.createdAt),
   customerIdx: index("booking_requests_customer_idx").on(t.customerUserId, t.createdAt),
   listingIdx: index("booking_requests_listing_idx").on(t.listingId),
 }));
-
-// ==================== Заложено на будущее (v1 не использует) ====================
-
-export const subscriptions = pgTable("subscriptions", {
-  id: text("id").primaryKey(),
-  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
-  plan: providerPlan("plan").notNull(),
-  price: integer("price").notNull(),
-  periodStart: timestamp("period_start").notNull(),
-  periodEnd: timestamp("period_end").notNull(),
-  status: varchar("status", { length: 20 }).notNull(),
-});
-
-export const promotions = pgTable("promotions", {
-  id: text("id").primaryKey(),
-  providerId: text("provider_id").notNull().references(() => providers.id, { onDelete: "cascade" }),
-  listingId: text("listing_id").references(() => listings.id, { onDelete: "cascade" }),
-  type: varchar("type", { length: 40 }).notNull(),
-  startsAt: timestamp("starts_at").notNull(),
-  endsAt: timestamp("ends_at").notNull(),
-});
 
 // events — сырые продуктовые события (view_listing, view_phone, submit_request...).
 // Основа статистики для владельца; агрегатов в v1 нет.
