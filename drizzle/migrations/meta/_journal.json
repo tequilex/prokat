@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1784140547198,
-      "tag": "0000_blue_stick",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1784140982689,
-      "tag": "0001_colorful_blazing_skull",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1784220209262,
-      "tag": "0002_chubby_eddie_brock",
+      "when": 1784582967615,
+      "tag": "0000_thick_doctor_faustus",
       "breakpoints": true
     }
   ]
