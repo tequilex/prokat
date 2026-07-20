@@ -6,12 +6,11 @@ import {
 } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
-  availability, categories, cities, listings, providers,
+  availability, categories, cities, listings, users,
 } from "@db/schema";
 
 export type City = typeof cities.$inferSelect;
 export type Category = typeof categories.$inferSelect;
-export type Provider = typeof providers.$inferSelect;
 export type Listing = typeof listings.$inferSelect;
 
 export interface ListingPhoto { url: string; width: number; height: number }
@@ -43,8 +42,7 @@ export async function getListingCountsByCategory(cityId: string): Promise<Map<st
   const rows = await getDb()
     .select({ categoryId: listings.categoryId, cnt: sql<number>`count(*)::int` })
     .from(listings)
-    .innerJoin(providers, eq(providers.id, listings.providerId))
-    .where(and(eq(providers.cityId, cityId), eq(listings.status, "active")))
+    .where(and(eq(listings.cityId, cityId), eq(listings.status, "active")))
     .groupBy(listings.categoryId);
   return new Map(rows.map((r) => [r.categoryId, r.cnt]));
 }
@@ -60,21 +58,11 @@ export function rollupToRoots(cats: Category[], direct: Map<string, number>): Ma
   return out;
 }
 
-// Сегмент после города: категория (глобальный слаг) или прокат (слаг в городе).
-// Категория приоритетна — их слаги задаёт админ и они «зарезервированы».
-export type CitySegment =
-  | { kind: "category"; category: Category }
-  | { kind: "provider"; provider: Provider };
-
-export async function resolveCitySegment(cityId: string, slug: string): Promise<CitySegment | null> {
-  const db = getDb();
-  const cat = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
-  if (cat[0]) return { kind: "category", category: cat[0] };
-  const prov = await db.select().from(providers)
-    .where(and(eq(providers.cityId, cityId), eq(providers.slug, slug)))
-    .limit(1);
-  if (prov[0]) return { kind: "provider", provider: prov[0] };
-  return null;
+// Сегмент после города — категория (слаг категории уникален глобально).
+// Карточка товара живёт на 3-м сегменте и резолвится по id (getActiveListingById).
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  const rows = await getDb().select().from(categories).where(eq(categories.slug, slug)).limit(1);
+  return rows[0] ?? null;
 }
 
 export interface ListingFilters {
@@ -85,27 +73,27 @@ export interface ListingFilters {
   pageSize?: number;
 }
 
-export interface ListingWithProvider {
+export interface ListingWithOwner {
   listing: Listing;
-  providerName: string;
-  providerSlug: string;
+  ownerName: string | null;
+  ownerUsername: string | null;
 }
 
 export const DEFAULT_PAGE_SIZE = 24;
 
-// Активные позиции города в наборе категорий, с провайдером для карточки.
+// Активные позиции города в наборе категорий, с продавцом для карточки.
 export async function getListingsForCategories(
   cityId: string,
   categoryIds: string[],
   filters: ListingFilters = {},
-): Promise<{ items: ListingWithProvider[]; total: number }> {
+): Promise<{ items: ListingWithOwner[]; total: number }> {
   if (categoryIds.length === 0) return { items: [], total: 0 };
   const db = getDb();
   const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
   const page = Math.max(1, filters.page ?? 1);
 
   const conds = [
-    eq(providers.cityId, cityId),
+    eq(listings.cityId, cityId),
     eq(listings.status, "active"),
     inArray(listings.categoryId, categoryIds),
   ];
@@ -119,16 +107,15 @@ export async function getListingsForCategories(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, providerName: providers.name, providerSlug: providers.slug })
+    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username })
       .from(listings)
-      .innerJoin(providers, eq(providers.id, listings.providerId))
+      .innerJoin(users, eq(users.id, listings.ownerUserId))
       .where(where)
       .orderBy(order, asc(listings.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ cnt: sql<number>`count(*)::int` })
       .from(listings)
-      .innerJoin(providers, eq(providers.id, listings.providerId))
       .where(where),
   ]);
 
@@ -136,13 +123,12 @@ export async function getListingsForCategories(
 }
 
 // Текстовый поиск по позициям в пределах города: ILIKE по названию и описанию.
-// Пустой запрос → пустой результат (страница показывает подсказку). Форма фильтров,
-// сортировки и пагинации — как у getListingsForCategories.
+// Пустой запрос → пустой результат (страница показывает подсказку).
 export async function searchListings(
   cityId: string,
   q: string,
   filters: ListingFilters = {},
-): Promise<{ items: ListingWithProvider[]; total: number }> {
+): Promise<{ items: ListingWithOwner[]; total: number }> {
   const query = q.trim();
   if (query === "") return { items: [], total: 0 };
   const db = getDb();
@@ -151,7 +137,7 @@ export async function searchListings(
   const like = `%${query}%`;
 
   const conds = [
-    eq(providers.cityId, cityId),
+    eq(listings.cityId, cityId),
     eq(listings.status, "active"),
     or(ilike(listings.title, like), ilike(listings.description, like)),
   ];
@@ -165,16 +151,15 @@ export async function searchListings(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, providerName: providers.name, providerSlug: providers.slug })
+    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username })
       .from(listings)
-      .innerJoin(providers, eq(providers.id, listings.providerId))
+      .innerJoin(users, eq(users.id, listings.ownerUserId))
       .where(where)
       .orderBy(order, asc(listings.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ cnt: sql<number>`count(*)::int` })
       .from(listings)
-      .innerJoin(providers, eq(providers.id, listings.providerId))
       .where(where),
   ]);
 
@@ -183,7 +168,7 @@ export async function searchListings(
 
 export interface CategoryStats {
   listingCount: number;
-  providerCount: number;
+  ownerCount: number;
   minPriceDay: number | null;
   maxPriceDay: number | null;
   avgDeposit: number | null;
@@ -192,45 +177,36 @@ export interface CategoryStats {
 // Статистика для вводного SEO-блока категории — только из данных, без шаблонных простыней.
 export async function getCategoryStats(cityId: string, categoryIds: string[]): Promise<CategoryStats> {
   if (categoryIds.length === 0) {
-    return { listingCount: 0, providerCount: 0, minPriceDay: null, maxPriceDay: null, avgDeposit: null };
+    return { listingCount: 0, ownerCount: 0, minPriceDay: null, maxPriceDay: null, avgDeposit: null };
   }
   const rows = await getDb()
     .select({
       listingCount: sql<number>`count(*)::int`,
-      providerCount: sql<number>`count(distinct ${listings.providerId})::int`,
+      ownerCount: sql<number>`count(distinct ${listings.ownerUserId})::int`,
       minPriceDay: sql<number | null>`min(${listings.priceDay})::int`,
       maxPriceDay: sql<number | null>`max(${listings.priceDay})::int`,
       avgDeposit: sql<number | null>`round(avg(${listings.depositAmount}))::int`,
     })
     .from(listings)
-    .innerJoin(providers, eq(providers.id, listings.providerId))
     .where(and(
-      eq(providers.cityId, cityId),
+      eq(listings.cityId, cityId),
       eq(listings.status, "active"),
       inArray(listings.categoryId, categoryIds),
     ));
   return rows[0];
 }
 
-export async function getProvidersOfCity(cityId: string): Promise<Provider[]> {
-  return getDb().select().from(providers)
-    .where(eq(providers.cityId, cityId))
-    .orderBy(asc(providers.name));
-}
-
-export async function getProviderListings(providerId: string): Promise<Listing[]> {
+// Активные товары продавца — для профиля /u/{username}.
+export async function getActiveListingsByOwner(userId: string): Promise<Listing[]> {
   return getDb().select().from(listings)
-    .where(and(eq(listings.providerId, providerId), eq(listings.status, "active")))
-    .orderBy(asc(listings.title));
+    .where(and(eq(listings.ownerUserId, userId), eq(listings.status, "active")))
+    .orderBy(desc(listings.createdAt));
 }
 
-export async function getListingBySlug(providerId: string, slug: string): Promise<Listing | null> {
+// Карточка товара резолвится по id (из хвоста URL /{city}/{cat}/{slug}-{id}).
+export async function getActiveListingById(id: string): Promise<Listing | null> {
   const rows = await getDb().select().from(listings)
-    .where(and(
-      eq(listings.providerId, providerId),
-      eq(listings.slug, slug),
-      eq(listings.status, "active"),
-    ))
+    .where(and(eq(listings.id, id), eq(listings.status, "active")))
     .limit(1);
   return rows[0] ?? null;
 }
@@ -241,19 +217,21 @@ export async function getCategoryById(id: string): Promise<Category | null> {
 }
 
 // Все активные позиции с полным путём слагов — для sitemap.
+// URL: /{citySlug}/{categorySlug}/{listingSlug}-{listingId}/.
 export async function getAllActiveListingPaths(): Promise<
-  Array<{ citySlug: string; providerSlug: string; listingSlug: string; updatedAt: Date }>
+  Array<{ citySlug: string; categorySlug: string; listingSlug: string; listingId: string; updatedAt: Date }>
 > {
   return getDb()
     .select({
       citySlug: cities.slug,
-      providerSlug: providers.slug,
+      categorySlug: categories.slug,
       listingSlug: listings.slug,
+      listingId: listings.id,
       updatedAt: listings.updatedAt,
     })
     .from(listings)
-    .innerJoin(providers, eq(providers.id, listings.providerId))
-    .innerJoin(cities, and(eq(cities.id, providers.cityId), eq(cities.isActive, true)))
+    .innerJoin(cities, and(eq(cities.id, listings.cityId), eq(cities.isActive, true)))
+    .innerJoin(categories, eq(categories.id, listings.categoryId))
     .where(eq(listings.status, "active"));
 }
 
