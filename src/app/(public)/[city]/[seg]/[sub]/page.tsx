@@ -259,23 +259,20 @@ async function ListingPage({
             <p className="mt-3 max-w-2xl text-sm leading-body">{listing.description}</p>
           )}
 
-          <div className="mt-5">
-            <OwnerCard
-              name={provider.name}
-              href={`/${city.slug}/${provider.slug}`}
-              isVerified={provider.isVerified}
-              address={provider.address}
-              hoursText={hoursText}
-            />
-          </div>
-
           <section aria-labelledby="calendar-heading" className="mt-8">
             <h2 id="calendar-heading" className="mb-3 text-lg font-semibold">Занятость на 4 недели</h2>
             <FullCalendar quantity={listing.quantity} map={map} from={from} />
           </section>
         </div>
 
-        <aside className="md:sticky md:top-20 md:self-start">
+        <aside className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
+          <OwnerCard
+            name={provider.name}
+            href={`/${city.slug}/${provider.slug}`}
+            isVerified={provider.isVerified}
+            address={provider.address}
+            hoursText={hoursText}
+          />
           <BookingWidget
             listingId={listing.id}
             listingTitle={listing.title}
