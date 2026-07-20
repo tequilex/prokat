@@ -1,23 +1,6 @@
-// Валидация форм кабинета владельца (прокат и позиция).
+// Валидация формы товара кабинета.
 
 import { z } from "zod";
-import { normalizePhone } from "@/lib/booking/validation";
-
-// Телефоны вводятся строкой через запятую, храним массивом нормализованных.
-const phonesField = z.string().trim().transform((raw) =>
-  raw.split(",").map((s) => normalizePhone(s)).filter((p) => p.length > 0),
-).refine((arr) => arr.length > 0, { message: "Укажите хотя бы один телефон" });
-
-export const providerFormSchema = z.object({
-  name: z.string().trim().min(3, "Название от 3 символов").max(150),
-  cityId: z.string().min(1, "Выберите город"),
-  description: z.string().trim().max(2000).optional().default(""),
-  address: z.string().trim().max(300).optional().default(""),
-  phones: phonesField,
-  workHours: z.string().trim().max(200).optional().default(""),
-});
-
-export type ProviderForm = z.output<typeof providerFormSchema>;
 
 const priceField = z.union([z.literal(""), z.coerce.number().int().min(0).max(10_000_000)])
   .optional()
@@ -26,7 +9,9 @@ const priceField = z.union([z.literal(""), z.coerce.number().int().min(0).max(10
 export const listingFormSchema = z.object({
   title: z.string().trim().min(3, "Название от 3 символов").max(200),
   categoryId: z.string().min(1, "Выберите категорию"),
+  cityId: z.string().min(1, "Выберите город"),
   description: z.string().trim().max(3000).optional().default(""),
+  location: z.string().trim().max(120).optional().default(""),  // район/ориентир, опц.
   priceDay: priceField,
   priceHour: priceField,
   priceWeek: priceField,
@@ -45,9 +30,9 @@ export const listingFormSchema = z.object({
 
 export type ListingForm = z.output<typeof listingFormSchema>;
 
-// Слаги, зарезервированные под маршруты приложения: /{city}/{provider}
-// не должен перекрывать их (категории проверяются отдельно по БД).
+// Слаги, зарезервированные под маршруты приложения: слаг категории (сегмент после
+// города) не должен их перекрывать (категории проверяются отдельно по БД).
 export const RESERVED_SLUGS = new Set([
   "api", "admin", "cabinet", "requests", "login", "welcome", "banned",
-  "privacy", "dev", "sitemap.xml", "robots.txt", "manifest.webmanifest",
+  "privacy", "dev", "u", "sitemap.xml", "robots.txt", "manifest.webmanifest",
 ]);
