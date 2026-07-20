@@ -1,38 +1,23 @@
 // Read-слой админки. Доступ проверяют страницы (assertAdmin).
 
 import { count, desc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/lib/db";
 import {
-  bookingRequests, categories, cities, listings, providers, users,
+  bookingRequests, categories, cities, listings, users,
 } from "@db/schema";
-
-export async function adminListProviders() {
-  const db = getDb();
-  return db
-    .select({
-      provider: providers,
-      cityName: cities.name,
-      citySlug: cities.slug,
-      ownerEmail: users.email,
-      listingCount: sql<number>`(SELECT count(*)::int FROM ${listings} WHERE ${listings.providerId} = ${providers.id})`,
-    })
-    .from(providers)
-    .innerJoin(cities, eq(cities.id, providers.cityId))
-    .innerJoin(users, eq(users.id, providers.ownerUserId))
-    .orderBy(desc(providers.createdAt));
-}
 
 export async function adminListListings(limit = 200) {
   return getDb()
     .select({
       listing: listings,
-      providerName: providers.name,
-      providerSlug: providers.slug,
+      ownerName: users.name,
+      ownerUsername: users.username,
       citySlug: cities.slug,
     })
     .from(listings)
-    .innerJoin(providers, eq(providers.id, listings.providerId))
-    .innerJoin(cities, eq(cities.id, providers.cityId))
+    .innerJoin(users, eq(users.id, listings.ownerUserId))
+    .innerJoin(cities, eq(cities.id, listings.cityId))
     .orderBy(desc(listings.createdAt))
     .limit(limit);
 }
@@ -41,7 +26,7 @@ export async function adminListCities() {
   return getDb()
     .select({
       city: cities,
-      providerCount: sql<number>`(SELECT count(*)::int FROM ${providers} WHERE ${providers.cityId} = ${cities.id})`,
+      listingCount: sql<number>`(SELECT count(*)::int FROM ${listings} WHERE ${listings.cityId} = ${cities.id})`,
     })
     .from(cities)
     .orderBy(cities.name);
@@ -59,16 +44,17 @@ export async function adminListCategories() {
 }
 
 export async function adminListRequests(limit = 100) {
+  const owner = alias(users, "owner");
   return getDb()
     .select({
       request: bookingRequests,
       listingTitle: listings.title,
-      providerName: providers.name,
+      ownerName: owner.name,
       customerEmail: users.email,
     })
     .from(bookingRequests)
     .innerJoin(listings, eq(listings.id, bookingRequests.listingId))
-    .innerJoin(providers, eq(providers.id, bookingRequests.providerId))
+    .innerJoin(owner, eq(owner.id, bookingRequests.ownerUserId))
     .innerJoin(users, eq(users.id, bookingRequests.customerUserId))
     .orderBy(desc(bookingRequests.createdAt))
     .limit(limit);
@@ -79,6 +65,7 @@ export async function adminListUsers(limit = 200) {
   return db
     .select({
       user: users,
+      listingCount: sql<number>`(SELECT count(*)::int FROM ${listings} WHERE ${listings.ownerUserId} = ${users.id})`,
       requestCount: sql<number>`(SELECT count(*)::int FROM ${bookingRequests} WHERE ${bookingRequests.customerUserId} = ${users.id})`,
     })
     .from(users)
@@ -88,14 +75,12 @@ export async function adminListUsers(limit = 200) {
 
 export async function adminCounts() {
   const db = getDb();
-  const [p, l, r, u] = await Promise.all([
-    db.select({ c: count() }).from(providers),
+  const [l, r, u] = await Promise.all([
     db.select({ c: count() }).from(listings),
     db.select({ c: count() }).from(bookingRequests),
     db.select({ c: count() }).from(users),
   ]);
   return {
-    providers: Number(p[0].c),
     listings: Number(l[0].c),
     requests: Number(r[0].c),
     users: Number(u[0].c),

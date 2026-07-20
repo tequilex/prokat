@@ -8,7 +8,7 @@ import { z } from "zod";
 import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { categories, cities, listings, providers, users } from "@db/schema";
+import { categories, cities, listings, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slugify";
@@ -39,17 +39,17 @@ export async function adminSetListingStatus(
   return { ok: true, data: undefined };
 }
 
-export async function adminSetProviderVerified(
-  providerId: string,
+export async function adminSetUserVerified(
+  userId: string,
   isVerified: boolean,
 ): Promise<ActionResult> {
   if (!(await requireAdmin())) return { ok: false, error: "forbidden" };
-  const res = await getDb().update(providers)
-    .set({ isVerified })
-    .where(eq(providers.id, providerId))
-    .returning({ id: providers.id });
+  const res = await getDb().update(users)
+    .set({ isVerified, verifiedAt: isVerified ? new Date() : null })
+    .where(eq(users.id, userId))
+    .returning({ id: users.id });
   if (res.length === 0) return { ok: false, error: "not_found" };
-  revalidatePath("/admin/providers");
+  revalidatePath("/admin/users");
   return { ok: true, data: undefined };
 }
 
