@@ -1,12 +1,12 @@
-// Dev/staging seeds: тестовый город, 3 категории (2 с подкатегориями),
-// 5 прокатов и 20 позиций. Идемпотентен: если город уже есть — выходит.
+// Dev/staging seeds: тестовый город, 7 категорий, 5 юзеров-владельцев и 20 товаров.
+// Идемпотентен: если город уже есть — выходит.
 // Запуск: pnpm db:seed (нужен DATABASE_URL в .env, миграции применены).
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { Pool } from "pg";
 import {
-  users, cities, categories, providers, listings, availability,
+  users, cities, categories, listings, availability,
 } from "../drizzle/schema";
 import { newId } from "../src/lib/id";
 import { slugify } from "../src/lib/slugify";
@@ -54,41 +54,32 @@ async function main() {
   const supId = await cat("Сапборды", "sport", sportId);
   const dressesId = await cat("Платья", "dresses");
 
-  // --- Владельцы и прокаты ---
-  const providerDefs = [
-    { name: "ПрокатМастер", phones: ["+7 900 111-22-33"], address: "ул. Баумана, 10" },
-    { name: "Инструмент 116", phones: ["+7 900 222-33-44"], address: "пр. Победы, 45" },
-    { name: "ВелоКазань", phones: ["+7 900 333-44-55"], address: "ул. Кремлёвская, 3" },
-    { name: "SUP-станция Казанка", phones: ["+7 900 444-55-66"], address: "наб. Казанки, 1" },
-    { name: "Платье напрокат", phones: ["+7 900 555-66-77"], address: "ул. Пушкина, 52" },
+  // --- Юзеры-владельцы (телефон = контакт продавца) ---
+  const ownerDefs = [
+    { username: "prokatmaster", name: "Артём", phone: "+7 900 111-22-33" },
+    { username: "instrument116", name: "Роман", phone: "+7 900 222-33-44" },
+    { username: "velokazan", name: "Дмитрий", phone: "+7 900 333-44-55" },
+    { username: "sup-kazanka", name: "Игорь", phone: "+7 900 444-55-66" },
+    { username: "platye-naprokat", name: "Марина", phone: "+7 900 555-66-77" },
   ];
 
-  const providerIds: string[] = [];
-  for (let i = 0; i < providerDefs.length; i++) {
-    const def = providerDefs[i];
+  const ownerIds: string[] = [];
+  for (let i = 0; i < ownerDefs.length; i++) {
+    const def = ownerDefs[i];
     const userId = newId();
     await db.insert(users).values({
       id: userId,
       email: `owner${i + 1}@seed.local`,
-      username: `owner${i + 1}`,
-      name: `Владелец «${def.name}»`,
-    });
-    const providerId = newId();
-    await db.insert(providers).values({
-      id: providerId,
-      ownerUserId: userId,
-      cityId,
+      username: def.username,
       name: def.name,
-      slug: slugify(def.name),
-      description: `${def.name} — тестовый прокат из сидов.`,
-      address: def.address,
-      phones: def.phones,
-      workHoursJson: { "mon-fri": "10:00-19:00", "sat-sun": "11:00-17:00" },
+      phone: def.phone,
+      isVerified: i < 2, // пара «проверенных» для демо значка
+      verifiedAt: i < 2 ? new Date() : null,
     });
-    providerIds.push(providerId);
+    ownerIds.push(userId);
   }
 
-  // --- Позиции: [провайдер, категория, название, цена/день, залог(₽|null), тип залога, кол-во] ---
+  // --- Товары: [владелец, категория, название, цена/день, залог(₽|null), тип залога, кол-во] ---
   const listingDefs: Array<[number, string, string, number, number | null, "money" | "document" | "none", number]> = [
     [0, powerToolsId, "Перфоратор Bosch GBH 2-26", 500, 3000, "money", 3],
     [0, powerToolsId, "Шуруповёрт Makita DF333", 300, 2000, "money", 5],
@@ -113,16 +104,17 @@ async function main() {
   ];
 
   const listingIds: string[] = [];
-  for (const [pIdx, categoryId, title, priceDay, depositAmount, depositType, quantity] of listingDefs) {
+  for (const [oIdx, categoryId, title, priceDay, depositAmount, depositType, quantity] of listingDefs) {
     const id = newId();
     listingIds.push(id);
     await db.insert(listings).values({
       id,
-      providerId: providerIds[pIdx],
+      ownerUserId: ownerIds[oIdx],
+      cityId,
       categoryId,
       title,
       slug: slugify(title),
-      description: `${title}. Тестовая позиция из сидов.`,
+      description: `${title}. Тестовый товар из сидов.`,
       priceDay,
       priceWeek: priceDay * 5, // недельная скидка ~30%
       depositAmount,
@@ -132,8 +124,8 @@ async function main() {
     });
   }
 
-  // Демо-занятость: у каждой третьей позиции заняты ближайшие дни,
-  // у каждой пятой — ручное закрытие. Календари в UI сразу «живые».
+  // Демо-занятость: у каждого третьего товара заняты ближайшие дни,
+  // у каждого пятого — ручное закрытие. Календари в UI сразу «живые».
   const today = todayStr();
   let availRows = 0;
   for (let i = 0; i < listingIds.length; i++) {
@@ -161,7 +153,7 @@ async function main() {
   }
 
   await pool.end();
-  console.log(`Seeded: 1 city, 7 categories, ${providerDefs.length} providers, ${listingDefs.length} listings, ${availRows} availability rows`);
+  console.log(`Seeded: 1 city, 7 categories, ${ownerDefs.length} owners, ${listingDefs.length} listings, ${availRows} availability rows`);
 }
 
 main().catch((err) => {
