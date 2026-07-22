@@ -14,7 +14,9 @@ interface Photo { url: string; width: number; height: number }
 
 export interface ListingFormValues {
   title: string;
+  cityId: string;
   categoryId: string;
+  location: string;
   description: string;
   priceDay: string;
   priceHour: string;
@@ -29,10 +31,11 @@ const INPUT = "h-11 rounded-md border border-border bg-background px-3 text-fore
 const MAX_PHOTOS = 10;
 
 export function ListingForm({
-  mode, listingId, categories, initial,
+  mode, listingId, cities, categories, initial,
 }: {
   mode: "create" | "edit";
   listingId?: string;
+  cities: Array<{ id: string; name: string }>;
   // Подкатегории (или корневые без детей) — позиция вешается на лист дерева.
   categories: Array<{ id: string; name: string }>;
   initial: ListingFormValues;
@@ -96,12 +99,28 @@ export function ListingForm({
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
+        Город
+        <select required value={v.cityId}
+          onChange={(e) => set({ cityId: e.target.value })} className={INPUT}>
+          <option value="" disabled>Выберите город</option>
+          {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
         Категория
         <select required value={v.categoryId}
           onChange={(e) => set({ categoryId: e.target.value })} className={INPUT}>
           <option value="" disabled>Выберите категорию</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        Район или ориентир выдачи (необязательно)
+        <input maxLength={120} value={v.location}
+          placeholder="м. Кремлёвская"
+          onChange={(e) => set({ location: e.target.value })} className={INPUT} />
       </label>
 
       <fieldset className="flex flex-col gap-1 text-sm">
