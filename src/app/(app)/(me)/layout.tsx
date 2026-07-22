@@ -1,8 +1,9 @@
-// Личный кабинет покупателя: заявки и профиль.
+// Личная зона кабинета (заявки, профиль). Единая навигация: owner-табы
+// показываются всем залогиненным юзерам.
 
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
-import { countNewRequests, getOwnerProvider } from "@/server/owner";
+import { countNewRequests } from "@/server/owner";
 import { AccountShell } from "@/components/account/AccountShell";
 import { buildAccountNav } from "@/components/account/accountNav";
 
@@ -10,15 +11,10 @@ export default async function MeLayout({ children }: { children: React.ReactNode
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/requests");
 
-  // Единая навигация кабинета: owner-табы появятся, если у пользователя есть прокат.
-  const provider = await getOwnerProvider(session.user.id);
-  const newCount = provider ? await countNewRequests(provider.id) : 0;
+  const newCount = await countNewRequests(session.user.id);
 
   return (
-    <AccountShell
-      title="Кабинет"
-      items={buildAccountNav({ hasProvider: Boolean(provider), newRequestsCount: newCount })}
-    >
+    <AccountShell title="Кабинет" items={buildAccountNav({ newRequestsCount: newCount })}>
       {children}
     </AccountShell>
   );

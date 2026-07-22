@@ -1,5 +1,6 @@
-// Единый источник навигации кабинета. Личные табы («я арендую») всегда,
-// owner-табы («я сдаю») — только при наличии проката, за разделителем.
+// Единый источник навигации кабинета. Личные табы («я арендую») и owner-табы
+// («я сдаю», за разделителем) доступны любому залогиненному юзеру — отдельной
+// роли/сущности «владелец» нет.
 
 export interface AccountNavItem {
   href: string;
@@ -9,19 +10,13 @@ export interface AccountNavItem {
 }
 
 export function buildAccountNav(
-  { hasProvider, newRequestsCount }: { hasProvider: boolean; newRequestsCount: number },
+  { newRequestsCount }: { newRequestsCount: number },
 ): AccountNavItem[] {
-  const items: AccountNavItem[] = [
+  return [
     { href: "/requests", label: "Мои заявки" },
     { href: "/profile", label: "Профиль" },
+    { href: "/cabinet/requests", label: "Заявки на мои вещи", badge: newRequestsCount, separatorBefore: true },
+    { href: "/cabinet/listings", label: "Мои объявления" },
+    { href: "/cabinet/calendar", label: "Календарь" },
   ];
-  if (hasProvider) {
-    items.push(
-      { href: "/cabinet/requests", label: "Заявки на мои вещи", badge: newRequestsCount, separatorBefore: true },
-      { href: "/cabinet/listings", label: "Мои объявления" },
-      { href: "/cabinet/calendar", label: "Календарь" },
-      { href: "/cabinet/settings", label: "Настройки проката" },
-    );
-  }
-  return items;
 }

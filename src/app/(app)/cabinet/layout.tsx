@@ -1,10 +1,10 @@
-// Каркас кабинета владельца. НИКАКИХ redirect'ов здесь: layout кэшируется
-// при client-side навигации — гейты живут в страницах (нет провайдера →
-// /cabinet/new, /cabinet/new с провайдером → /cabinet/requests).
+// Каркас кабинета. Доступен любому залогиненному юзеру; owner-табы показываются
+// всегда (каждый может разместить товар). Redirect'ов здесь нет — layout
+// кэшируется при client-навигации, гейты живут в страницах.
 
 import { requireAuthState } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
-import { countNewRequests, getOwnerProvider } from "@/server/owner";
+import { countNewRequests } from "@/server/owner";
 import { AccountShell } from "@/components/account/AccountShell";
 import { buildAccountNav } from "@/components/account/accountNav";
 
@@ -12,18 +12,10 @@ export default async function CabinetLayout({ children }: { children: React.Reac
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
 
-  const provider = await getOwnerProvider(session.user.id);
-  if (!provider) {
-    return <div className="mx-auto w-full max-w-5xl px-4 py-6">{children}</div>;
-  }
-
-  const newCount = await countNewRequests(provider.id);
+  const newCount = await countNewRequests(session.user.id);
 
   return (
-    <AccountShell
-      title="Кабинет"
-      items={buildAccountNav({ hasProvider: true, newRequestsCount: newCount })}
-    >
+    <AccountShell title="Кабинет" items={buildAccountNav({ newRequestsCount: newCount })}>
       {children}
     </AccountShell>
   );
