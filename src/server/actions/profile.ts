@@ -16,6 +16,7 @@ export type ActionResult<T = void> =
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Укажите имя").max(100),
+  bio: z.string().trim().max(500).optional().default(""),
   // Пустая строка = убрать телефон; иначе — валидный номер.
   phone: z.string().transform((raw) => {
     const trimmed = raw.trim();
@@ -35,7 +36,7 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
 
   await getDb().update(users)
-    .set({ name: parsed.data.name, phone: parsed.data.phone ?? null })
+    .set({ name: parsed.data.name, phone: parsed.data.phone ?? null, bio: parsed.data.bio || null })
     .where(eq(users.id, session.user.id));
 
   revalidatePath("/profile");

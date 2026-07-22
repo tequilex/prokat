@@ -6,9 +6,16 @@ import { updateProfile } from "@/server/actions/profile";
 
 const INPUT = "h-11 rounded-md border border-border bg-background px-3 text-foreground";
 
-export function ProfileForm({ initialName, initialPhone }: { initialName: string; initialPhone: string }) {
+export function ProfileForm({
+  initialName, initialPhone, initialBio,
+}: {
+  initialName: string;
+  initialPhone: string;
+  initialBio: string;
+}) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone);
+  const [bio, setBio] = useState(initialBio);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -18,7 +25,7 @@ export function ProfileForm({ initialName, initialPhone }: { initialName: string
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const r = await updateProfile({ name, phone });
+      const r = await updateProfile({ name, phone, bio });
       if (r.ok) setSaved(true);
       else setError(r.error);
     });
@@ -36,8 +43,15 @@ export function ProfileForm({ initialName, initialPhone }: { initialName: string
         <input type="tel" value={phone} placeholder="+7 900 000-00-00" autoComplete="tel"
           onChange={(e) => { setPhone(e.target.value); setSaved(false); }} className={INPUT} />
         <span className="text-xs text-muted-foreground">
-          Подставляется в форму заявки на бронь.
+          Подставляется в форму заявки и показывается покупателю после подтверждения.
         </span>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        О себе
+        <textarea maxLength={500} rows={3} value={bio}
+          onChange={(e) => { setBio(e.target.value); setSaved(false); }}
+          placeholder="Пара слов для покупателей — видно в вашем профиле"
+          className="rounded-md border border-border bg-background px-3 py-2 text-foreground" />
       </label>
 
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
