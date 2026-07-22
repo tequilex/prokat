@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
-import { getOwnerListings, getOwnerProvider } from "@/server/owner";
+import { getOwnerListings } from "@/server/owner";
 import { getAvailabilityRows } from "@/server/catalog";
 import { addDaysStr, todayStr } from "@/lib/catalog/dates";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
@@ -23,10 +23,8 @@ export default async function CabinetCalendarPage({
 }) {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
-  const provider = await getOwnerProvider(session.user.id);
-  if (!provider) redirect("/cabinet/new");
 
-  const items = (await getOwnerListings(provider.id)).filter((l) => l.status !== "archived");
+  const items = (await getOwnerListings(session.user.id)).filter((l) => l.status !== "archived");
   if (items.length === 0) {
     return <p className="py-12 text-center text-muted-foreground">Сначала добавьте позиции.</p>;
   }

@@ -4,50 +4,53 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ImageOff } from "lucide-react";
 import { requireAuthState } from "@/lib/auth/guard";
-import { getOwnerListings, getOwnerProvider, getProviderCity } from "@/server/owner";
-import { listingPhotos } from "@/server/catalog";
+import { getOwnerListings } from "@/server/owner";
+import { getActiveCities, getAllCategories, listingPhotos } from "@/server/catalog";
+import { listingPath } from "@/lib/catalog/listing-path";
 import { formatPrice } from "@/lib/catalog/format";
 import { Button } from "@/components/ui/button";
 import { ListingStatusButtons } from "@/components/cabinet/ListingStatusButtons";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Мои позиции", robots: { index: false } };
+export const metadata: Metadata = { title: "Мои объявления", robots: { index: false } };
 
 const STATUS_LABEL: Record<string, string> = {
-  active: "Активна",
-  hidden: "Скрыта",
+  active: "Активно",
+  hidden: "Скрыто",
   archived: "Архив",
-  on_moderation: "На модерации",
 };
 
 export default async function CabinetListingsPage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
-  const provider = await getOwnerProvider(session.user.id);
-  if (!provider) redirect("/cabinet/new");
 
-  const [items, city] = await Promise.all([
-    getOwnerListings(provider.id),
-    getProviderCity(provider.cityId),
+  const [items, cities, cats] = await Promise.all([
+    getOwnerListings(session.user.id),
+    getActiveCities(),
+    getAllCategories(),
   ]);
+  const citySlug = new Map(cities.map((c) => [c.id, c.slug]));
+  const catSlug = new Map(cats.map((c) => [c.id, c.slug]));
 
   return (
-    <section aria-label="Мои позиции">
+    <section aria-label="Мои объявления">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{items.length} позиций</p>
+        <p className="text-sm text-muted-foreground">{items.length} объявлений</p>
         <Button asChild size="sm">
-          <Link href={"/cabinet/listings/new" as never}>+ Добавить позицию</Link>
+          <Link href={"/cabinet/listings/new" as never}>+ Разместить</Link>
         </Button>
       </div>
 
       {items.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">
-          Добавьте первую позицию — она появится в каталоге.
+          Разместите первое объявление — оно появится в каталоге.
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((l) => {
             const photo = listingPhotos(l)[0];
+            const cSlug = citySlug.get(l.cityId);
+            const catS = catSlug.get(l.categoryId);
             return (
               <li key={l.id} className="flex gap-3 rounded-lg border border-border bg-card p-3">
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
@@ -71,10 +74,10 @@ export default async function CabinetListingsPage() {
                   <p className="text-sm text-muted-foreground">
                     {l.priceDay !== null ? `${formatPrice(l.priceDay)}/сутки` : "—"}
                     {" · "}{l.quantity} шт.
-                    {city && l.status === "active" && (
+                    {cSlug && catS && l.status === "active" && (
                       <>
                         {" · "}
-                        <Link href={`/${city.slug}/${provider.slug}/${l.slug}` as never} className="hover:text-foreground underline-offset-2 hover:underline">
+                        <Link href={listingPath(cSlug, catS, l.slug, l.id) as never} className="hover:text-foreground underline-offset-2 hover:underline">
                           посмотреть в каталоге
                         </Link>
                       </>
