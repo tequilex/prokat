@@ -4,35 +4,35 @@ import { adminListListings } from "@/server/admin";
 import { adminSetListingStatus } from "@/server/actions/admin";
 import { ActionButton } from "@/components/admin/ActionButton";
 import { formatPrice } from "@/lib/catalog/format";
+import { listingPath } from "@/lib/catalog/listing-path";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Позиции — админка", robots: { index: false } };
+export const metadata: Metadata = { title: "Объявления — админка", robots: { index: false } };
 
 const STATUS_LABEL: Record<string, string> = {
-  active: "активна",
-  hidden: "скрыта",
+  active: "активно",
+  hidden: "скрыто",
   archived: "архив",
-  on_moderation: "на модерации",
 };
 
 export default async function AdminListingsPage() {
   const rows = await adminListListings();
 
   return (
-    <section aria-label="Позиции">
-      <p className="mb-4 text-sm text-muted-foreground">Последние {rows.length} позиций</p>
+    <section aria-label="Объявления">
+      <p className="mb-4 text-sm text-muted-foreground">Последние {rows.length} объявлений</p>
       <ul className="flex flex-col gap-2">
-        {rows.map(({ listing, providerName, providerSlug, citySlug }) => (
+        {rows.map(({ listing, ownerName, ownerUsername, citySlug, categorySlug }) => (
           <li key={listing.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
             <div className="min-w-0">
               <Link
-                href={`/${citySlug}/${providerSlug}/${listing.slug}` as never}
+                href={listingPath(citySlug, categorySlug, listing.slug, listing.id) as never}
                 className="font-medium hover:underline underline-offset-2"
               >
                 {listing.title}
               </Link>
               <p className="text-sm text-muted-foreground">
-                {providerName}
+                {ownerName ?? `@${ownerUsername ?? "—"}`}
                 {listing.priceDay !== null ? ` · ${formatPrice(listing.priceDay)}/сутки` : ""}
                 {" · "}{STATUS_LABEL[listing.status] ?? listing.status}
               </p>
@@ -44,7 +44,7 @@ export default async function AdminListingsPage() {
               {listing.status === "active" && (
                 <ActionButton
                   label="Скрыть"
-                  confirmText="Скрыть позицию из каталога?"
+                  confirmText="Скрыть объявление из каталога?"
                   action={adminSetListingStatus.bind(null, listing.id, "hidden")}
                 />
               )}

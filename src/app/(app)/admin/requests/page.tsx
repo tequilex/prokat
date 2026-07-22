@@ -14,7 +14,7 @@ export default async function AdminRequestsPage() {
     <section aria-label="Заявки">
       <p className="mb-4 text-sm text-muted-foreground">Последние {rows.length} заявок (просмотр)</p>
       <ul className="flex flex-col gap-2">
-        {rows.map(({ request, listingTitle, providerName, customerEmail }) => {
+        {rows.map(({ request, listingTitle, ownerName, customerEmail }) => {
           const status = request.status as BookingStatus;
           return (
             <li key={request.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
@@ -23,7 +23,7 @@ export default async function AdminRequestsPage() {
                 <p className="text-sm text-muted-foreground">
                   {formatDayMonth(request.dateFrom)} — {formatDayMonth(request.dateTo)}
                   {request.qty > 1 ? ` · ${request.qty} шт.` : ""}
-                  {" · "}{providerName} · {customerEmail}
+                  {" · "}{ownerName ?? "—"} · {customerEmail}
                   {" · "}{request.createdAt.toLocaleDateString("ru-RU")}
                 </p>
               </div>
