@@ -1,7 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  buildBreadcrumbJsonLd, buildLocalBusinessJsonLd, buildProductJsonLd,
-} from "@/lib/jsonld";
+import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
 
 describe("buildProductJsonLd()", () => {
   const base = {
@@ -9,8 +7,8 @@ describe("buildProductJsonLd()", () => {
     description: "Мощный перфоратор.",
     priceDay: 500,
     photoUrls: ["https://img.example/1.webp"],
-    url: "https://prokat.example/kazan/prokatmaster/perforator",
-    providerName: "ПрокатМастер",
+    url: "https://prokat.example/kazan/elektroinstrument/perforator-01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    sellerName: "Артём",
     available: true,
   };
 
@@ -22,7 +20,7 @@ describe("buildProductJsonLd()", () => {
     expect(ld.offers.priceCurrency).toBe("RUB");
     expect(ld.offers.businessFunction).toContain("LeaseOut");
     expect(ld.offers.availability).toBe("https://schema.org/InStock");
-    expect(ld.offers.seller.name).toBe("ПрокатМастер");
+    expect(ld.offers.seller.name).toBe("Артём");
   });
 
   it("без цены за сутки — без offers", () => {
@@ -39,36 +37,6 @@ describe("buildProductJsonLd()", () => {
     const ld = buildProductJsonLd({ ...base, photoUrls: [], description: null });
     expect(ld.image).toBeUndefined();
     expect(ld.description).toBeUndefined();
-  });
-});
-
-describe("buildLocalBusinessJsonLd()", () => {
-  it("собирает LocalBusiness с адресом, телефоном и geo", () => {
-    const ld = buildLocalBusinessJsonLd({
-      name: "ПрокатМастер",
-      description: "Прокат инструмента.",
-      url: "https://prokat.example/kazan/prokatmaster",
-      cityName: "Казань",
-      address: "ул. Баумана, 10",
-      lat: 55.79,
-      lon: 49.1,
-      phones: ["+7 900 111-22-33"],
-    });
-    expect(ld["@type"]).toBe("LocalBusiness");
-    expect(ld.address.addressLocality).toBe("Казань");
-    expect(ld.address.streetAddress).toBe("ул. Баумана, 10");
-    expect(ld.telephone).toBe("+7 900 111-22-33");
-    expect(ld.geo.latitude).toBe(55.79);
-  });
-
-  it("без координат/телефонов — нет geo/telephone", () => {
-    const ld = buildLocalBusinessJsonLd({
-      name: "X", description: null, url: "https://x", cityName: "Казань",
-      address: null, lat: null, lon: null, phones: [],
-    });
-    expect(ld.geo).toBeUndefined();
-    expect(ld.telephone).toBeUndefined();
-    expect(ld.address.streetAddress).toBeUndefined();
   });
 });
 
