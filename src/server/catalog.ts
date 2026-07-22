@@ -235,6 +235,39 @@ export async function getSellerById(userId: string): Promise<Seller | null> {
   return rows[0] ?? null;
 }
 
+export async function getSellerByUsername(username: string): Promise<Seller | null> {
+  const rows = await getDb().select({
+    id: users.id, name: users.name, username: users.username,
+    image: users.image, bio: users.bio, isVerified: users.isVerified,
+    createdAt: users.createdAt, phone: users.phone,
+  }).from(users).where(eq(users.username, username)).limit(1);
+  return rows[0] ?? null;
+}
+
+// Карточка товара с городом — товары продавца могут быть в разных городах,
+// поэтому citySlug нужен на каждую карточку (для её href).
+export interface OwnerCardListing extends ListingWithOwner {
+  citySlug: string;
+}
+
+// Активные товары продавца в форме карточки — для профиля /u/{username}.
+export async function getActiveListingCardsByOwner(userId: string): Promise<OwnerCardListing[]> {
+  return getDb()
+    .select({
+      listing: listings,
+      ownerName: users.name,
+      ownerUsername: users.username,
+      categorySlug: categories.slug,
+      citySlug: cities.slug,
+    })
+    .from(listings)
+    .innerJoin(users, eq(users.id, listings.ownerUserId))
+    .innerJoin(categories, eq(categories.id, listings.categoryId))
+    .innerJoin(cities, eq(cities.id, listings.cityId))
+    .where(and(eq(listings.ownerUserId, userId), eq(listings.status, "active")))
+    .orderBy(desc(listings.createdAt));
+}
+
 export async function getCategoryById(id: string): Promise<Category | null> {
   const rows = await getDb().select().from(categories).where(eq(categories.id, id)).limit(1);
   return rows[0] ?? null;
