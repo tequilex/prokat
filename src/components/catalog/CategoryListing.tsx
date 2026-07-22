@@ -9,7 +9,7 @@ import {
 } from "@/server/catalog";
 import { parseFilters, type CategorySearchParams } from "@/lib/catalog/filters";
 import { todayStr, addDaysStr } from "@/lib/catalog/dates";
-import { formatPrice, listingsCountLabel, providersCountLabel } from "@/lib/catalog/format";
+import { formatPrice, listingsCountLabel, ownersCountLabel } from "@/lib/catalog/format";
 import { buildAvailabilityByListing } from "@/lib/catalog/availability";
 import { ListingCard } from "@/components/catalog/ListingCard";
 import { ListingFilters, type FilterState } from "@/components/catalog/ListingFilters";
@@ -60,7 +60,7 @@ export async function CategoryListing({
       {/* Вводный блок — только из данных */}
       {stats.listingCount > 0 && (
         <p className="text-sm text-muted-foreground">
-          {listingsCountLabel(stats.listingCount)} от {providersCountLabel(stats.providerCount)}
+          {listingsCountLabel(stats.listingCount)} от {ownersCountLabel(stats.ownerCount)}
           {stats.minPriceDay !== null && (
             <>
               , цены от {formatPrice(stats.minPriceDay)}

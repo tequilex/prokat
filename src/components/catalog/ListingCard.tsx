@@ -1,22 +1,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
-import { listingPhotos, type ListingWithProvider } from "@/server/catalog";
+import { listingPhotos, type ListingWithOwner } from "@/server/catalog";
 import { formatDeposit, formatPrice } from "@/lib/catalog/format";
+import { listingPath } from "@/lib/catalog/listing-path";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { MiniCalendar } from "@/components/catalog/AvailabilityCalendar";
 
 export function ListingCard({
   item, citySlug, availabilityMap, from,
 }: {
-  item: ListingWithProvider;
+  item: ListingWithOwner;
   citySlug: string;
   availabilityMap: AvailabilityMap;
   from: string;
 }) {
-  const { listing, providerName, providerSlug } = item;
+  const { listing, ownerName, ownerUsername, categorySlug } = item;
   const photo = listingPhotos(listing)[0];
-  const href = `/${citySlug}/${providerSlug}/${listing.slug}`;
+  const href = listingPath(citySlug, categorySlug, listing.slug, listing.id);
+  const sellerLabel = ownerName ?? "Продавец";
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-transform hover:border-primary active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100">
@@ -59,9 +61,13 @@ export function ListingCard({
         <MiniCalendar quantity={listing.quantity} map={availabilityMap} from={from} />
 
         <p className="mt-auto pt-1 text-xs text-muted-foreground">
-          <Link href={`/${citySlug}/${providerSlug}` as never} className="hover:text-foreground hover:underline underline-offset-2">
-            {providerName}
-          </Link>
+          {ownerUsername ? (
+            <Link href={`/u/${ownerUsername}` as never} className="hover:text-foreground hover:underline underline-offset-2">
+              {sellerLabel}
+            </Link>
+          ) : (
+            sellerLabel
+          )}
         </p>
       </div>
     </article>
