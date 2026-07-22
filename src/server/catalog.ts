@@ -77,6 +77,7 @@ export interface ListingWithOwner {
   listing: Listing;
   ownerName: string | null;
   ownerUsername: string | null;
+  categorySlug: string;
 }
 
 export const DEFAULT_PAGE_SIZE = 24;
@@ -107,9 +108,10 @@ export async function getListingsForCategories(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username })
+    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, categorySlug: categories.slug })
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
+      .innerJoin(categories, eq(categories.id, listings.categoryId))
       .where(where)
       .orderBy(order, asc(listings.id))
       .limit(pageSize)
@@ -151,9 +153,10 @@ export async function searchListings(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username })
+    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, categorySlug: categories.slug })
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
+      .innerJoin(categories, eq(categories.id, listings.categoryId))
       .where(where)
       .orderBy(order, asc(listings.id))
       .limit(pageSize)
@@ -208,6 +211,27 @@ export async function getActiveListingById(id: string): Promise<Listing | null> 
   const rows = await getDb().select().from(listings)
     .where(and(eq(listings.id, id), eq(listings.status, "active")))
     .limit(1);
+  return rows[0] ?? null;
+}
+
+export interface Seller {
+  id: string;
+  name: string | null;
+  username: string | null;
+  image: string | null;
+  bio: string | null;
+  isVerified: boolean;
+  createdAt: Date;
+  phone: string | null;
+}
+
+// Публичные поля продавца — для страницы товара и профиля /u/{username}.
+export async function getSellerById(userId: string): Promise<Seller | null> {
+  const rows = await getDb().select({
+    id: users.id, name: users.name, username: users.username,
+    image: users.image, bio: users.bio, isVerified: users.isVerified,
+    createdAt: users.createdAt, phone: users.phone,
+  }).from(users).where(eq(users.id, userId)).limit(1);
   return rows[0] ?? null;
 }
 
