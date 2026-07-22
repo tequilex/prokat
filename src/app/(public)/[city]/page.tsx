@@ -4,8 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { seo } from "@theme/seo";
 import {
-  getAllCategories, getCityBySlug, getListingCountsByCategory,
-  getProvidersOfCity, rollupToRoots,
+  getAllCategories, getCityBySlug, getListingCountsByCategory, rollupToRoots,
 } from "@/server/catalog";
 import { listingsCountLabel } from "@/lib/catalog/format";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
@@ -31,10 +30,9 @@ export default async function CityPage({ params }: Props) {
   const city = await getCityBySlug(citySlug);
   if (!city) notFound();
 
-  const [cats, direct, provs] = await Promise.all([
+  const [cats, direct] = await Promise.all([
     getAllCategories(),
     getListingCountsByCategory(city.id),
-    getProvidersOfCity(city.id),
   ]);
   const rootCounts = rollupToRoots(cats, direct);
   const roots = cats.filter((c) => c.parentId === null);
@@ -62,26 +60,6 @@ export default async function CityPage({ params }: Props) {
         </div>
       </section>
 
-      {provs.length > 0 && (
-        <section aria-labelledby="city-provs" className="mt-10">
-          <h2 id="city-provs" className="mb-3 text-lg font-semibold">Прокаты города</h2>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {provs.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/${city.slug}/${p.slug}` as never}
-                  className="block rounded-lg border border-border bg-card p-4 hover:border-primary"
-                >
-                  <span className="font-medium">{p.name}</span>
-                  {p.address && (
-                    <span className="mt-1 block text-sm text-muted-foreground">{p.address}</span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </main>
   );
 }
