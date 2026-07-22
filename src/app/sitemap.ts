@@ -2,8 +2,9 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site-config";
 import {
   getActiveCities, getAllActiveListingPaths, getAllCategories,
-  getListingCountsByCategory, getProvidersOfCity, rollupToRoots,
+  getListingCountsByCategory, rollupToRoots,
 } from "@/server/catalog";
+import { listingPath } from "@/lib/catalog/listing-path";
 
 // Sitemap читает БД в рантайме; force-dynamic — иначе Next prerender'ит
 // во время build без БД и падает.
@@ -44,19 +45,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       });
     }
-
-    for (const p of await getProvidersOfCity(city.id)) {
-      out.push({
-        url: `${base}/${city.slug}/${p.slug}`,
-        changeFrequency: "weekly",
-        priority: 0.6,
-      });
-    }
   }
 
   for (const l of await getAllActiveListingPaths()) {
     out.push({
-      url: `${base}/${l.citySlug}/${l.providerSlug}/${l.listingSlug}`,
+      url: `${base}${listingPath(l.citySlug, l.categorySlug, l.listingSlug, l.listingId)}`,
       lastModified: l.updatedAt,
       changeFrequency: "weekly",
       priority: 0.6,
