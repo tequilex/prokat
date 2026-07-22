@@ -1,16 +1,18 @@
 // /{city}/{seg}/{sub} — снова двусмысленно:
-//   seg = категория  → sub = подкатегория (существует только с ≥1 активной позицией, иначе 404);
-//   seg = прокат     → sub = позиция.
+//   sub = {slug}-{id} и товар с этим id активен → карточка товара;
+//   иначе seg = корневая категория, sub = подкатегория (список, 404 если пусто).
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
 import { seo } from "@theme/seo";
 import {
-  getAllCategories, getAvailabilityRows, getCategoryById, getCityBySlug,
-  getListingBySlug, getListingCountsByCategory, listingPhotos, resolveCitySegment,
-  type Category, type City, type Listing, type Provider,
+  getAllCategories, getAvailabilityRows, getCategoryById, getCategoryBySlug,
+  getCityBySlug, getActiveListingById, getListingCountsByCategory, getSellerById,
+  listingPhotos,
+  type Category, type City, type Listing, type Seller,
 } from "@/server/catalog";
+import { extractListingId, listingPath } from "@/lib/catalog/listing-path";
 import { formatDeposit, formatPrice } from "@/lib/catalog/format";
 import { addDaysStr, todayStr } from "@/lib/catalog/dates";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
@@ -36,51 +38,56 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ city: string; seg: string; sub: string }>;
-  // Категорийные фильтры + выбор дат брони (from/to/qty) на странице позиции.
   searchParams: Promise<CategorySearchParams & { from?: string; to?: string; qty?: string }>;
 }
 
 type Resolved =
   | { kind: "subcategory"; city: City; root: Category; sub: Category }
-  | { kind: "listing"; city: City; provider: Provider; listing: Listing };
+  | { kind: "listing"; city: City; category: Category; listing: Listing; seller: Seller };
 
 async function resolve(citySlug: string, seg: string, sub: string): Promise<Resolved | null> {
   const city = await getCityBySlug(citySlug);
   if (!city) return null;
-  const first = await resolveCitySegment(city.id, seg);
-  if (!first) return null;
 
-  if (first.kind === "category") {
-    if (first.category.parentId !== null) return null; // подкатегория не бывает базой
-    const cats = await getAllCategories();
-    const subCat = cats.find((c) => c.slug === sub && c.parentId === first.category.id);
-    if (!subCat) return null;
-    return { kind: "subcategory", city, root: first.category, sub: subCat };
+  // Попытка: карточка товара /{city}/{cat}/{slug}-{id}.
+  const parsed = extractListingId(sub);
+  if (parsed) {
+    const listing = await getActiveListingById(parsed.id);
+    if (!listing || listing.cityId !== city.id) return null;
+    const [category, seller] = await Promise.all([
+      getCategoryById(listing.categoryId),
+      getSellerById(listing.ownerUserId),
+    ]);
+    if (!category || !seller) return null;
+    return { kind: "listing", city, category, listing, seller };
   }
 
-  const listing = await getListingBySlug(first.provider.id, sub);
-  if (!listing) return null;
-  return { kind: "listing", city, provider: first.provider, listing };
+  // Иначе: подкатегория /{city}/{root}/{sub}.
+  const root = await getCategoryBySlug(seg);
+  if (!root || root.parentId !== null) return null;
+  const cats = await getAllCategories();
+  const subCat = cats.find((c) => c.slug === sub && c.parentId === root.id);
+  if (!subCat) return null;
+  return { kind: "subcategory", city, root, sub: subCat };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug, seg, sub } = await params;
   const r = await resolve(citySlug, seg, sub);
   if (!r) return {};
-  const canonical = `${siteConfig.url}/${r.city.slug}/${seg}/${sub}`;
   if (r.kind === "subcategory") {
     return {
       title: seo.titleTemplate(`Аренда: ${r.sub.name.toLowerCase()} в ${r.city.name}`),
       description: `${r.sub.name} напрокат в ${r.city.name}: цены, залоги, календарь занятости.`,
-      alternates: { canonical },
+      alternates: { canonical: `${siteConfig.url}/${r.city.slug}/${seg}/${sub}` },
     };
   }
   const priceBit = r.listing.priceDay !== null ? ` от ${formatPrice(r.listing.priceDay)}/сутки` : "";
+  const canonical = listingPath(r.city.slug, r.category.slug, r.listing.slug, r.listing.id);
   return {
     title: seo.titleTemplate(`${r.listing.title} — аренда в ${r.city.name}${priceBit}`),
-    description: r.listing.description ??
-      `${r.listing.title} напрокат в ${r.city.name} — прокат «${r.provider.name}».`,
-    alternates: { canonical },
+    description: r.listing.description ?? `${r.listing.title} напрокат в ${r.city.name}.`,
+    alternates: { canonical: `${siteConfig.url}${canonical}` },
   };
 }
 
@@ -91,6 +98,12 @@ export default async function CitySubPage({ params, searchParams }: Props) {
 
   if (r.kind === "subcategory") {
     return <SubcategoryPage r={r} searchParams={await searchParams} />;
+  }
+
+  // Каноничность URL товара: seg = слаг категории, slug-часть = listing.slug.
+  const parsed = extractListingId(sub);
+  if (seg !== r.category.slug || parsed?.slug !== r.listing.slug) {
+    permanentRedirect(listingPath(r.city.slug, r.category.slug, r.listing.slug, r.listing.id) as never);
   }
   return <ListingPage r={r} searchParams={await searchParams} />;
 }
@@ -103,7 +116,7 @@ async function SubcategoryPage({
 }) {
   const { city, root, sub } = r;
   const directCounts = await getListingCountsByCategory(city.id);
-  // ТЗ: страница подкатегории существует только при ≥1 активной позиции.
+  // Страница подкатегории существует только при ≥1 активной позиции.
   if ((directCounts.get(sub.id) ?? 0) === 0) notFound();
 
   const cats = await getAllCategories();
@@ -150,17 +163,10 @@ async function ListingPage({
   r: Extract<Resolved, { kind: "listing" }>;
   searchParams: { from?: string; to?: string; qty?: string };
 }) {
-  const { city, provider, listing } = r;
+  const { city, category, listing, seller } = r;
   const photos = listingPhotos(listing);
-  const category = await getCategoryById(listing.categoryId);
-
-  // work_hours_json: {text: "..."} из формы кабинета или Record<период, часы> из сидов.
-  const wh = provider.workHoursJson;
-  const hoursText = wh && typeof wh === "object"
-    ? (typeof (wh as Record<string, unknown>).text === "string"
-        ? String((wh as Record<string, unknown>).text)
-        : Object.entries(wh as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(", "))
-    : "";
+  const sellerName = seller.name ?? "Продавец";
+  const sellerHref = seller.username ? `/u/${seller.username}` : `/u/${seller.id}`;
 
   const session = await auth();
   const isAuthed = Boolean(session?.user);
@@ -173,21 +179,16 @@ async function ListingPage({
   const vkEnabled = Boolean(env.VK_CLIENT_ID && env.VK_CLIENT_SECRET);
   const isDev = env.NODE_ENV !== "production";
 
-  // Занятость на весь горизонт бронирования: календарь показывает первые
-  // 4 недели, виджет валидирует выбор дат по всем 90 дням.
   const from = todayStr();
   const rows = await getAvailabilityRows([listing.id], from, addDaysStr(from, BOOKING_HORIZON_DAYS));
   const map: AvailabilityMap = new Map(
     rows.map((row) => [row.date, { bookedQty: row.bookedQty, blockedQty: row.blockedQty }]),
   );
-  // Map не сериализуется через RSC-границу — клиентскому виджету отдаём plain object.
   const availabilityRecord = Object.fromEntries(map);
 
-  // Выбор дат/qty из URL (восстанавливается после OAuth-redirect).
   const selection = parseBookingParams(searchParams, { today: from, maxQty: listing.quantity });
 
-  // view_listing — сырьё для статистики владельца. Ошибка записи не должна
-  // ронять страницу.
+  // view_listing — сырьё для статистики. Ошибка записи не должна ронять страницу.
   try {
     await getDb().insert(events).values({
       id: newId(),
@@ -200,17 +201,17 @@ async function ListingPage({
     console.error("[events] view_listing insert failed:", e);
   }
 
+  const categoryHref = `/${city.slug}/${category.slug}`;
   const crumbs = [
     { label: "Главная", href: "/" },
     { label: city.name, href: `/${city.slug}` },
-    ...(category ? [{ label: category.name, href: categoryHref(city, category) }] : []),
+    { label: category.name, href: categoryHref },
     { label: listing.title },
   ];
 
-  // Продукт «в наличии», если в ближайшую неделю есть хотя бы один свободный день.
   const weekDates = Array.from({ length: 7 }, (_, i) => addDaysStr(from, i));
   const available = weekDates.some((d) => freeQty(listing.quantity, map.get(d)) > 0);
-  const listingUrl = `${siteConfig.url}/${city.slug}/${provider.slug}/${listing.slug}`;
+  const canonicalPath = listingPath(city.slug, category.slug, listing.slug, listing.id);
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6 pb-24 md:pb-6">
@@ -219,8 +220,8 @@ async function ListingPage({
         description: listing.description,
         priceDay: listing.priceDay,
         photoUrls: photos.map((p) => p.url),
-        url: listingUrl,
-        providerName: provider.name,
+        url: `${siteConfig.url}${canonicalPath}`,
+        sellerName,
         available,
       })} />
       <JsonLd data={buildBreadcrumbJsonLd(
@@ -231,7 +232,6 @@ async function ListingPage({
 
       <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
         <div>
-          {/* Галерея: простая сетка, без каруселей и JS */}
           {photos.length === 0 ? (
             <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
               <ImageOff className="h-10 w-10" aria-hidden="true" />
@@ -267,17 +267,16 @@ async function ListingPage({
 
         <aside className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
           <OwnerCard
-            name={provider.name}
-            href={`/${city.slug}/${provider.slug}`}
-            isVerified={provider.isVerified}
-            address={provider.address}
-            hoursText={hoursText}
+            name={sellerName}
+            href={sellerHref}
+            isVerified={seller.isVerified}
+            location={listing.location}
           />
           <BookingWidget
             listingId={listing.id}
             listingTitle={listing.title}
             initialPhone={initialPhone}
-            pathname={`/${city.slug}/${provider.slug}/${listing.slug}`}
+            pathname={canonicalPath}
             initial={selection}
             today={from}
             maxDate={addDaysStr(from, BOOKING_HORIZON_DAYS)}
@@ -287,9 +286,9 @@ async function ListingPage({
             priceWeek={listing.priceWeek}
             priceHour={listing.priceHour}
             depositLabel={formatDeposit(listing.depositType, listing.depositAmount)}
-            providerName={provider.name}
-            providerHref={`/${city.slug}/${provider.slug}`}
-            providerAddress={provider.address}
+            sellerName={sellerName}
+            sellerHref={sellerHref}
+            sellerLocation={listing.location}
             isAuthed={isAuthed}
             nextAuthProviders={nextAuthProviders}
             vkEnabled={vkEnabled}
@@ -299,10 +298,4 @@ async function ListingPage({
       </div>
     </main>
   );
-}
-
-function categoryHref(city: City, category: Category): string {
-  // Для подкатегории канонический путь требует родителя; здесь достаточно
-  // короткого /{city}/{slug} — [seg] сам средиректит на канонику.
-  return `/${city.slug}/${category.slug}`;
 }
