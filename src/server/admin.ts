@@ -14,10 +14,12 @@ export async function adminListListings(limit = 200) {
       ownerName: users.name,
       ownerUsername: users.username,
       citySlug: cities.slug,
+      categorySlug: categories.slug,
     })
     .from(listings)
     .innerJoin(users, eq(users.id, listings.ownerUserId))
     .innerJoin(cities, eq(cities.id, listings.cityId))
+    .innerJoin(categories, eq(categories.id, listings.categoryId))
     .orderBy(desc(listings.createdAt))
     .limit(limit);
 }

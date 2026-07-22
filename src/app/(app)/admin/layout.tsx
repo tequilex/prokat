@@ -10,8 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <AccountShell
       title="Админка"
       items={[
-        { href: "/admin/providers", label: "Прокаты" },
-        { href: "/admin/listings", label: "Позиции" },
+        { href: "/admin/listings", label: "Объявления" },
         { href: "/admin/cities", label: "Города" },
         { href: "/admin/categories", label: "Категории" },
         { href: "/admin/requests", label: "Заявки" },
