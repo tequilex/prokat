@@ -36,9 +36,9 @@ export interface BookingWidgetProps {
   priceWeek: number | null;
   priceHour: number | null;
   depositLabel: string;
-  providerName: string;
-  providerHref: string;
-  providerAddress: string | null;
+  sellerName: string;
+  sellerHref: string;
+  sellerLocation: string | null;
   isAuthed: boolean;
   nextAuthProviders: string[];
   vkEnabled: boolean;
@@ -176,11 +176,11 @@ export function BookingWidget(props: BookingWidgetProps) {
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          Прокат{" "}
-          <Link href={props.providerHref as never} className="text-foreground hover:underline underline-offset-2">
-            {props.providerName}
+          Продавец{" "}
+          <Link href={props.sellerHref as never} className="text-foreground hover:underline underline-offset-2">
+            {props.sellerName}
           </Link>
-          {props.providerAddress ? ` · ${props.providerAddress}` : null}
+          {props.sellerLocation ? ` · ${props.sellerLocation}` : null}
         </p>
       </div>
 
