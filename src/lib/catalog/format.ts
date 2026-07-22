@@ -16,6 +16,6 @@ export function listingsCountLabel(n: number): string {
   return `${n} ${ruPlural(n, "позиция", "позиции", "позиций")}`;
 }
 
-export function providersCountLabel(n: number): string {
-  return `${n} ${ruPlural(n, "прокат", "проката", "прокатов")}`;
+export function ownersCountLabel(n: number): string {
+  return `${n} ${ruPlural(n, "продавец", "продавца", "продавцов")}`;
 }

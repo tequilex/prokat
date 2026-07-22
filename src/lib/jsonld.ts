@@ -18,7 +18,7 @@ export function buildProductJsonLd(input: {
   priceDay: number | null;
   photoUrls: string[];
   url: string;            // абсолютный URL карточки позиции
-  providerName: string;
+  sellerName: string;
   available: boolean;     // есть ли свободные единицы в ближайшую неделю
 }): JsonLd {
   const ld: JsonLd = {
@@ -40,37 +40,8 @@ export function buildProductJsonLd(input: {
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       url: input.url,
-      seller: { "@type": "Organization", name: input.providerName },
+      seller: { "@type": "Person", name: input.sellerName },
     };
-  }
-  return ld;
-}
-
-export function buildLocalBusinessJsonLd(input: {
-  name: string;
-  description: string | null;
-  url: string;            // абсолютный URL карточки проката
-  cityName: string;
-  address: string | null;
-  lat: number | null;
-  lon: number | null;
-  phones: string[];
-}): JsonLd {
-  const ld: JsonLd = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: input.name,
-    url: input.url,
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: input.cityName,
-      ...(input.address ? { streetAddress: input.address } : {}),
-    },
-  };
-  if (input.description) ld.description = input.description;
-  if (input.phones.length > 0) ld.telephone = input.phones[0];
-  if (input.lat !== null && input.lon !== null) {
-    ld.geo = { "@type": "GeoCoordinates", latitude: input.lat, longitude: input.lon };
   }
   return ld;
 }
