@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
-import { getOwnerProvider, getProviderRequests } from "@/server/owner";
+import { getOwnerRequests } from "@/server/owner";
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/booking/status-labels";
 import type { BookingStatus } from "@/lib/catalog/booking-status";
 import { formatDayMonth } from "@/lib/catalog/dates";
@@ -13,10 +13,8 @@ export const metadata: Metadata = { title: "Заявки", robots: { index: fals
 export default async function CabinetRequestsPage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
-  const provider = await getOwnerProvider(session.user.id);
-  if (!provider) redirect("/cabinet/new");
 
-  const rows = await getProviderRequests(provider.id);
+  const rows = await getOwnerRequests(session.user.id);
 
   return (
     <section aria-label="Заявки на бронь">

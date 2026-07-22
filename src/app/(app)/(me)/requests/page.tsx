@@ -6,6 +6,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getCustomerRequests } from "@/server/booking";
+import { listingPath } from "@/lib/catalog/listing-path";
 import { canTransition, type BookingStatus } from "@/lib/catalog/booking-status";
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/booking/status-labels";
 import { formatDayMonth } from "@/lib/catalog/dates";
@@ -32,18 +33,18 @@ export default async function RequestsPage() {
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {rows.map(({ request, listingTitle, listingSlug, providerName, providerSlug, providerPhones, citySlug }) => {
+          {rows.map(({ request, listingTitle, listingSlug, listingId, categorySlug, citySlug, ownerName, ownerUsername, ownerPhone }) => {
             const status = request.status as BookingStatus;
-            const phones = Array.isArray(providerPhones) ? (providerPhones as string[]) : [];
             const period = request.dateFrom === request.dateTo
               ? formatDayMonth(request.dateFrom)
               : `${formatDayMonth(request.dateFrom)} — ${formatDayMonth(request.dateTo)}`;
+            const sellerLabel = ownerName ?? "Продавец";
             return (
               <li key={request.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <Link
-                      href={`/${citySlug}/${providerSlug}/${listingSlug}` as never}
+                      href={listingPath(citySlug, categorySlug, listingSlug, listingId) as never}
                       className="font-medium hover:underline underline-offset-2"
                     >
                       {listingTitle}
@@ -52,9 +53,11 @@ export default async function RequestsPage() {
                       {period}
                       {request.qty > 1 ? ` · ${request.qty} шт.` : ""}
                       {" · "}
-                      <Link href={`/${citySlug}/${providerSlug}` as never} className="hover:text-foreground">
-                        {providerName}
-                      </Link>
+                      {ownerUsername ? (
+                        <Link href={`/u/${ownerUsername}` as never} className="hover:text-foreground">
+                          {sellerLabel}
+                        </Link>
+                      ) : sellerLabel}
                     </p>
                   </div>
                   <span className={`rounded-pill px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_CLASSES[status]}`}>
@@ -64,21 +67,21 @@ export default async function RequestsPage() {
 
                 {status === "new" && (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Владелец обычно созванивается для подтверждения. Заявка
+                    Продавец обычно созванивается для подтверждения. Заявка
                     действует до {request.expiresAt.toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.
                   </p>
                 )}
-                {status === "confirmed" && phones.length > 0 && (
+                {status === "confirmed" && ownerPhone && (
                   <p className="mt-2 text-sm">
-                    Телефон проката:{" "}
-                    <a href={`tel:${phones[0].replace(/[^+\d]/g, "")}`} className="font-medium hover:underline">
-                      {phones[0]}
+                    Телефон продавца:{" "}
+                    <a href={`tel:${ownerPhone.replace(/[^+\d]/g, "")}`} className="font-medium hover:underline">
+                      {ownerPhone}
                     </a>
                   </p>
                 )}
-                {request.providerComment && (
+                {request.ownerComment && (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Комментарий проката: {request.providerComment}
+                    Комментарий продавца: {request.ownerComment}
                   </p>
                 )}
 
