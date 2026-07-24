@@ -1,41 +1,64 @@
-# prokat — сервис-каталог прокатов
+# prokat — маркетплейс аренды вещей
 
-Веб-сервис, где владельцы прокатов (инструмент, спорт, платья, фототехника, детские товары) размещают позиции, а клиенты находят их через каталог и оставляют заявки на бронь. Платежи не проводятся — аренда и залог остаются между владельцем и клиентом.
+Сервис «арендуй что угодно рядом» в духе Авито, но для аренды. Любой пользователь
+одновременно и арендатор, и продавец: размещает свои вещи и бронирует чужие
+(инструмент, спорт, сапборды, платья и другое). Платежей внутри нет — сервис сводит
+людей и ведёт заявки на бронь, а оплата и залог остаются между ними.
 
-Каркас унаследован от skelet (Next.js-скелет блог-платформы): инфраструктура, auth, загрузка изображений, тема.
+## Возможности
+
+- **Каталог по городам и категориям** — SSR-страницы с фильтрами, поиском и SEO
+  (JSON-LD, sitemap, канонические URL).
+- **Объявления** — товар с фото, ценами (сутки/час/неделя), залогом, количеством и
+  городом; публикуется сразу.
+- **Профиль продавца** `/u/{username}` — карточки товаров, «на сайте с», значок «Проверен».
+- **Бронь как заявка** — арендатор выбирает даты, владелец подтверждает; контакты
+  раскрываются после подтверждения. Мини-календарь занятости у каждого товара.
+- **Кабинет** — «Мои заявки», «Мои объявления», «Заявки на мои вещи», календарь занятости,
+  профиль/настройки — в одном месте.
+- **Админка** — модерация объявлений, справочники городов/категорий, заявки, бан и
+  верификация пользователей.
 
 ## Стек
 
-- **Frontend + Backend:** Next.js 15 (App Router, Server Components, Server Actions), SSR на всех публичных страницах
-- **БД:** Postgres 16 (docker-compose) + Drizzle ORM
-- **Auth:** Auth.js v5 — Яндекс ID (штатный провайдер) + VK ID (собственный OAuth 2.1 + PKCE)
-- **Storage:** S3-совместимое хранилище (Yandex Object Storage), загрузка через sharp → webp
-- **Стили:** Tailwind + CSS-токены (`theme/`), светлая/тёмная тема
-- **Деплой:** docker-compose (Caddy + app + Postgres + backup), HTTPS через Let's Encrypt
+- **Fullstack:** Next.js 15 (App Router, Server Components, Server Actions), React 19, TypeScript
+- **БД:** PostgreSQL 16 + Drizzle ORM
+- **Auth:** Auth.js v5 — Яндекс ID + VK ID (OAuth 2.1 + PKCE)
+- **Storage:** S3-совместимое (Yandex Object Storage), изображения `sharp` → webp
+- **Стили:** Tailwind + CSS-токены, светлая/тёмная темы
+- **Деплой:** docker-compose (Caddy + app + Postgres + backup), HTTPS via Let's Encrypt
+
+## Быстрый старт
+
+```bash
+docker compose up -d db          # поднять Postgres
+pnpm install
+pnpm db:migrate && pnpm db:seed  # схема + тестовые данные
+pnpm dev                         # http://localhost:3000
+```
+
+Для входа в dev-режиме: `GET /api/dev/login` (обычный юзер) или `?role=admin`.
 
 ## Команды
 
 ```bash
-pnpm dev            # dev-сервер
-pnpm build          # production-сборка
-pnpm test           # vitest
-pnpm lint           # eslint
-pnpm db:generate    # drizzle-kit: сгенерировать миграцию из drizzle/schema.ts
-pnpm db:migrate     # применить миграции (.env → DATABASE_URL)
-pnpm check-theme    # проверка целостности theme-токенов
+pnpm dev          # dev-сервер
+pnpm build        # production-сборка
+pnpm test         # vitest
+pnpm lint         # eslint
+pnpm db:generate  # сгенерировать миграцию из drizzle/schema.ts
+pnpm db:migrate   # применить миграции
+pnpm db:seed      # тестовые данные
 ```
 
 ## Структура
 
-- `src/app/(public)` — публичный каталог (SSR, SEO)
-- `src/app/(auth)` — вход и онбординг
-- `src/app/api` — auth, upload, health
+- `src/app/(public)` — публичный каталог, карточки товаров, профили продавцов
+- `src/app/(app)` — кабинет пользователя и админка
+- `src/server` — read-слой и Server Actions
+- `src/lib` — домен-логика (каталог, бронь, auth, storage)
 - `drizzle/` — схема БД и миграции
-- `theme/` — токены, типографика, тексты, SEO-дефолты
+- `theme/` — токены, тексты, SEO-дефолты
 - `docs/DEPLOY.md`, `docs/RECOVERY.md` — деплой и восстановление
 
-## Статус
-
-Этап 1: бутстрап из skelet, блоговый слой удалён. Дальше — схема каталога
-(cities/categories/providers/listings/availability/booking_requests/events),
-затем публичный каталог, флоу заявок и кабинеты.
+Полная карта проекта для разработки — в [CLAUDE.md](./CLAUDE.md).
