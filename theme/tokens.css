@@ -1,16 +1,16 @@
 :root {
-  --color-background: #FFFFFF;
+  --color-background: #EDF0EE;
   --color-foreground: #17171C;
-  --color-header:     #FFFFFF;
-  --color-card:       #F6F6F8;
+  --color-header:     #EDF0EE;
+  --color-card:       #FFFFFF;
   --color-card-fg:    #17171C;
-  --color-primary:    #087A41;
-  --color-primary-fg: #FFFFFF;
-  --color-accent:     #087A41;
-  --color-muted:      #F1F1F3;
-  --color-muted-fg:   #71717A;
-  --color-border:     #E3E3E7;
-  --color-ring:       #087A41;
+  --color-primary:    #34C759;
+  --color-primary-fg: #06240F;
+  --color-accent:     #34C759;
+  --color-muted:      #EAEBEE;
+  --color-muted-fg:   #6E6E73;
+  --color-border:     #E1E3E6;
+  --color-ring:       #34C759;
   --color-danger:     #EF4444;
 
   --radius-sm: 6px;
@@ -20,20 +20,43 @@
 
   --font-display: var(--font-display-var, system-ui), sans-serif;
   --font-text:    var(--font-text-var, system-ui), sans-serif;
+
+  /* Glass (парящие пилюли хедера в духе Telegram): полупрозрачный фон + мягкий
+   * хайлайт-бордер + тень. Значения несут собственную альфу/тень, поэтому даны
+   * целиком (не через --color-*). Тема переключается в .dark ниже. */
+  --glass-bg:     rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-shadow: 0 18px 44px -14px rgba(22, 38, 28, 0.18);
+
+  /* Ambient: деликатные зелёные свечения на фоне-холсте (в основном сверху,
+   * за хедером). Стекло ловит их через backdrop-blur — эффект «живого» фростеда. */
+  --ambient:
+    radial-gradient(650px circle at 12% -4%, rgba(16, 185, 129, 0.16), transparent 60%),
+    radial-gradient(720px circle at 82% -8%, rgba(34, 197, 94, 0.16), transparent 62%),
+    radial-gradient(560px circle at 95% 48%, rgba(5, 182, 83, 0.10), transparent 60%);
 }
 
 .dark {
-  --color-background: #232324;
-  --color-foreground: #E8E8EB;
-  --color-header:     #232324;
-  --color-card:       #1A1A1E;
-  --color-card-fg:    #E8E8EB;
-  --color-primary:    #22C77E;
-  --color-primary-fg: #06231A;
-  --color-accent:     #22C77E;
-  --color-muted:      #222225;
-  --color-muted-fg:   #94949B;
-  --color-border:     #26262B;
-  --color-ring:       #22C77E;
+  --color-background: #0A0D0B;
+  --color-foreground: #F5F5F7;
+  --color-header:     #0A0D0B;
+  --color-card:       #17181A;
+  --color-card-fg:    #F5F5F7;
+  --color-primary:    #30D158;
+  --color-primary-fg: #06240F;
+  --color-accent:     #30D158;
+  --color-muted:      #202224;
+  --color-muted-fg:   #B4B4BC;
+  --color-border:     #24262A;
+  --color-ring:       #30D158;
   --color-danger:     #DD4242;
+
+  --glass-bg:     rgba(22, 24, 23, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.55);
+
+  --ambient:
+    radial-gradient(650px circle at 12% -4%, rgba(48, 209, 88, 0.16), transparent 60%),
+    radial-gradient(720px circle at 82% -8%, rgba(47, 211, 176, 0.12), transparent 62%),
+    radial-gradient(560px circle at 95% 48%, rgba(75, 224, 107, 0.10), transparent 60%);
 }

@@ -20,3 +20,27 @@
    * overflow:hidden оставляем — это полезный scroll-lock для модалки. */
   html body[data-scroll-locked] { margin-right: 0 !important; }
 }
+
+@layer components {
+  /* Парящая стеклянная пилюля хедера: полупрозрачный фон размывает контент под
+   * собой (backdrop-filter), хайлайт-бордер и мягкая тень дают эффект «парения».
+   * Все значения — из токенов (--glass-*), тема переключается автоматически. */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+  }
+
+  /* Фиксированный слой зелёного свечения за всем контентом (см. --ambient).
+   * pointer-events:none — не мешает кликам; z-index:-10 — под контентом, но
+   * над фоном-холстом body. Не скроллится → «ambient» присутствие сверху. */
+  .bg-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    background-image: var(--ambient);
+  }
+}

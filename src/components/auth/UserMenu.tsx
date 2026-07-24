@@ -27,7 +27,7 @@ export function UserMenu({ username, name, image, isAdmin = false }: Props) {
     // добавляет padding-right на <body> для компенсации скроллбара, и хедер
     // прыгает (вдвойне — с нашим scrollbar-gutter: stable место уже занято).
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring">
+      <DropdownMenuTrigger className="inline-flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-ring">
         <Avatar src={image} name={name} username={username} size={36} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[180px]">

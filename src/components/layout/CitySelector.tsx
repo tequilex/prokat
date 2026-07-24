@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { content } from "@theme/content";
 import {
   DropdownMenu,
@@ -24,9 +24,11 @@ export function CitySelector({
 }) {
   const current = cities.find((c) => c.slug === currentSlug);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex min-h-11 items-center gap-1 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted">
-        <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+    // modal={false}: без него Radix включает scroll-lock (overflow:hidden на
+    // body), из-за чего sticky-хедер пересчитывается и прыгает к началу
+    // страницы. См. тот же приём в ThemeToggle/UserMenu.
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger className="inline-flex h-10 items-center gap-1 rounded-pill px-3 text-sm text-foreground transition-colors hover:bg-foreground/5">
         <span className="max-w-[8rem] truncate">{current?.name ?? content.nav.city}</span>
         <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
       </DropdownMenuTrigger>

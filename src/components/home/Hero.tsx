@@ -9,7 +9,7 @@ export interface HeroChip {
 
 export function Hero({ citySlug, chips = [] }: { citySlug?: string; chips?: HeroChip[] }) {
   return (
-    <section className="bg-gradient-to-b from-muted/60 to-background px-4 py-12 text-center md:py-16">
+    <section className="px-4 py-12 text-center md:py-16">
       <h1 className="mx-auto max-w-2xl font-display text-3xl font-bold tracking-tight md:text-4xl">
         {content.home.heroTitle}
       </h1>
