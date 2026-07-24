@@ -29,7 +29,7 @@ export function HeroSearch() {
       />
       <button
         type="submit"
-        className="h-10 shrink-0 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.97]"
+        className="h-10 shrink-0 rounded-pill bg-primary px-5 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.97]"
       >
         {content.nav.search}
       </button>

@@ -19,6 +19,17 @@
    * Глушим margin-right с большей специфичностью (html body... vs body...);
    * overflow:hidden оставляем — это полезный scroll-lock для модалки. */
   html body[data-scroll-locked] { margin-right: 0 !important; }
+
+  /* Radix-модалки (Sheet/Dialog) вешают на <body> overflow:hidden для scroll-lock.
+   * Но наш скролл-контейнер — <html> (overflow-y: scroll выше), поэтому
+   * overflow:hidden на body делает его контекстом для sticky-хедера, и хедер
+   * прыгает к началу документа при открытии шторки. На мобиле переносим
+   * блокировку на <html> (реальный скроллер, без видимого скроллбара — без
+   * сдвига ширины): фон фиксируется, а sticky-хедер остаётся на месте. */
+  @media (max-width: 767px) {
+    html:has(body[data-scroll-locked]) { overflow: hidden; }
+    html body[data-scroll-locked] { overflow: visible !important; }
+  }
 }
 
 @layer components {
@@ -31,6 +42,20 @@
     box-shadow: var(--glass-shadow);
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
     backdrop-filter: blur(16px) saturate(1.4);
+  }
+
+  /* Плавающая карточка-контент: белая (тёмная) поверхность со скруглением,
+   * тонким бордером и мягкой тенью — «парит» на фоне-холсте. Паддинги задаёт
+   * потребитель (напр. p-4). Переиспользуется для панелей/карточек. */
+  .surface {
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+  }
+  /* В тёмной теме тень почти не читается на почти-чёрном фоне — добавляем
+   * тонкий световой кант, чтобы карточка отделялась от холста. */
+  .dark .surface {
+    border: 1px solid var(--color-border);
   }
 
   /* Фиксированный слой зелёного свечения за всем контентом (см. --ambient).

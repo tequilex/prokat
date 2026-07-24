@@ -62,7 +62,7 @@ export function AccountShell({
       <div className="mt-5 md:grid md:grid-cols-[200px_1fr] md:gap-8">
         {/* Desktop: сайдбар */}
         <aside className="hidden md:block">
-          <nav aria-label="Разделы" className="sticky top-20 flex flex-col gap-1">
+          <nav aria-label="Разделы" className="surface sticky top-20 flex flex-col gap-1 p-2">
             {items.map((it) => (
               <Fragment key={it.href}>
                 {it.separatorBefore && <hr role="separator" className="my-2 border-border" />}

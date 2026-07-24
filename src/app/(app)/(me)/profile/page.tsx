@@ -24,8 +24,8 @@ export default async function ProfilePage() {
   const { user, providers } = profile;
 
   return (
-    <section aria-label="Профиль" className="flex flex-col gap-8">
-      <div>
+    <section aria-label="Профиль" className="flex flex-col gap-5">
+      <div className="surface p-5 sm:p-6">
         <h2 className="mb-3 text-lg font-semibold">Данные</h2>
         <p className="mb-4 text-sm text-muted-foreground">
           @{user.username} · {user.email}
@@ -40,7 +40,7 @@ export default async function ProfilePage() {
         )}
       </div>
 
-      <div>
+      <div className="surface p-5 sm:p-6">
         <h2 className="mb-3 text-lg font-semibold">Способы входа</h2>
         {providers.length === 0 ? (
           <p className="text-sm text-muted-foreground">

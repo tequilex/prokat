@@ -74,7 +74,7 @@ export async function CategoryListing({
       )}
 
       <div className="flex flex-col gap-5 md:flex-row">
-        <aside className="md:w-56 md:shrink-0">
+        <aside className="md:sticky md:top-20 md:h-fit md:w-56 md:shrink-0 md:self-start">
           <ListingFilters
             basePath={basePath}
             state={filterState}
