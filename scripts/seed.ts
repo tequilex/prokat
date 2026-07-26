@@ -3,7 +3,7 @@
 // Запуск: pnpm db:seed (нужен DATABASE_URL в .env, миграции применены).
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import {
   users, cities, categories, listings, availability,
@@ -40,19 +40,90 @@ async function main() {
   });
 
   // --- Категории (дерево 2 уровня) ---
-  const cat = async (name: string, vertical: string, parentId: string | null = null) => {
+  const cat = async (
+    name: string, vertical: string, parentId: string | null = null, slug?: string,
+  ) => {
     const id = newId();
-    await db.insert(categories).values({ id, parentId, name, slug: slugify(name), vertical });
+    await db.insert(categories).values({ id, parentId, name, slug: slug ?? slugify(name), vertical });
     return id;
   };
 
-  const toolsId = await cat("Инструмент", "tools");
-  const powerToolsId = await cat("Электроинструмент", "tools", toolsId);
+  // Инструменты
+  const toolsId = await cat("Инструменты", "tools");
+  const powerToolsId = await cat("Электроинструменты", "tools", toolsId);
+  await cat("Ручной инструмент", "tools", toolsId);
   const gardenId = await cat("Садовая техника", "tools", toolsId);
+  await cat("Строительное оборудование", "tools", toolsId);
+
+  // Одежда
+  const clothesId = await cat("Одежда", "clothing");
+  const eveningId = await cat("Вечерняя одежда", "clothing", clothesId);
+  const weddingId = await cat("Свадебная одежда", "clothing", clothesId);
+  await cat("Костюмы", "clothing", clothesId);
+  await cat("Аксессуары", "clothing", clothesId, "aksessuary-odezhda");
+
+  // Фото и видео
+  const photoId = await cat("Фото и видео", "photo");
+  await cat("Камеры", "photo", photoId);
+  await cat("Объективы", "photo", photoId);
+  await cat("Освещение", "photo", photoId);
+  await cat("Штативы и стабилизаторы", "photo", photoId);
+  await cat("Дроны", "photo", photoId);
+  await cat("Экшн-камеры", "photo", photoId);
+
+  // Транспорт
+  const transportId = await cat("Транспорт", "transport");
+  const bikesId = await cat("Велосипеды", "transport", transportId);
+  const scootersId = await cat("Электросамокаты", "transport", transportId);
+  await cat("Автомобили", "transport", transportId);
+  await cat("Прицепы", "transport", transportId);
+  await cat("Водный транспорт", "transport", transportId);
+
+  // Туризм и отдых
+  const outdoorId = await cat("Туризм и отдых", "outdoor");
+  await cat("Палатки", "outdoor", outdoorId);
+  await cat("Спальники", "outdoor", outdoorId);
+  await cat("Рюкзаки", "outdoor", outdoorId);
+  await cat("Кемпинг-оборудование", "outdoor", outdoorId);
+  await cat("Туристическая посуда", "outdoor", outdoorId);
+
+  // Развлечения
+  const funId = await cat("Развлечения", "entertainment");
+  await cat("Игровые приставки", "entertainment", funId);
+  await cat("VR", "entertainment", funId);
+  await cat("Настольные игры", "entertainment", funId);
+  await cat("Проекторы", "entertainment", funId);
+
+  // Детские товары
+  const kidsId = await cat("Детские товары", "kids");
+  await cat("Коляски", "kids", kidsId);
+  await cat("Автокресла", "kids", kidsId);
+  await cat("Игрушки", "kids", kidsId);
+  await cat("Стульчики для кормления", "kids", kidsId);
+
+  // Дом и мероприятия
+  const homeId = await cat("Дом и мероприятия", "home");
+  await cat("Мебель", "home", homeId);
+  await cat("Декор", "home", homeId);
+  await cat("Шатры и тенты", "home", homeId);
+  await cat("Грили и барбекю", "home", homeId);
+  await cat("Уборочная техника", "home", homeId);
+
+  // Электроника
+  const electronicsId = await cat("Электроника", "electronics");
+  await cat("Ноутбуки", "electronics", electronicsId);
+  await cat("Планшеты", "electronics", electronicsId);
+  await cat("Смартфоны", "electronics", electronicsId);
+  await cat("Мониторы", "electronics", electronicsId);
+  await cat("Аксессуары", "electronics", electronicsId, "aksessuary-elektronika");
+
+  // Спорт
   const sportId = await cat("Спорт", "sport");
-  const bikesId = await cat("Велосипеды", "sport", sportId);
-  const supId = await cat("Сапборды", "sport", sportId);
-  const dressesId = await cat("Платья", "dresses");
+  await cat("Тренажеры", "sport", sportId);
+  await cat("Фитнес-инвентарь", "sport", sportId);
+  await cat("Зимний спорт", "sport", sportId);
+  await cat("Велоспорт", "sport", sportId);
+  const waterSportId = await cat("Водный спорт", "sport", sportId);
 
   // --- Юзеры-владельцы (телефон = контакт продавца) ---
   const ownerDefs = [
@@ -93,14 +164,14 @@ async function main() {
     [2, bikesId, "Горный велосипед Trek Marlin 7", 700, null, "document", 6],
     [2, bikesId, "Городской велосипед Forward", 450, null, "document", 8],
     [2, bikesId, "Детский велосипед 20\"", 300, null, "document", 4],
-    [2, bikesId, "Электросамокат Ninebot Max", 900, 5000, "money", 5],
-    [3, supId, "Сапборд Aztron Mercury 10'10\"", 800, 3000, "money", 10],
-    [3, supId, "Сапборд двухместный 15'", 1400, 5000, "money", 2],
-    [3, supId, "Гидрокостюм 3 мм", 300, null, "document", 8],
-    [4, dressesId, "Вечернее платье Zara, р. 42-44", 1500, 5000, "money", 1],
-    [4, dressesId, "Коктейльное платье, р. 46", 1200, 4000, "money", 1],
-    [4, dressesId, "Свадебное платье А-силуэт", 5000, 15000, "money", 1],
-    [4, dressesId, "Платье для фотосессии со шлейфом", 2000, 6000, "money", 1],
+    [2, scootersId, "Электросамокат Ninebot Max", 900, 5000, "money", 5],
+    [3, waterSportId, "Сапборд Aztron Mercury 10'10\"", 800, 3000, "money", 10],
+    [3, waterSportId, "Сапборд двухместный 15'", 1400, 5000, "money", 2],
+    [3, waterSportId, "Гидрокостюм 3 мм", 300, null, "document", 8],
+    [4, eveningId, "Вечернее платье Zara, р. 42-44", 1500, 5000, "money", 1],
+    [4, eveningId, "Коктейльное платье, р. 46", 1200, 4000, "money", 1],
+    [4, weddingId, "Свадебное платье А-силуэт", 5000, 15000, "money", 1],
+    [4, eveningId, "Платье для фотосессии со шлейфом", 2000, 6000, "money", 1],
   ];
 
   const listingIds: string[] = [];
@@ -156,7 +227,8 @@ async function main() {
   }
 
   await pool.end();
-  console.log(`Seeded: 1 city, 7 categories, ${ownerDefs.length} owners, ${listingDefs.length} listings, ${availRows} availability rows`);
+  const catCount = (await db.select({ c: sql<number>`count(*)::int` }).from(categories))[0].c;
+  console.log(`Seeded: 1 city, ${catCount} categories, ${ownerDefs.length} owners, ${listingDefs.length} listings, ${availRows} availability rows`);
 }
 
 main().catch((err) => {
