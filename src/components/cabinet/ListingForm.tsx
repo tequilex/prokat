@@ -90,7 +90,7 @@ export function ListingForm({
   };
 
   return (
-    <form onSubmit={submit} className="flex max-w-lg flex-col gap-4">
+    <form onSubmit={submit} className="surface flex max-w-lg flex-col gap-4 p-5 sm:p-6">
       <label className="flex flex-col gap-1 text-sm">
         Название
         <input required minLength={3} maxLength={200} value={v.title}

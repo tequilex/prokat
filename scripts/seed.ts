@@ -106,6 +106,8 @@ async function main() {
   const listingIds: string[] = [];
   for (const [oIdx, categoryId, title, priceDay, depositAmount, depositType, quantity] of listingDefs) {
     const id = newId();
+    // Демо-фото: локальные картинки из public/demo/ (циклом), без внешних хостов.
+    const photo = `/demo/${(listingIds.length % 6) + 1}.webp`;
     listingIds.push(id);
     await db.insert(listings).values({
       id,
@@ -120,6 +122,7 @@ async function main() {
       depositAmount,
       depositType,
       quantity,
+      photosJson: [{ url: photo, width: 800, height: 600 }],
       status: "active",
     });
   }
