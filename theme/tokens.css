@@ -43,10 +43,10 @@
 }
 
 .dark {
-  --color-background: #0A0D0B;
+  --color-background: #191919;
   --color-foreground: #F5F5F7;
-  --color-header:     #0A0D0B;
-  --color-card:       #17181A;
+  --color-header:     #191919;
+  --color-card:       #242426;
   --color-card-fg:    #F5F5F7;
   --color-primary:    #30D158;
   --color-primary-fg: #06240F;

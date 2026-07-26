@@ -8,17 +8,18 @@ import { content } from "@theme/content";
 
 describe("Hero", () => {
   it("shows the headline and a working search", () => {
-    render(<Hero citySlug="kazan" chips={[{ slug: "instrument", name: "Инструмент" }]} />);
+    render(<Hero citySlug="kazan" categories={[{ slug: "instrument", name: "Инструмент" }]} />);
     expect(screen.getByText(content.home.heroTitle)).toBeInTheDocument();
     expect(screen.getByRole("search")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Инструмент" })).toHaveAttribute(
+    // Категория рендерится и в быстрых чипах, и в панели — проверяем ссылку.
+    expect(screen.getAllByRole("link", { name: "Инструмент" })[0]).toHaveAttribute(
       "href",
       "/kazan/instrument",
     );
   });
 
-  it("omits chips when no city", () => {
-    render(<Hero chips={[{ slug: "instrument", name: "Инструмент" }]} />);
+  it("omits category links when no city", () => {
+    render(<Hero categories={[{ slug: "instrument", name: "Инструмент" }]} />);
     expect(screen.queryByRole("link", { name: "Инструмент" })).toBeNull();
   });
 });

@@ -19,11 +19,10 @@ export const content = {
     allCities: "Все города",
   },
   home: {
-    heroTitle: "Арендуй что угодно рядом. Или сдавай своё.",
-    heroSubtitle:
-      "Инструмент, техника, авто, снаряжение — на день, неделю или час. Без покупки.",
-    heroSearchPlaceholder: "Дрель, палатка, велосипед…",
-    categoriesHeading: "Категории",
+    heroTitle: "Арендуй, а не покупай",
+    heroSubtitle: "Рядом и в удобное для тебя время",
+    heroSearchPlaceholder: "Что хотите арендовать?",
+    categoriesHeading: "Популярные категории",
     howHeading: "Как это работает",
     howSteps: [
       { title: "Найдите нужное", text: "Ищите вещи рядом с вами по категориям или через поиск." },

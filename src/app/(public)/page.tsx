@@ -32,7 +32,6 @@ export default async function HomePage() {
     ? rollupToRoots(cats, await getListingCountsByCategory(defaultCity.id))
     : null;
 
-  const chips = roots.slice(0, 5).map((c) => ({ slug: c.slug, name: c.name }));
   const tiles = roots.map((c) => ({
     slug: c.slug,
     name: c.name,
@@ -45,7 +44,11 @@ export default async function HomePage() {
 
   return (
     <main>
-      <Hero citySlug={defaultCity?.slug} chips={chips} />
+      <Hero
+        citySlug={defaultCity?.slug}
+        cityName={defaultCity?.name}
+        categories={roots.map((c) => ({ slug: c.slug, name: c.name }))}
+      />
 
       <div className="mx-auto w-full max-w-[1200px] space-y-12 px-4 py-12">
         {defaultCity && (

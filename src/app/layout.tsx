@@ -27,9 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {process.env.NODE_ENV === "production" && process.env.YANDEX_METRIKA_ID && (
           <YandexMetrika counterId={process.env.YANDEX_METRIKA_ID} />
         )}
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {/* Слой зелёного свечения за всем контентом (fixed, под хедером/страницей). */}
-          <div aria-hidden className="bg-ambient" />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {/* Глобальный progress-bar поверх <html>: даёт моментальный visual
            * feedback на любой client-side навигации (Link/router.push), пока
            * RSC грузит новую страницу. Цвет — токен --color-primary. */}
