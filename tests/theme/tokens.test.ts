@@ -17,12 +17,12 @@ describe("theme tokens", () => {
 
   it("uses a green accent in both themes", () => {
     // primary/accent/ring share the green; assert hue by exact configured hex
-    expect(block(":root")).toMatch(/--color-primary:\s*#087A41/i);
-    expect(block(".dark")).toMatch(/--color-primary:\s*#22C77E/i);
+    expect(block(":root")).toMatch(/--color-primary:\s*#34C759/i);
+    expect(block(".dark")).toMatch(/--color-primary:\s*#30D158/i);
   });
 
-  it("drops the pink header (header equals background)", () => {
-    expect(block(":root")).toMatch(/--color-header:\s*#FFFFFF/i);
-    expect(block(".dark")).toMatch(/--color-header:\s*#232324/i);
+  it("keeps header equal to background", () => {
+    expect(block(":root")).toMatch(/--color-header:\s*#EDF0EE/i);
+    expect(block(".dark")).toMatch(/--color-header:\s*#191919/i);
   });
 });

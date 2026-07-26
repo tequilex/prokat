@@ -78,7 +78,7 @@ export function Hero({
 
         {/* Панель популярных категорий — прямо на фоне страницы, без карточки.
          * На десктопе верх опущен под хедер (стоит рядом с фото). */}
-        <aside className="flex flex-col px-6 pb-10 pt-8 sm:px-8 lg:pt-[calc(var(--header-h)+1.5rem)]">
+        <aside className="flex flex-col px-6 pb-2 pt-8 sm:px-8 lg:pb-10 lg:pt-[calc(var(--header-h)+1.5rem)]">
           <h2 className="mb-4 text-xl font-semibold text-foreground">
             {content.home.categoriesHeading}
           </h2>

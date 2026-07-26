@@ -1,35 +1,58 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
-import { listingPhotos, type ListingWithOwner } from "@/server/catalog";
-import { formatDeposit, formatPrice } from "@/lib/catalog/format";
+import { listingPhotos, type Listing, type ListingWithOwner } from "@/server/catalog";
+import { formatPrice } from "@/lib/catalog/format";
 import { listingPath } from "@/lib/catalog/listing-path";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { MiniCalendar } from "@/components/catalog/AvailabilityCalendar";
+import { Avatar } from "@/components/ui/Avatar";
 
+const NEW_DAYS = 14;
+
+function isNew(createdAt: Date): boolean {
+  return Date.now() - new Date(createdAt).getTime() < NEW_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function priceLabel(l: Listing): string | null {
+  if (l.priceDay !== null) return `${formatPrice(l.priceDay)}/сутки`;
+  if (l.priceHour !== null) return `${formatPrice(l.priceHour)}/час`;
+  if (l.priceWeek !== null) return `${formatPrice(l.priceWeek)}/неделя`;
+  return null;
+}
+
+// Единая карточка товара для всего проекта (главная, каталог, поиск, профиль).
+// Скошенные углы + бейдж «Новое» + аватар владельца + зелёная цена. Мини-календарь
+// занятости — опционально: рисуется, только если переданы availabilityMap и from.
 export function ListingCard({
-  item, citySlug, availabilityMap, from,
+  item,
+  citySlug,
+  availabilityMap,
+  from,
 }: {
   item: ListingWithOwner;
   citySlug: string;
-  availabilityMap: AvailabilityMap;
-  from: string;
+  availabilityMap?: AvailabilityMap;
+  from?: string;
 }) {
-  const { listing, ownerName, ownerUsername, categorySlug } = item;
+  const { listing, ownerName, ownerUsername, ownerImage, categorySlug } = item;
   const photo = listingPhotos(listing)[0];
   const href = listingPath(citySlug, categorySlug, listing.slug, listing.id);
-  const sellerLabel = ownerName ?? "Продавец";
+  const price = priceLabel(listing);
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-transform hover:border-primary active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100">
-      <Link href={href as never} className="relative block aspect-[4/3] bg-muted">
+    <article className="flex flex-col">
+      <Link
+        href={href as never}
+        className="group relative block aspect-[4/3] overflow-hidden rounded-tl-[26px] rounded-tr-[8px] rounded-bl-[8px] rounded-br-[26px] bg-muted"
+      >
         {photo ? (
           <Image
             src={photo.url}
             alt={listing.title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <span className="flex h-full items-center justify-center text-muted-foreground">
@@ -37,39 +60,30 @@ export function ListingCard({
             <span className="sr-only">Без фото</span>
           </span>
         )}
+
+        {isNew(listing.createdAt) && (
+          <span className="absolute left-3 top-3 rounded-pill bg-primary px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary-foreground">
+            Новое
+          </span>
+        )}
+
+        <span className="absolute bottom-3 right-3 rounded-full ring-2 ring-white/80">
+          <Avatar src={ownerImage} name={ownerName} username={ownerUsername} size={36} />
+        </span>
       </Link>
 
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <h3 className="line-clamp-2 text-sm font-medium leading-tight">
-          <Link href={href as never} className="hover:underline underline-offset-2">
-            {listing.title}
-          </Link>
+      <Link href={href as never} className="mt-2.5 block">
+        <h3 className="line-clamp-1 text-sm font-medium text-foreground hover:underline">
+          {listing.title}
         </h3>
+      </Link>
+      {price && <p className="text-sm font-semibold text-primary">{price}</p>}
 
-        <p className="text-base font-bold tracking-tight">
-          {listing.priceDay !== null ? (
-            <>{formatPrice(listing.priceDay)}<span className="text-sm font-normal text-muted-foreground">/сутки</span></>
-          ) : listing.priceHour !== null ? (
-            <>{formatPrice(listing.priceHour)}<span className="text-sm font-normal text-muted-foreground">/час</span></>
-          ) : null}
-        </p>
-
-        <p className="text-xs text-muted-foreground">
-          {formatDeposit(listing.depositType, listing.depositAmount)}
-        </p>
-
-        <MiniCalendar quantity={listing.quantity} map={availabilityMap} from={from} />
-
-        <p className="mt-auto pt-1 text-xs text-muted-foreground">
-          {ownerUsername ? (
-            <Link href={`/u/${ownerUsername}` as never} className="hover:text-foreground hover:underline underline-offset-2">
-              {sellerLabel}
-            </Link>
-          ) : (
-            sellerLabel
-          )}
-        </p>
-      </div>
+      {availabilityMap && from && (
+        <div className="mt-2">
+          <MiniCalendar quantity={listing.quantity} map={availabilityMap} from={from} />
+        </div>
+      )}
     </article>
   );
 }

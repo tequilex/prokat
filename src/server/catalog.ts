@@ -77,10 +77,29 @@ export interface ListingWithOwner {
   listing: Listing;
   ownerName: string | null;
   ownerUsername: string | null;
+  ownerImage: string | null;
   categorySlug: string;
 }
 
 export const DEFAULT_PAGE_SIZE = 24;
+
+// Недавно добавленные активные позиции по городу (для секции на главной).
+export async function getRecentListings(cityId: string, limit = 12): Promise<ListingWithOwner[]> {
+  return getDb()
+    .select({
+      listing: listings,
+      ownerName: users.name,
+      ownerUsername: users.username,
+      ownerImage: users.image,
+      categorySlug: categories.slug,
+    })
+    .from(listings)
+    .innerJoin(users, eq(users.id, listings.ownerUserId))
+    .innerJoin(categories, eq(categories.id, listings.categoryId))
+    .where(and(eq(listings.cityId, cityId), eq(listings.status, "active")))
+    .orderBy(desc(listings.createdAt), asc(listings.id))
+    .limit(limit);
+}
 
 // Активные позиции города в наборе категорий, с продавцом для карточки.
 export async function getListingsForCategories(
@@ -108,7 +127,7 @@ export async function getListingsForCategories(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, categorySlug: categories.slug })
+    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, ownerImage: users.image, categorySlug: categories.slug })
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
       .innerJoin(categories, eq(categories.id, listings.categoryId))
@@ -153,7 +172,7 @@ export async function searchListings(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, categorySlug: categories.slug })
+    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, ownerImage: users.image, categorySlug: categories.slug })
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
       .innerJoin(categories, eq(categories.id, listings.categoryId))
@@ -257,6 +276,7 @@ export async function getActiveListingCardsByOwner(userId: string): Promise<Owne
       listing: listings,
       ownerName: users.name,
       ownerUsername: users.username,
+      ownerImage: users.image,
       categorySlug: categories.slug,
       citySlug: cities.slug,
     })
