@@ -3,6 +3,7 @@
 //   иначе seg = корневая категория, sub = подкатегория (список, 404 если пусто).
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { CircleCheck } from "lucide-react";
 import { seo } from "@theme/seo";
 import {
   getAllCategories, getAvailabilityRows, getCategoryById, getCategoryBySlug,
@@ -234,25 +235,60 @@ async function ListingPage({
         siteConfig.url,
       )} />
       <Breadcrumbs items={crumbs} />
+      <h1 className="mt-2 font-display text-xl font-bold sm:text-2xl">{listing.title}</h1>
 
-      <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
+      <div className="mt-3 grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
         <div>
           <Gallery photos={photos} title={listing.title} />
 
-          <h1 className="mt-5 font-display text-2xl font-bold">{listing.title}</h1>
+          <div className="mt-5">
+            <OwnerCard
+              name={sellerName}
+              href={sellerHref}
+              username={seller.username}
+              image={seller.image}
+              isVerified={seller.isVerified}
+              location={listing.location}
+              cityName={city.name}
+              createdAt={seller.createdAt}
+            />
+          </div>
+
           {listing.description && (
-            <p className="mt-3 max-w-2xl text-sm leading-body">{listing.description}</p>
+            <section className="mt-8">
+              <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Описание</h2>
+              <p className="max-w-2xl whitespace-pre-line text-sm leading-body">{listing.description}</p>
+            </section>
           )}
 
+          <section className="mt-8">
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Условия аренды</h2>
+            <ul className="flex max-w-2xl flex-col gap-2.5 text-sm">
+              <li className="flex gap-2.5">
+                <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span>Оплата и залог — напрямую с владельцем. Сервис сводит вас и ведёт заявку, платежей внутри нет.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span>Заявка на бронь ни к чему не обязывает. Даты займутся только после подтверждения владельцем.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span>
+                  {listing.depositType === "none"
+                    ? "Без залога."
+                    : listing.depositType === "document"
+                      ? "Залог — документ, возвращается после аренды."
+                      : listing.depositAmount
+                        ? `Залог ${formatPrice(listing.depositAmount)} — возвращается после возврата вещи в исходном состоянии.`
+                        : "Залог — по договорённости с владельцем."}
+                </span>
+              </li>
+            </ul>
+          </section>
         </div>
 
         <aside className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
-          <OwnerCard
-            name={sellerName}
-            href={sellerHref}
-            isVerified={seller.isVerified}
-            location={listing.location}
-          />
           <BookingWidget
             listingId={listing.id}
             listingTitle={listing.title}
