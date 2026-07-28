@@ -11,7 +11,7 @@ export interface BookingSelection {
   qty: number;
 }
 
-export const BOOKING_HORIZON_DAYS = 90;
+export const BOOKING_HORIZON_DAYS = 180;
 
 function isValidDate(s: string | undefined): s is string {
   if (!s) return false;

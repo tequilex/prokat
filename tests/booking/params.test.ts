@@ -27,10 +27,10 @@ describe("parseBookingParams()", () => {
     expect(sel.to).toBe("2026-07-20");
   });
 
-  it("за горизонтом 90 дней — кламп к горизонту", () => {
-    const sel = parseBookingParams({ from: "2027-01-01", to: "2027-02-01" }, OPTS);
-    expect(sel.from).toBe("2026-10-14"); // today + 90
-    expect(sel.to).toBe("2026-10-14");
+  it("за горизонтом 180 дней — кламп к горизонту", () => {
+    const sel = parseBookingParams({ from: "2027-06-01", to: "2027-07-01" }, OPTS);
+    expect(sel.from).toBe("2027-01-12"); // today + 180
+    expect(sel.to).toBe("2027-01-12");
   });
 
   it("qty ограничен наличием и не меньше 1", () => {

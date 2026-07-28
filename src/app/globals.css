@@ -83,3 +83,81 @@
     background-image: var(--ambient);
   }
 }
+
+/* react-day-picker (календарь брони) — тема под наш тёмный/зелёный. Переменные
+ * библиотека объявляет на .rdp-root, поэтому переопределяем именно на нём. */
+.rdp-theme { color: var(--color-foreground); font-size: 14px; }
+.rdp-theme .rdp-day_button { font-size: 15px; }
+.rdp-theme .rdp-root {
+  --rdp-accent-color: var(--color-primary);
+  --rdp-accent-background-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --rdp-today-color: var(--color-primary);
+  --rdp-selected-border: none;
+  --rdp-range_start-color: var(--color-primary-fg);
+  --rdp-range_end-color: var(--color-primary-fg);
+  --rdp-range_start-date-background-color: var(--color-primary);
+  --rdp-range_end-date-background-color: var(--color-primary);
+  --rdp-range_middle-background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --rdp-range_middle-color: var(--color-foreground);
+  --rdp-disabled-opacity: 0.3;
+  --rdp-outside-opacity: 0.4;
+  --rdp-day-height: 44px;
+  --rdp-day_button-height: 44px;
+  --rdp-day_button-border-radius: 12px;
+  margin: 0;
+}
+/* Календарь на всю ширину виджета: грид тянется, кнопки заполняют ячейки по
+ * ширине (заливка диапазона остаётся сплошной), высота ряда фиксирована. */
+.rdp-theme .rdp-months { max-width: none; width: 100%; }
+.rdp-theme .rdp-month { width: 100%; }
+.rdp-theme .rdp-month_grid { width: 100%; table-layout: fixed; }
+.rdp-theme .rdp-day { width: auto; }
+.rdp-theme .rdp-day_button { width: 100%; }
+/* Шапка: месяц по центру, стрелки по краям (nav на всю ширину, space-between). */
+.rdp-theme .rdp-nav {
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  width: 100%;
+  justify-content: space-between;
+}
+.rdp-theme .rdp-month_caption {
+  justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--color-foreground); text-transform: capitalize;
+}
+.rdp-theme .rdp-weekday { font-weight: 500; color: var(--color-muted-fg); }
+.rdp-theme .rdp-chevron { fill: var(--color-muted-fg); }
+.rdp-theme .rdp-day_button { color: var(--color-foreground); }
+/* Выбранные дни — обычный вес/размер (библиотека делает их bold + large). */
+.rdp-theme .rdp-selected { font-weight: 500; font-size: inherit; }
+/* Заливку всего диапазона рисуем на КНОПКЕ (не на ячейке), поэтому у концов и
+ * середины одинаковая высота и стык ровный. Концы скруглены по внешним углам. */
+.rdp-theme .rdp-range_start,
+.rdp-theme .rdp-range_middle,
+.rdp-theme .rdp-range_end { background: none; }
+.rdp-theme .rdp-range_middle .rdp-day_button {
+  background-color: var(--rdp-range_middle-background-color);
+  color: var(--rdp-range_middle-color);
+  border-radius: 0;
+}
+/* Дни соседнего месяца приглушены (outside-opacity), но если они попали в
+ * выбранный диапазон — заливка должна быть в полную силу. */
+.rdp-theme .rdp-outside.rdp-selected,
+.rdp-theme .rdp-outside.rdp-range_start,
+.rdp-theme .rdp-outside.rdp-range_middle,
+.rdp-theme .rdp-outside.rdp-range_end { opacity: 1; }
+.rdp-theme .rdp-range_start .rdp-day_button { border-radius: 12px 0 0 12px; }
+.rdp-theme .rdp-range_end .rdp-day_button { border-radius: 0 12px 12px 0; }
+.rdp-theme .rdp-range_start.rdp-range_end .rdp-day_button { border-radius: 12px; }
+/* Ховер только по НЕвыбранным дням — чтобы не мутнить зелёную заливку. */
+.rdp-theme .rdp-day:not(.rdp-selected) .rdp-day_button:hover:not([disabled]) {
+  background: var(--color-muted);
+}
+.rdp-theme .rdp-booked .rdp-day_button {
+  text-decoration: line-through;
+  color: color-mix(in srgb, var(--color-danger) 80%, var(--color-muted-fg));
+}
+/* Прошедшие дни — приглушённое зачёркивание (не красное, как «занято»). */
+.rdp-theme .rdp-past .rdp-day_button {
+  text-decoration: line-through;
+  color: var(--color-muted-fg);
+}

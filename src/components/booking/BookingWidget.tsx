@@ -10,10 +10,10 @@
 // кнопка пока ведёт в состояние «скоро».
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { BookingFormDialog } from "@/components/booking/BookingFormDialog";
+import { BookingCalendar } from "@/components/booking/BookingCalendar";
 import {
   buildBookingQuery, rentalDaysCount, type BookingSelection,
 } from "@/lib/booking/params";
@@ -50,45 +50,62 @@ export function BookingWidget(props: BookingWidgetProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
 
-  // to не может быть раньше from: сдвигаем автоматически.
-  const set = (patch: Partial<BookingSelection>) => {
+  const setQty = (qty: number) => setSel((cur) => ({ ...cur, qty }));
+
+  // from === "" → ничего не выбрано; from && to === "" → выбран только «Забрать»
+  // (ждём «Вернуть»); from && to → полный диапазон.
+  const hasComplete = Boolean(sel.from && sel.to);
+
+  // Дефолтная дата ведёт себя как «Забрать»: первый клик расширяет её в диапазон.
+  // Дальше — обычный цикл: клик → новый «Забрать», ещё клик → «Вернуть».
+  const [touched, setTouched] = useState(false);
+  const onDayPick = (day: string) => {
     setSel((cur) => {
-      const next = { ...cur, ...patch };
-      if (next.to < next.from) next.to = next.from;
-      return next;
+      const extend = () => {
+        const [a, b] = day < cur.from ? [day, cur.from] : [cur.from, day];
+        return { ...cur, from: a, to: b };
+      };
+      if (!touched) return extend();
+      // Нет выбора или диапазон завершён → начинаем новый выбор с этой даты.
+      if (!cur.from || cur.to) return { ...cur, from: day, to: "" };
+      // Выбран только «Забрать» → эта дата закрывает диапазон.
+      return extend();
     });
+    if (!touched) setTouched(true);
   };
 
-  const query = buildBookingQuery(sel, props.today);
+  const query = hasComplete ? buildBookingQuery(sel, props.today) : "";
   const callbackUrl = query ? `${props.pathname}?${query}` : props.pathname;
 
   useEffect(() => {
     window.history.replaceState(null, "", callbackUrl);
   }, [callbackUrl]);
 
-  const days = rentalDaysCount(sel);
+  const days = hasComplete ? rentalDaysCount(sel) : 0;
   const estimate = useMemo(() => {
-    if (props.priceDay === null) return null;
+    if (props.priceDay === null || !hasComplete) return null;
     return props.priceDay * days * sel.qty;
-  }, [props.priceDay, days, sel.qty]);
+  }, [props.priceDay, hasComplete, days, sel.qty]);
 
   // Дни выбранного диапазона, где не набирается qty свободных единиц.
-  // Нативный date-input не умеет блокировать отдельные даты, поэтому
-  // конфликт ловим после выбора: сообщение + заблокированная кнопка.
   const conflicts = useMemo(() => {
+    if (!hasComplete) return [];
     const map = new Map(Object.entries(props.availability));
     return unavailableDates(props.quantity, map, sel.from, sel.to, sel.qty);
-  }, [props.availability, props.quantity, sel]);
+  }, [props.availability, props.quantity, sel, hasComplete]);
   const hasConflict = conflicts.length > 0;
+  const bookDisabled = !hasComplete || hasConflict;
 
   const onBook = () => {
-    if (hasConflict) return;
+    if (bookDisabled) return;
     if (props.isAuthed) setFormOpen(true);
     else setLoginOpen(true);
   };
 
   const bookButton = (extra: string) => (
-    <Button className={extra} onClick={onBook} disabled={hasConflict}>Забронировать</Button>
+    <Button className={extra} onClick={onBook} disabled={bookDisabled}>
+      {hasComplete ? "Забронировать" : "Выберите даты"}
+    </Button>
   );
 
   const conflictMessage = hasConflict ? (
@@ -99,90 +116,113 @@ export function BookingWidget(props: BookingWidgetProps) {
     </p>
   ) : null;
 
+  const clearDates = () => {
+    setSel((cur) => ({ ...cur, from: "", to: "" }));
+    setTouched(true);
+  };
+
+  // Цены за периоды + залог — блоками внизу (как у Hygglo). Значения — уже строки.
+  const depositValue =
+    props.depositLabel === "без залога" ? "Нет"
+      : props.depositLabel === "залог: документ" ? "Документ"
+        : props.depositLabel.replace(/^залог\s*/, "");
+  const priceBoxes: { value: string; label: string }[] = [
+    props.priceHour !== null ? { value: formatPrice(props.priceHour), label: "час" } : null,
+    props.priceDay !== null ? { value: formatPrice(props.priceDay), label: "сутки" } : null,
+    props.priceWeek !== null ? { value: formatPrice(props.priceWeek), label: "неделя" } : null,
+    { value: depositValue, label: "залог" },
+  ].filter((b): b is { value: string; label: string } => b !== null);
+
   return (
     <>
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <dl className="flex flex-col gap-2 text-sm">
-          {props.priceDay !== null && (
-            <div className="flex items-baseline justify-between">
-              <dt className="text-muted-foreground">Сутки</dt>
-              <dd className="text-xl font-bold tracking-tight">{formatPrice(props.priceDay)}</dd>
+      <div className="surface p-4 sm:p-5">
+        <BookingCalendar
+          from={sel.from}
+          to={sel.to}
+          onDayPick={onDayPick}
+          today={props.today}
+          maxDate={props.maxDate}
+          availability={props.availability}
+          quantity={props.quantity}
+          qty={sel.qty}
+        />
+
+        {/* Забрать / Вернуть — как pickup/drop off у Hygglo. */}
+        <div className="mt-3 grid grid-cols-2 gap-3 text-center">
+          <div>
+            <div className="text-xs text-muted-foreground">Забрать</div>
+            <div className={`text-xs ${sel.from ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+              {sel.from ? formatDayMonth(sel.from) : "Выберите дату"}
             </div>
-          )}
-          {props.priceWeek !== null && (
-            <div className="flex items-baseline justify-between">
-              <dt className="text-muted-foreground">Неделя</dt>
-              <dd className="font-medium">{formatPrice(props.priceWeek)}</dd>
-            </div>
-          )}
-          {props.priceHour !== null && (
-            <div className="flex items-baseline justify-between">
-              <dt className="text-muted-foreground">Час</dt>
-              <dd className="font-medium">{formatPrice(props.priceHour)}</dd>
-            </div>
-          )}
-          <div className="flex items-baseline justify-between border-t border-border pt-2">
-            <dt className="text-muted-foreground">Залог</dt>
-            <dd>{props.depositLabel}</dd>
           </div>
-        </dl>
-
-        <div className="mt-4 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              С
-              <input
-                type="date" required value={sel.from}
-                min={props.today} max={props.maxDate}
-                onChange={(e) => e.target.value && set({ from: e.target.value })}
-                className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              По (включительно)
-              <input
-                type="date" required value={sel.to}
-                min={sel.from} max={props.maxDate}
-                onChange={(e) => e.target.value && set({ to: e.target.value })}
-                className="h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              />
-            </label>
+          <div>
+            <div className="text-xs text-muted-foreground">Вернуть</div>
+            <div className={`text-xs ${sel.to ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+              {sel.to ? formatDayMonth(sel.to) : "Выберите дату"}
+            </div>
           </div>
-
-          {props.quantity > 1 && (
-            <label className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-              Количество
-              <select
-                value={sel.qty}
-                onChange={(e) => set({ qty: Number(e.target.value) })}
-                className="h-10 w-20 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              >
-                {Array.from({ length: props.quantity }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          {estimate !== null && (
-            <p className="text-sm text-muted-foreground">
-              {days} дн. × {sel.qty} шт. ≈ <span className="font-medium text-foreground">{formatPrice(estimate)}</span>
-            </p>
-          )}
-
-          {conflictMessage}
-
-          {bookButton("mt-1 hidden w-full md:inline-flex")}
         </div>
 
-        <p className="mt-4 text-xs text-muted-foreground">
-          Продавец{" "}
-          <Link href={props.sellerHref as never} className="text-foreground hover:underline underline-offset-2">
-            {props.sellerName}
-          </Link>
-          {props.sellerLocation ? ` · ${props.sellerLocation}` : null}
-        </p>
+        {(sel.from || sel.to) && (
+          <button
+            type="button"
+            onClick={clearDates}
+            className="mx-auto mt-1 block text-xs font-medium text-primary hover:underline"
+          >
+            Очистить даты
+          </button>
+        )}
+
+        {props.quantity > 1 && (
+          <label className="mt-3 flex items-center justify-between gap-2 text-sm text-muted-foreground">
+            Количество
+            <select
+              value={sel.qty}
+              onChange={(e) => setQty(Number(e.target.value))}
+              className="h-10 w-20 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+            >
+              {Array.from({ length: props.quantity }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {/* Итог */}
+        <div className="mt-3 border-t border-foreground/10 pt-3 text-center">
+          {estimate !== null ? (
+            <div className="flex items-baseline justify-center gap-2">
+              <span className="text-xl font-bold tracking-tight">{formatPrice(estimate)}</span>
+              <span className="text-sm text-muted-foreground">
+                за {days} дн.{sel.qty > 1 ? ` · ${sel.qty} шт.` : ""}
+              </span>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">Выберите даты, чтобы увидеть цену.</div>
+          )}
+        </div>
+
+        {conflictMessage && <div className="mt-2">{conflictMessage}</div>}
+
+        {bookButton("mt-3 hidden w-full md:inline-flex")}
       </div>
+
+      {/* Цены за периоды + залог — отдельным блоком под виджетом (не на подложке) */}
+      {priceBoxes.length > 0 && (
+        <div className="mt-2">
+          <div className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Цены за периоды
+          </div>
+          <div className="flex gap-2">
+            {priceBoxes.map((b) => (
+              <div key={b.label} className="flex-1 rounded-xl border border-border bg-card p-3 text-center">
+                <div className="font-semibold">{b.value}</div>
+                <div className="text-xs text-muted-foreground">{b.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mobile: прилипшая к низу кнопка */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">

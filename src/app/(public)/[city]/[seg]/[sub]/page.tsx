@@ -16,7 +16,6 @@ import { addDaysStr, todayStr } from "@/lib/catalog/dates";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { Gallery } from "@/components/catalog/Gallery";
-import { FullCalendar } from "@/components/catalog/AvailabilityCalendar";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
@@ -185,7 +184,14 @@ async function ListingPage({
   );
   const availabilityRecord = Object.fromEntries(map);
 
-  const selection = parseBookingParams(searchParams, { today: from, maxQty: listing.quantity });
+  const parsedSelection = parseBookingParams(searchParams, { today: from, maxQty: listing.quantity });
+  // Стартовый выбор по умолчанию — первый свободный день (бронь доступна сразу,
+  // без действий пользователя; сегодня может быть занято).
+  const horizonDates = Array.from({ length: BOOKING_HORIZON_DAYS + 1 }, (_, i) => addDaysStr(from, i));
+  const firstFree = horizonDates.find((d) => freeQty(listing.quantity, map.get(d)) > 0) ?? from;
+  const selection = searchParams.from
+    ? parsedSelection
+    : { ...parsedSelection, from: firstFree, to: firstFree };
 
   // view_listing — сырьё для статистики. Ошибка записи не должна ронять страницу.
   try {
@@ -238,10 +244,6 @@ async function ListingPage({
             <p className="mt-3 max-w-2xl text-sm leading-body">{listing.description}</p>
           )}
 
-          <section aria-labelledby="calendar-heading" className="mt-8">
-            <h2 id="calendar-heading" className="mb-3 text-lg font-semibold">Занятость на 4 недели</h2>
-            <FullCalendar quantity={listing.quantity} map={map} from={from} />
-          </section>
         </div>
 
         <aside className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
