@@ -3,11 +3,13 @@
 //   иначе seg = корневая категория, sub = подкатегория (список, 404 если пусто).
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import Link from "next/link";
 import { CircleCheck } from "lucide-react";
 import { seo } from "@theme/seo";
 import {
   getAllCategories, getAvailabilityRows, getCategoryById, getCategoryBySlug,
   getCityBySlug, getActiveListingById, getListingCountsByCategory, getSellerById,
+  getActiveListingCardsByOwner, getListingsForCategories,
   listingPhotos,
   type Category, type City, type Listing, type Seller,
 } from "@/server/catalog";
@@ -17,6 +19,7 @@ import { addDaysStr, todayStr } from "@/lib/catalog/dates";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { Gallery } from "@/components/catalog/Gallery";
+import { ListingCard } from "@/components/catalog/ListingCard";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
@@ -219,8 +222,16 @@ async function ListingPage({
   const available = weekDates.some((d) => freeQty(listing.quantity, map.get(d)) > 0);
   const canonicalPath = listingPath(city.slug, category.slug, listing.slug, listing.id);
 
+  // Похожее: другие товары продавца и другие в этой категории (без текущего).
+  const [sellerItemsAll, categoryItemsRes] = await Promise.all([
+    getActiveListingCardsByOwner(seller.id),
+    getListingsForCategories(city.id, [category.id], { pageSize: 13 }),
+  ]);
+  const moreFromSeller = sellerItemsAll.filter((i) => i.listing.id !== listing.id).slice(0, 8);
+  const moreInCategory = categoryItemsRes.items.filter((i) => i.listing.id !== listing.id).slice(0, 8);
+
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-4 py-6 pb-24 md:pb-6">
+    <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
       <JsonLd data={buildProductJsonLd({
         title: listing.title,
         description: listing.description,
@@ -286,6 +297,15 @@ async function ListingPage({
               </li>
             </ul>
           </section>
+
+          {/* Отзывы — заглушка (данных отзывов пока нет). */}
+          <section className="mt-8">
+            <h2 className="mb-3 text-lg font-bold">Отзывы</h2>
+            <div className="surface p-6 text-center text-sm text-muted-foreground">
+              Отзывов пока нет — они появятся после первых аренд.
+            </div>
+          </section>
+
         </div>
 
         <aside className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
@@ -313,6 +333,38 @@ async function ListingPage({
           />
         </aside>
       </div>
+
+      {moreFromSeller.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-4 text-lg font-bold">
+            Ещё у{" "}
+            <Link href={sellerHref as never} className="text-primary hover:underline">{sellerName}</Link>
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {moreFromSeller.map((item) => (
+              <div key={item.listing.id} className="w-[220px] shrink-0 sm:w-[240px]">
+                <ListingCard item={item} citySlug={item.citySlug} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {moreInCategory.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-4 text-lg font-bold">
+            Ещё в категории{" "}
+            <Link href={categoryHref as never} className="text-primary hover:underline">{category.name}</Link>
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {moreInCategory.map((item) => (
+              <div key={item.listing.id} className="w-[220px] shrink-0 sm:w-[240px]">
+                <ListingCard item={item} citySlug={city.slug} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

@@ -204,7 +204,7 @@ export function BookingWidget(props: BookingWidgetProps) {
 
         {conflictMessage && <div className="mt-2">{conflictMessage}</div>}
 
-        {bookButton("mt-3 hidden w-full md:inline-flex")}
+        {bookButton("mt-3 w-full")}
       </div>
 
       {/* Цены за периоды + залог — отдельным блоком под виджетом (не на подложке) */}

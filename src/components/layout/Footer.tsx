@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/components/providers/ThemeToggle";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border mt-16">
+    <footer className="border-t border-border mt-10">
       <div className="container mx-auto px-4 py-8 max-w-[1200px] flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-muted-foreground">
         <div>{content.copyright}</div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
