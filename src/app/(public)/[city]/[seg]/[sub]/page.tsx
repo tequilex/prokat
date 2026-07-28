@@ -3,8 +3,6 @@
 //   иначе seg = корневая категория, sub = подкатегория (список, 404 если пусто).
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import Image from "next/image";
-import { ImageOff } from "lucide-react";
 import { seo } from "@theme/seo";
 import {
   getAllCategories, getAvailabilityRows, getCategoryById, getCategoryBySlug,
@@ -17,6 +15,7 @@ import { formatDeposit, formatPrice } from "@/lib/catalog/format";
 import { addDaysStr, todayStr } from "@/lib/catalog/dates";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
+import { Gallery } from "@/components/catalog/Gallery";
 import { FullCalendar } from "@/components/catalog/AvailabilityCalendar";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -232,27 +231,7 @@ async function ListingPage({
 
       <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
         <div>
-          {photos.length === 0 ? (
-            <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <ImageOff className="h-10 w-10" aria-hidden="true" />
-              <span className="sr-only">Без фото</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {photos.map((p, i) => (
-                <div key={p.url} className={`relative overflow-hidden rounded-2xl bg-muted ${i === 0 ? "col-span-2 aspect-[16/9]" : "aspect-[4/3]"}`}>
-                  <Image
-                    src={p.url}
-                    alt={`${listing.title} — фото ${i + 1}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 60vw"
-                    className="object-cover"
-                    priority={i === 0}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <Gallery photos={photos} title={listing.title} />
 
           <h1 className="mt-5 font-display text-2xl font-bold">{listing.title}</h1>
           {listing.description && (

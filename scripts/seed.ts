@@ -177,8 +177,9 @@ async function main() {
   const listingIds: string[] = [];
   for (const [oIdx, categoryId, title, priceDay, depositAmount, depositType, quantity] of listingDefs) {
     const id = newId();
-    // Демо-фото: локальные картинки из public/demo/ (циклом), без внешних хостов.
-    const photo = `/demo/${(listingIds.length % 6) + 1}.webp`;
+    // Демо-фото: 3 локальные картинки из public/demo/ (циклом), без внешних хостов.
+    const base = listingIds.length % 6;
+    const photos = [0, 1, 2].map((k) => `/demo/${((base + k) % 6) + 1}.webp`);
     listingIds.push(id);
     await db.insert(listings).values({
       id,
@@ -193,7 +194,7 @@ async function main() {
       depositAmount,
       depositType,
       quantity,
-      photosJson: [{ url: photo, width: 800, height: 600 }],
+      photosJson: photos.map((url) => ({ url, width: 800, height: 600 })),
       status: "active",
     });
   }
