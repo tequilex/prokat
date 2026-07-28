@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { seo } from "@theme/seo";
-import { content } from "@theme/content";
 import { auth } from "@/lib/auth";
 import {
   getActiveCities, getAllCategories, getListingCountsByCategory, getRecentListings, rollupToRoots,
@@ -8,7 +7,7 @@ import {
 import { Hero } from "@/components/home/Hero";
 import { RecentItems } from "@/components/home/RecentItems";
 import { CategoryTiles } from "@/components/home/CategoryTiles";
-import { HowItWorks } from "@/components/home/HowItWorks";
+import { WhyChoose } from "@/components/home/WhyChoose";
 import { ListYourItemBand } from "@/components/home/ListYourItemBand";
 
 export const dynamic = "force-dynamic";
@@ -54,17 +53,10 @@ export default async function HomePage() {
 
       {defaultCity && <RecentItems items={recent} citySlug={defaultCity.slug} />}
 
-      <div className="mx-auto w-full max-w-[1200px] space-y-10 px-4 pb-12 pt-6">
-        {defaultCity && (
-          <section>
-            <h2 className="mb-5 text-xl font-semibold text-foreground">
-              {content.home.categoriesHeading}
-            </h2>
-            <CategoryTiles citySlug={defaultCity.slug} categories={tiles} />
-          </section>
-        )}
+      {defaultCity && <CategoryTiles citySlug={defaultCity.slug} categories={tiles} />}
 
-        <HowItWorks />
+      <div className="mx-auto w-full max-w-[1200px] space-y-10 px-4 pb-12 pt-6">
+        <WhyChoose />
 
         <ListYourItemBand href={placeHref} />
       </div>

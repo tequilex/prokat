@@ -17,8 +17,8 @@ describe("CategoryTiles", () => {
     expect(screen.getByRole("link", { name: /Спорт/ })).toHaveAttribute("href", "/kazan/sport");
   });
 
-  it("shows a count when provided", () => {
+  it("has a browse-all link to the city", () => {
     render(<CategoryTiles citySlug="kazan" categories={cats} />);
-    expect(screen.getByText(/3/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Смотреть все/ })).toHaveAttribute("href", "/kazan");
   });
 });
