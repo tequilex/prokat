@@ -5,6 +5,7 @@ import { seo } from "@theme/seo";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import "./globals.css";
 import "@theme/tokens.css";
@@ -34,7 +35,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NextTopLoader color="#34C759" height={3} showSpinner={false} />
           <Header />
           <div className="flex-1">{children}</div>
-          <Footer />
+          {/* Отступ под парящий таб-бар: только на мобайле, где он существует. */}
+          <div className="pb-[72px] md:pb-0">
+            <Footer />
+          </div>
+          <MobileNav />
         </ThemeProvider>
       </body>
     </html>

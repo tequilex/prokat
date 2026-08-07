@@ -13,11 +13,15 @@ export function Logo({
   word = "inrenta",
   showWord = true,
   className,
+  bracketClassName = "border-primary",
 }: {
   size?: number;
   word?: string;
   showWord?: boolean;
   className?: string;
+  /** Цвет скобок. Переопределяется там, где скобки работают иконкой и должны
+   *  гаснуть вместе с остальной навигацией (таб-бар). */
+  bracketClassName?: string;
 }) {
   const stroke = Math.max(1.5, +(size * 0.08).toFixed(2));
   const height = Math.round(size * 0.95);
@@ -28,7 +32,7 @@ export function Logo({
   const bracket = (side: "left" | "right") => (
     <span
       aria-hidden="true"
-      className="block shrink-0 border-primary"
+      className={cn("block shrink-0", bracketClassName)}
       style={{
         width: flare,
         height,

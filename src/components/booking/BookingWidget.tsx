@@ -225,7 +225,10 @@ export function BookingWidget(props: BookingWidgetProps) {
       )}
 
       {/* Mobile: прилипшая к низу кнопка */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
+      <div
+        data-booking-bar
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden"
+      >
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-1">
           <span className="font-mark text-sm font-bold">
             {estimate !== null
