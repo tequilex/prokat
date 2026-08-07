@@ -79,7 +79,7 @@ export function BookingFormDialog({
             <>
               <Dialog.Title className="font-display text-xl">Заявка отправлена</Dialog.Title>
               <Dialog.Description className="mt-2 text-sm text-muted-foreground">
-                Владелец проката получил заявку и обычно созванивается для
+                Владелец получил заявку и обычно созванивается для
                 подтверждения. Если ответа нет 24 часа, заявка истечёт автоматически.
               </Dialog.Description>
               <Button asChild className="mt-5 w-full">
@@ -126,7 +126,7 @@ export function BookingFormDialog({
                   Отправить заявку
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Оплата и залог — напрямую с прокатом, сервис платежи не проводит.
+                  Оплата и залог — напрямую с владельцем, сервис платежи не проводит.
                 </p>
               </form>
             </>

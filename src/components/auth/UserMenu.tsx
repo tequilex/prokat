@@ -38,7 +38,7 @@ export function UserMenu({ username, name, image, isAdmin = false }: Props) {
           <Link href={"/requests" as never}>Мои заявки</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href={"/cabinet" as never}>Кабинет проката</Link>
+          <Link href={"/cabinet" as never}>Кабинет</Link>
         </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem asChild>

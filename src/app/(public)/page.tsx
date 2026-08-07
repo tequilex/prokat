@@ -13,7 +13,9 @@ import { ListYourItemBand } from "@/components/home/ListYourItemBand";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: seo.defaultTitle,
+  // absolute — иначе к заголовку применится шаблон `%s — inrenta` из корневого
+  // layout и имя задвоится.
+  title: { absolute: seo.defaultTitle },
   description: seo.defaultDescription,
 };
 

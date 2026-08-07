@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (body.action === "cancel" && typeof body.requestId === "string") {
     return NextResponse.json(await cancelBookingRequest(body.requestId));
   }
-  // Действия владельца (нужна сессия владельца проката).
+  // Действия владельца (нужна сессия владельца вещи).
   if (typeof body.requestId === "string") {
     if (body.action === "confirm") return NextResponse.json(await confirmRequest(body.requestId, body.comment));
     if (body.action === "decline") return NextResponse.json(await declineRequest(body.requestId, body.comment));

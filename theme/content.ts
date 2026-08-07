@@ -2,11 +2,11 @@ const SITE_CONTACT_EMAIL = "test@mail.ru";
 
 export const content = {
   site: {
-    name: "Прокат",
-    shortName: "Прокат",
+    name: "inrenta",
+    shortName: "inrenta",
     tagline: "Арендуй что угодно рядом — или сдавай своё",
     description:
-      "Сервис-каталог прокатов. Владельцы размещают позиции, клиенты находят их и оставляют заявки на бронь.",
+      "Аренда вещей между людьми. Любой размещает свои вещи и бронирует чужие — сервис сводит людей и ведёт заявки на бронь.",
     contactEmail: SITE_CONTACT_EMAIL,
   },
   nav: {
@@ -72,10 +72,10 @@ export const content = {
   },
   privacy: {
     title: "Политика конфиденциальности",
-    intro: "Этот сайт — каталог прокатов. Ниже описано, какие данные собираем и зачем.",
+    intro: "Этот сайт — сервис аренды вещей между людьми. Ниже описано, какие данные собираем и зачем.",
     section: {
       whoWeAre: "Кто мы",
-      whoWeAreBody: `Независимый проект-каталог прокатов. По вопросам обработки персональных данных пишите на ${SITE_CONTACT_EMAIL}.`,
+      whoWeAreBody: `Независимый проект — сервис аренды вещей между людьми. По вопросам обработки персональных данных пишите на ${SITE_CONTACT_EMAIL}.`,
       whatWeCollect: "Какие данные собираем",
       whatWeCollectBody:
         "Email и публичный профиль (имя, никнейм, аватар) при входе через OAuth-провайдеры (Yandex, VK). Данные, которые вы указываете в заявках на бронь (телефон, комментарий). Технические данные через Яндекс.Метрика — IP, User-Agent, путь, реферер, длительность сессии (без webvisor).",
@@ -89,7 +89,7 @@ export const content = {
     contact: `По вопросам обработки данных пишите: ${SITE_CONTACT_EMAIL}`,
     updatedAt: "Обновлено: 2026-07-15",
   },
-  copyright: `© ${new Date().getFullYear()} Прокат`,
+  copyright: `© ${new Date().getFullYear()} inrenta`,
 } as const;
 
 export type ContentSchema = typeof content;

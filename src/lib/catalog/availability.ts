@@ -3,7 +3,7 @@
 // Свободно в день = quantity - bookedQty - blockedQty.
 //
 // Даты везде — строки "YYYY-MM-DD" (как их отдаёт pg `date`).
-// Диапазон брони [dateFrom, dateTo] включает обе границы: прокат посуточный,
+// Диапазон брони [dateFrom, dateTo] включает обе границы: аренда посуточная,
 // день возврата тоже занят.
 
 export interface DayLoad {

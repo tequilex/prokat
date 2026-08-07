@@ -1,9 +1,9 @@
 export const seo = {
-  siteName: "Прокат",
-  titleTemplate: (pageTitle: string) => `${pageTitle} — Прокат`,
-  defaultTitle: "Прокат — каталог прокатов вещей",
+  siteName: "inrenta",
+  titleTemplate: (pageTitle: string) => `${pageTitle} — inrenta`,
+  defaultTitle: "inrenta — аренда вещей у людей рядом",
   defaultDescription:
-    "Каталог прокатов: инструмент, спорт, платья, фототехника и другое. Найдите прокат в своём городе и оставьте заявку на бронь.",
+    "Аренда вещей между людьми: инструмент, спорт, туризм, платья, фототехника. Найдите вещь в своём городе и оставьте заявку на бронь.",
   themeColor: "#ffffff",
   locale: "ru_RU",
   ogDefault: "/og-default.png",
