@@ -192,7 +192,7 @@ export function BookingWidget(props: BookingWidgetProps) {
         <div className="mt-3 border-t border-foreground/10 pt-3 text-center">
           {estimate !== null ? (
             <div className="flex items-baseline justify-center gap-2">
-              <span className="text-xl font-bold tracking-tight">{formatPrice(estimate)}</span>
+              <span className="font-mark text-xl font-bold tracking-tight">{formatPrice(estimate)}</span>
               <span className="text-sm text-muted-foreground">
                 за {days} дн.{sel.qty > 1 ? ` · ${sel.qty} шт.` : ""}
               </span>
@@ -210,13 +210,13 @@ export function BookingWidget(props: BookingWidgetProps) {
       {/* Цены за периоды + залог — отдельным блоком под виджетом (не на подложке) */}
       {priceBoxes.length > 0 && (
         <div className="mt-2">
-          <div className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="mb-2 text-center font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             Цены за периоды
           </div>
           <div className="flex gap-2">
             {priceBoxes.map((b) => (
               <div key={b.label} className="flex-1 rounded-xl border border-border bg-card p-3 text-center">
-                <div className="font-semibold">{b.value}</div>
+                <div className="font-mark font-bold">{b.value}</div>
                 <div className="text-xs text-muted-foreground">{b.label}</div>
               </div>
             ))}
@@ -227,7 +227,7 @@ export function BookingWidget(props: BookingWidgetProps) {
       {/* Mobile: прилипшая к низу кнопка */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-1">
-          <span className="text-sm font-semibold">
+          <span className="font-mark text-sm font-bold">
             {estimate !== null
               ? `≈ ${formatPrice(estimate)}`
               : props.priceDay !== null ? `${formatPrice(props.priceDay)}/сутки` : ""}

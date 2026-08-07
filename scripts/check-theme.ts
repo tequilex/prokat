@@ -18,6 +18,8 @@ export const REQUIRED_TOKENS = [
   "--radius-pill",
   "--font-display",
   "--font-text",
+  "--font-mark",
+  "--font-mono",
 ] as const;
 
 const COLOR_TOKENS = REQUIRED_TOKENS.filter(t => t.startsWith("--color-"));

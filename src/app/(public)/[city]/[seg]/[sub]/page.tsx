@@ -267,13 +267,13 @@ async function ListingPage({
 
           {listing.description && (
             <section className="mt-8">
-              <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Описание</h2>
+              <h2 className="mb-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Описание</h2>
               <p className="max-w-2xl whitespace-pre-line text-sm leading-body">{listing.description}</p>
             </section>
           )}
 
           <section className="mt-8">
-            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Условия аренды</h2>
+            <h2 className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Условия аренды</h2>
             <ul className="flex max-w-2xl flex-col gap-2.5 text-sm">
               <li className="flex gap-2.5">
                 <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />

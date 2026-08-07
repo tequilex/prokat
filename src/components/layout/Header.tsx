@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { content } from "@theme/content";
+import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/providers/ThemeToggle";
 import { auth } from "@/lib/auth";
@@ -28,11 +29,8 @@ export async function Header() {
           <div className="flex min-w-0 items-center gap-2.5 md:contents">
             {/* Бренд + город — одна пилюля (ужимается на узких экранах) */}
             <div className="glass flex h-12 min-w-0 items-center gap-3 rounded-pill pl-5 pr-3 md:order-1">
-              <Link
-                href="/"
-                className="shrink-0 font-display text-lg font-semibold text-primary"
-              >
-                {content.site.name}
+              <Link href="/" className="shrink-0" aria-label={content.site.name}>
+                <Logo size={20} word={content.site.name} />
               </Link>
               <span className="h-5 w-px shrink-0 bg-border" aria-hidden="true" />
               <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
-import { fontDisplay, fontText } from "@theme/fonts";
+import { fontDisplay, fontText, fontMark, fontMono } from "@theme/fonts";
 import { seo } from "@theme/seo";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Header } from "@/components/layout/Header";
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="ru"
       suppressHydrationWarning
-      className={`${fontDisplay.variable} ${fontText.variable}`}
+      className={`${fontDisplay.variable} ${fontText.variable} ${fontMark.variable} ${fontMono.variable}`}
     >
       <body className="bg-background text-foreground font-sans antialiased min-h-screen flex flex-col">
         {process.env.NODE_ENV === "production" && process.env.YANDEX_METRIKA_ID && (

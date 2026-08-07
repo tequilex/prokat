@@ -20,6 +20,12 @@
 
   --font-display: var(--font-display-var, system-ui), sans-serif;
   --font-text:    var(--font-text-var, system-ui), sans-serif;
+  /* Знак и деньги — отдельным семейством; служебные капсы — моно.
+   * У Space Grotesk нет кириллицы, поэтому вторым в стеке стоит основной
+   * текстовый шрифт: «450 ₽/сутки» наберётся знаком по цифрам и Inter по
+   * слову, а не системным шрифтом вразнобой. */
+  --font-mark:    var(--font-mark-var, system-ui), var(--font-text-var, system-ui), sans-serif;
+  --font-mono:    var(--font-mono-var, ui-monospace), monospace;
 
   /* Glass (парящие пилюли хедера в духе Telegram): полупрозрачный фон + мягкий
    * хайлайт-бордер + тень. Значения несут собственную альфу/тень, поэтому даны

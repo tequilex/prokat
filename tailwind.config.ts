@@ -42,6 +42,10 @@ export default {
       fontFamily: {
         display: "var(--font-display)",
         sans: "var(--font-text)",
+        // Знак и деньги.
+        mark: "var(--font-mark)",
+        // Служебные капсы.
+        mono: "var(--font-mono)",
       },
       fontSize: {
         xs:   "var(--text-xs)",
