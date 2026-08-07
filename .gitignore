@@ -23,6 +23,9 @@ dist/
 # brainstorm
 .superpowers/
 
+# design
+inrenta Design System/
+
 # data
 pg_data/
 caddy_data/
