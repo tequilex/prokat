@@ -30,6 +30,22 @@
     html:has(body[data-scroll-locked]) { overflow: hidden; }
     html body[data-scroll-locked] { overflow: visible !important; }
   }
+
+  /* iOS Safari масштабирует страницу при фокусе в поле с кеглем меньше 16 px и
+   * обратно уже не отъезжает. Шкала брендбука мельче (база 15), поэтому на
+   * сенсорных экранах поднимаем кегль полей до порога. Альтернатива —
+   * maximum-scale=1 в <meta viewport> — запрещает пользователю зум вообще,
+   * это потеря доступности.
+   *
+   * :not() здесь ради специфичности (0,2,1): иначе утилиты Tailwind вроде
+   * text-sm на самих полях перебивают правило. */
+  @media (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
 }
 
 /* Высота плавающего хедера: мобайл — 2 ряда (выше), с md — один ряд. Используется
