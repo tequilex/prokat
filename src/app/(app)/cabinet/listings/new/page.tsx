@@ -16,7 +16,6 @@ export default async function NewListingPage() {
 
   return (
     <main>
-      <h2 className="mb-4 text-lg font-semibold">Новое объявление</h2>
       <ListingForm
         mode="create"
         cities={cities.map((c) => ({ id: c.id, name: c.name }))}

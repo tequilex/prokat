@@ -23,7 +23,6 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
 
   return (
     <main>
-      <h2 className="mb-4 text-lg font-semibold">Редактирование: {listing.title}</h2>
       <ListingForm
         mode="edit"
         listingId={listing.id}

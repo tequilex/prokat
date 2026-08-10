@@ -83,6 +83,20 @@
     background-image: var(--ambient);
   }
 
+  /* Дышащие скобки: пустое состояние зоны фото. Двигается только содержимое —
+   * знак никогда не вращается и не масштабируется. Ход ±5 px, 1400 мс. */
+  .brackets-breathe > span:first-child {
+    animation: brackets-breathe-l 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  .brackets-breathe > span:last-child {
+    animation: brackets-breathe-r 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brackets-breathe > span {
+      animation: none;
+    }
+  }
+
   /* Две прилипшие панели внизу одного экрана не уживаются. На странице позиции
    * главное действие — «Забронировать», поэтому таб-бар уступает ему место.
    * Связь через :has(), чтобы страница не знала о существовании навигации. */
@@ -167,4 +181,13 @@
 .rdp-theme .rdp-past .rdp-day_button {
   text-decoration: line-through;
   color: var(--color-muted-fg);
+}
+
+@keyframes brackets-breathe-l {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-5px); }
+}
+@keyframes brackets-breathe-r {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(5px); }
 }

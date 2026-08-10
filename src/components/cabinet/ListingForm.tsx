@@ -3,15 +3,13 @@
 // Форма позиции (create/edit). Фото грузятся сразу через /api/upload
 // (sharp → webp → S3) и попадают в photos_json при сохранении формы.
 
-import { useRef, useState, useTransition } from "react";
-import Image from "next/image";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormBlock } from "@/components/cabinet/FormBlock";
+import { StepProgress } from "@/components/cabinet/StepProgress";
+import { PhotoDrop, type Photo } from "@/components/cabinet/PhotoDrop";
 import { createListing, updateListing } from "@/server/actions/owner";
-
-interface Photo { url: string; width: number; height: number }
 
 export interface ListingFormValues {
   title: string;
@@ -46,10 +44,22 @@ export function ListingForm({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pending, startTransition] = useTransition();
-  const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const set = (patch: Partial<ListingFormValues>) => setV((cur) => ({ ...cur, ...patch }));
+
+  // Сколько блоков уже собрано — по тому же смыслу, что и их заголовки.
+  // Не валидация: сервер всё равно проверит, здесь только счётчик объёма.
+  const blocksDone = useMemo(
+    () =>
+      [
+        v.title.trim().length >= 3 && v.categoryId !== "",
+        v.photos.length > 0,
+        [v.priceDay, v.priceHour, v.priceWeek].some((p) => Number(p) > 0),
+        v.cityId !== "" && Number(v.quantity) > 0,
+      ].filter(Boolean).length,
+    [v],
+  );
 
   const uploadFiles = async (files: FileList) => {
     setUploadError(null);
@@ -73,7 +83,6 @@ export function ListingForm({
       }
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
@@ -92,6 +101,12 @@ export function ListingForm({
 
   return (
     <form onSubmit={submit} className="flex max-w-xl flex-col gap-3">
+      <StepProgress
+        title={mode === "create" ? "Сдаём вещь" : "Правим объявление"}
+        done={blocksDone}
+        total={4}
+      />
+
       <FormBlock title="Что сдаёте" hint="название видят в поиске">
         <label className="flex flex-col gap-1 text-sm">
           Название
@@ -118,34 +133,14 @@ export function ListingForm({
       </FormBlock>
 
       <FormBlock title="Фото" hint={`первое станет обложкой · до ${MAX_PHOTOS} штук`}>
-        {v.photos.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {v.photos.map((p, i) => (
-              <div key={p.url} className="relative h-20 w-20 overflow-hidden rounded-md bg-muted">
-                <Image src={p.url} alt={`Фото ${i + 1}`} fill sizes="80px" className="object-cover" />
-                <button
-                  type="button" aria-label="Удалить фото"
-                  onClick={() => set({ photos: v.photos.filter((x) => x.url !== p.url) })}
-                  className="absolute right-0.5 top-0.5 rounded-full bg-background/80 p-0.5 hover:bg-background"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        {v.photos.length < MAX_PHOTOS && (
-          <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
-            {uploading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            {uploading ? "Загрузка..." : "Добавить фото"}
-            <input
-              ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-              disabled={uploading}
-              onChange={(e) => e.target.files?.length && uploadFiles(e.target.files)}
-            />
-          </label>
-        )}
-        {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+        <PhotoDrop
+          photos={v.photos}
+          max={MAX_PHOTOS}
+          uploading={uploading}
+          error={uploadError}
+          onFiles={uploadFiles}
+          onRemove={(url) => set({ photos: v.photos.filter((x) => x.url !== url) })}
+        />
       </FormBlock>
 
       <FormBlock title="Цена и залог" hint="залог возвращается арендатору">
