@@ -1,11 +1,169 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Bell, ArrowRight } from "lucide-react";
 import { requireAuthState } from "@/lib/auth/guard";
+import { getCabinetSummary, type CabinetDeal } from "@/server/cabinet";
+import { formatDayMonth, formatTimeLeft } from "@/lib/catalog/dates";
+import { listingPath } from "@/lib/catalog/listing-path";
+import { Stats } from "@/components/cabinet/StatTile";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-// Точка входа кабинета: сразу на «Мои объявления».
+// Кабинет открывается сводкой, а не списком: пять разделов вручную обходить
+// никто не станет, а срок горит только у входящих заявок.
 export default async function CabinetIndex() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
-  redirect("/cabinet/listings");
+
+  const { pending, lending, borrowing, stats } = await getCabinetSummary(session.user.id);
+  const quiet = pending.length === 0 && lending.length === 0 && borrowing.length === 0;
+
+  return (
+    <div className="flex flex-col gap-8">
+      <Stats
+        items={[
+          { value: stats.views7d, label: "просмотров за неделю" },
+          { value: stats.requests30d, label: "заявок за месяц" },
+          { value: stats.activeListings, label: "активных объявлений" },
+          { value: stats.busyDays30d, label: "дней занято впереди", accent: true },
+        ]}
+      />
+
+      {pending.length > 0 && (
+        <Section
+          title="требует действия"
+          note="срок горит только здесь"
+          href="/cabinet/requests"
+          linkLabel="Все входящие"
+        >
+          {pending.map((d) => (
+            <PendingCard key={d.id} deal={d} />
+          ))}
+        </Section>
+      )}
+
+      {lending.length > 0 && (
+        <Section
+          title="мои вещи в аренде"
+          note="делать ничего не нужно"
+          href="/cabinet/requests"
+          linkLabel="Все заявки"
+        >
+          {lending.map((d) => (
+            <DealRow key={d.id} deal={d} peerPrefix="у" />
+          ))}
+        </Section>
+      )}
+
+      {borrowing.length > 0 && (
+        <Section
+          title="я арендую"
+          note="вернуть вовремя"
+          href="/requests"
+          linkLabel="Все мои заявки"
+        >
+          {borrowing.map((d) => (
+            <DealRow key={d.id} deal={d} peerPrefix="от" />
+          ))}
+        </Section>
+      )}
+
+      {quiet && (
+        <div className="surface flex flex-col items-start gap-3 p-6">
+          <p className="font-display text-lg font-bold">Всё разобрано</p>
+          <p className="text-sm text-muted-foreground">
+            Ни одной заявки со сроком. Когда кто-то захочет взять вашу вещь, она появится здесь.
+          </p>
+          <Button asChild>
+            <Link href={"/cabinet/listings/new" as never}>Разместить ещё вещь</Link>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Section({
+  title, note, href, linkLabel, children,
+}: {
+  title: string;
+  note: string;
+  href: string;
+  linkLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 className="font-mono text-2xs uppercase tracking-mono text-muted-foreground">{title}</h2>
+        <span className="text-sm text-muted-foreground">{note}</span>
+        <Link
+          href={href as never}
+          className="ml-auto inline-flex items-center gap-1 text-sm text-accent hover:underline"
+        >
+          {linkLabel}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      </div>
+      <div className="flex flex-col gap-2.5">{children}</div>
+    </section>
+  );
+}
+
+function peerLabel(deal: CabinetDeal): string {
+  return deal.peerName ?? (deal.peerUsername ? `@${deal.peerUsername}` : "человек");
+}
+
+function dates(deal: CabinetDeal): string {
+  return `${formatDayMonth(deal.dateFrom)} — ${formatDayMonth(deal.dateTo)}`;
+}
+
+/* Заявка со сроком. Последствие названо прямо: без него непонятно, почему
+ * это вообще стоит перед человеком. */
+function PendingCard({ deal }: { deal: CabinetDeal }) {
+  const left = formatTimeLeft(deal.expiresAt);
+
+  return (
+    <article className="surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+        <Bell className="h-5 w-5" aria-hidden="true" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="font-medium">
+          {peerLabel(deal)} просит {deal.listingTitle.toLowerCase()}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {dates(deal)}
+          {deal.qty > 1 && ` · ${deal.qty} шт.`}
+          {left && ` · осталось ${left}`}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Не ответите — заявка закроется сама, и человек уйдёт к другому владельцу.
+        </p>
+      </div>
+
+      <Button asChild className="shrink-0">
+        <Link href={"/cabinet/requests" as never}>Ответить</Link>
+      </Button>
+    </article>
+  );
+}
+
+function DealRow({ deal, peerPrefix }: { deal: CabinetDeal; peerPrefix: string }) {
+  return (
+    <article className="surface flex flex-wrap items-center gap-x-4 gap-y-1 p-4">
+      <Link
+        href={listingPath(deal.citySlug, deal.categorySlug, deal.listingSlug, deal.listingId) as never}
+        className="min-w-0 flex-1 font-medium hover:text-accent"
+      >
+        {deal.listingTitle}
+      </Link>
+      <span className="text-sm text-muted-foreground">{dates(deal)}</span>
+      <span className="text-sm text-muted-foreground">
+        {peerPrefix} {peerLabel(deal)}
+      </span>
+    </article>
+  );
 }

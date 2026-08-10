@@ -1,3 +1,4 @@
+import { ruPlural } from "@/lib/plural";
 // Дата-хелперы каталога. Работаем в UTC: занятость считается по календарным
 // дням, а не по часам, поэтому смещение зоны сервера роли не играет —
 // важно лишь единообразие с eachDate() из availability.ts.
@@ -31,4 +32,20 @@ const MONTHS_GEN = [
 export function formatDayMonth(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
   return `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]}`;
+}
+
+/* Сколько осталось до срока, словами: «2 ч 40 мин», «6 ч», «завтра».
+ * Возвращает null, когда срок уже прошёл — вызывающий решает, что показать. */
+export function formatTimeLeft(until: Date, now: Date = new Date()): string | null {
+  const minutes = Math.floor((until.getTime() - now.getTime()) / 60000);
+  if (minutes <= 0) return null;
+  if (minutes < 60) return `${minutes} мин`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    const rest = minutes % 60;
+    return rest ? `${hours} ч ${rest} мин` : `${hours} ч`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days} ${ruPlural(days, "день", "дня", "дней")}`;
 }
