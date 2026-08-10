@@ -101,16 +101,16 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
           <button
             type="button"
             onClick={() => setLightbox(false)}
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
             aria-label="Закрыть"
           >
             <X className="h-6 w-6" />
           </button>
 
-          <div
-            className="relative flex h-[90vh] w-[92vw] items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
+          {/* pointer-events-none: фото занимает почти весь экран, и если оно
+           * ловит клики, до фона не дотянуться — на телефоне лайтбокс
+           * становится невыходным. Тап по снимку закрывает, как и по фону. */}
+          <div className="pointer-events-none relative flex h-[90vh] w-[92vw] items-center justify-center">
             <Image
               key={current.url}
               src={current.url}
@@ -126,7 +126,7 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); go(-1); }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
+                className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
                 aria-label="Предыдущее фото"
               >
                 <ChevronLeft className="h-7 w-7" />
@@ -134,12 +134,12 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); go(1); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20"
+                className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
                 aria-label="Следующее фото"
               >
                 <ChevronRight className="h-7 w-7" />
               </button>
-              <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm text-white">
+              <span className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm text-white">
                 {active + 1} / {count}
               </span>
             </>
