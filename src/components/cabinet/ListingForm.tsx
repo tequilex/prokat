@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormBlock } from "@/components/cabinet/FormBlock";
 import { createListing, updateListing } from "@/server/actions/owner";
 
 interface Photo { url: string; width: number; height: number }
@@ -90,94 +91,33 @@ export function ListingForm({
   };
 
   return (
-    <form onSubmit={submit} className="surface flex max-w-lg flex-col gap-4 p-5 sm:p-6">
-      <label className="flex flex-col gap-1 text-sm">
-        Название
-        <input required minLength={3} maxLength={200} value={v.title}
-          placeholder="Перфоратор Bosch GBH 2-26"
-          onChange={(e) => set({ title: e.target.value })} className={INPUT} />
-      </label>
+    <form onSubmit={submit} className="flex max-w-xl flex-col gap-3">
+      <FormBlock title="Что сдаёте" hint="название видят в поиске">
+        <label className="flex flex-col gap-1 text-sm">
+          Название
+          <input required minLength={3} maxLength={200} value={v.title}
+            placeholder="Перфоратор Bosch GBH 2-26"
+            onChange={(e) => set({ title: e.target.value })} className={INPUT} />
+        </label>
 
-      <label className="flex flex-col gap-1 text-sm">
-        Город
-        <select required value={v.cityId}
-          onChange={(e) => set({ cityId: e.target.value })} className={INPUT}>
-          <option value="" disabled>Выберите город</option>
-          {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm">
-        Категория
-        <select required value={v.categoryId}
-          onChange={(e) => set({ categoryId: e.target.value })} className={INPUT}>
-          <option value="" disabled>Выберите категорию</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm">
-        Район или ориентир выдачи (необязательно)
-        <input maxLength={120} value={v.location}
-          placeholder="м. Кремлёвская"
-          onChange={(e) => set({ location: e.target.value })} className={INPUT} />
-      </label>
-
-      <fieldset className="flex flex-col gap-1 text-sm">
-        <legend className="mb-1">Цены, ₽ (заполните хотя бы одну)</legend>
-        <div className="flex flex-wrap gap-2">
-          <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-            За сутки
-            <input type="number" min={0} value={v.priceDay}
-              onChange={(e) => set({ priceDay: e.target.value })} className={INPUT} />
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-            За час
-            <input type="number" min={0} value={v.priceHour}
-              onChange={(e) => set({ priceHour: e.target.value })} className={INPUT} />
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-            За неделю
-            <input type="number" min={0} value={v.priceWeek}
-              onChange={(e) => set({ priceWeek: e.target.value })} className={INPUT} />
-          </label>
-        </div>
-      </fieldset>
-
-      <div className="flex flex-wrap gap-2">
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          Залог
-          <select value={v.depositType}
-            onChange={(e) => set({ depositType: e.target.value as ListingFormValues["depositType"] })}
-            className={INPUT}>
-            <option value="money">Деньги</option>
-            <option value="document">Документ</option>
-            <option value="none">Без залога</option>
+        <label className="flex flex-col gap-1 text-sm">
+          Категория
+          <select required value={v.categoryId}
+            onChange={(e) => set({ categoryId: e.target.value })} className={INPUT}>
+            <option value="" disabled>Выберите категорию</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
-        {v.depositType === "money" && (
-          <label className="flex flex-1 flex-col gap-1 text-sm">
-            Сумма залога, ₽
-            <input type="number" min={0} value={v.depositAmount}
-              onChange={(e) => set({ depositAmount: e.target.value })} className={INPUT} />
-          </label>
-        )}
-        <label className="flex w-28 flex-col gap-1 text-sm">
-          Количество
-          <input type="number" required min={1} max={1000} value={v.quantity}
-            onChange={(e) => set({ quantity: e.target.value })} className={INPUT} />
+
+        <label className="flex flex-col gap-1 text-sm">
+          Описание
+          <textarea maxLength={3000} rows={4} value={v.description}
+            onChange={(e) => set({ description: e.target.value })}
+            className="rounded-md border border-border bg-background px-3 py-2 text-foreground" />
         </label>
-      </div>
+      </FormBlock>
 
-      <label className="flex flex-col gap-1 text-sm">
-        Описание
-        <textarea maxLength={3000} rows={4} value={v.description}
-          onChange={(e) => set({ description: e.target.value })}
-          className="rounded-md border border-border bg-background px-3 py-2 text-foreground" />
-      </label>
-
-      <div className="flex flex-col gap-2 text-sm">
-        <span>Фото ({v.photos.length}/{MAX_PHOTOS})</span>
+      <FormBlock title="Фото" hint={`первое станет обложкой · до ${MAX_PHOTOS} штук`}>
         {v.photos.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {v.photos.map((p, i) => (
@@ -195,7 +135,7 @@ export function ListingForm({
           </div>
         )}
         {v.photos.length < MAX_PHOTOS && (
-          <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 hover:bg-muted">
+          <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
             {uploading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {uploading ? "Загрузка..." : "Добавить фото"}
             <input
@@ -206,7 +146,75 @@ export function ListingForm({
           </label>
         )}
         {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
-      </div>
+      </FormBlock>
+
+      <FormBlock title="Цена и залог" hint="залог возвращается арендатору">
+        <fieldset className="flex flex-col gap-1 text-sm">
+          <legend className="mb-1">Цены, ₽ (заполните хотя бы одну)</legend>
+          <div className="flex flex-wrap gap-2">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
+              За сутки
+              <input type="number" min={0} value={v.priceDay}
+                onChange={(e) => set({ priceDay: e.target.value })} className={INPUT} />
+            </label>
+            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
+              За час
+              <input type="number" min={0} value={v.priceHour}
+                onChange={(e) => set({ priceHour: e.target.value })} className={INPUT} />
+            </label>
+            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
+              За неделю
+              <input type="number" min={0} value={v.priceWeek}
+                onChange={(e) => set({ priceWeek: e.target.value })} className={INPUT} />
+            </label>
+          </div>
+        </fieldset>
+
+        <div className="flex flex-wrap gap-2">
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Залог
+            <select value={v.depositType}
+              onChange={(e) => set({ depositType: e.target.value as ListingFormValues["depositType"] })}
+              className={INPUT}>
+              <option value="money">Деньги</option>
+              <option value="document">Документ</option>
+              <option value="none">Без залога</option>
+            </select>
+          </label>
+          {v.depositType === "money" && (
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              Сумма залога, ₽
+              <input type="number" min={0} value={v.depositAmount}
+                onChange={(e) => set({ depositAmount: e.target.value })} className={INPUT} />
+            </label>
+          )}
+        </div>
+      </FormBlock>
+
+      <FormBlock title="Где забирают" hint="точный адрес не публикуем">
+        <div className="flex flex-wrap gap-2">
+          <label className="flex flex-1 flex-col gap-1 text-sm">
+            Город
+            <select required value={v.cityId}
+              onChange={(e) => set({ cityId: e.target.value })} className={INPUT}>
+              <option value="" disabled>Выберите город</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          <label className="flex w-28 flex-col gap-1 text-sm">
+            Количество
+            <input type="number" required min={1} max={1000} value={v.quantity}
+              onChange={(e) => set({ quantity: e.target.value })} className={INPUT} />
+          </label>
+        </div>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Район или ориентир выдачи (необязательно)
+          <input maxLength={120} value={v.location}
+            placeholder="м. Кремлёвская"
+            onChange={(e) => set({ location: e.target.value })} className={INPUT} />
+        </label>
+      </FormBlock>
 
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
