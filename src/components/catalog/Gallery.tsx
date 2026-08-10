@@ -76,7 +76,7 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
                 aria-label={`Фото ${i + 1}`}
                 aria-current={i === active}
                 className={`group pointer-events-auto relative h-12 w-12 shrink-0 overflow-hidden rounded-xl ring-2 transition ${
-                  i === active ? "ring-primary" : "ring-white/40 hover:ring-white/80"
+                  i === active ? "ring-accent" : "ring-white/40 hover:ring-white/80"
                 }`}
               >
                 <Image src={p.url} alt="" fill sizes="48px" className="object-cover" />

@@ -50,7 +50,7 @@ export function TabBar({
             <Logo
               size={20}
               showWord={false}
-              bracketClassName={myItems ? "border-primary" : "border-muted-foreground"}
+              bracketClassName={myItems ? "border-accent" : "border-muted-foreground"}
             />
           </span>
           Мои вещи

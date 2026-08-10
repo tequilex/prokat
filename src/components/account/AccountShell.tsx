@@ -18,7 +18,7 @@ function isActive(pathname: string, href: string): boolean {
 function Badge({ n }: { n?: number }) {
   if (!n) return null;
   return (
-    <span className="ml-auto rounded-pill bg-primary px-1.5 py-0.5 text-xs text-primary-foreground">
+    <span className="ml-auto rounded-pill bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">
       {n}
     </span>
   );
@@ -48,7 +48,7 @@ export function AccountShell({
               href={it.href as never}
               className={`flex items-center gap-1 whitespace-nowrap border-b-2 px-3 py-2 text-sm ${
                 isActive(pathname, it.href)
-                  ? "border-primary font-medium text-foreground"
+                  ? "border-accent font-medium text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >

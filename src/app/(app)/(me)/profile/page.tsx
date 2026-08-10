@@ -33,7 +33,7 @@ export default async function ProfilePage() {
         <ProfileForm initialName={user.name ?? ""} initialPhone={user.phone ?? ""} initialBio={user.bio ?? ""} />
         {user.username && (
           <p className="mt-3 text-sm">
-            <a href={`/u/${user.username}`} className="text-primary hover:underline underline-offset-2">
+            <a href={`/u/${user.username}`} className="text-accent hover:underline underline-offset-2">
               Открыть мой публичный профиль →
             </a>
           </p>

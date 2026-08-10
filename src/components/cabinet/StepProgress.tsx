@@ -26,11 +26,11 @@ export function StepProgress({
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
-            className={`h-[3px] flex-1 rounded-sm ${i < done ? "bg-primary" : "bg-border"}`}
+            className={`h-[3px] flex-1 rounded-sm ${i < done ? "bg-accent" : "bg-border"}`}
           />
         ))}
       </div>
-      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+      <span className="font-mono text-2xs uppercase tracking-mono text-muted-foreground">
         {done} из {total}
       </span>
     </div>

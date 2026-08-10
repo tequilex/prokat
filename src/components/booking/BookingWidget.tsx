@@ -210,7 +210,7 @@ export function BookingWidget(props: BookingWidgetProps) {
       {/* Цены за периоды + залог — отдельным блоком под виджетом (не на подложке) */}
       {priceBoxes.length > 0 && (
         <div className="mt-2">
-          <div className="mb-2 text-center font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mb-2 text-center font-mono text-2xs font-medium uppercase tracking-mono text-muted-foreground">
             Цены за периоды
           </div>
           <div className="flex gap-2">

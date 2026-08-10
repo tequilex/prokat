@@ -62,7 +62,7 @@ export function ListingCard({
         )}
 
         {isNew(listing.createdAt) && (
-          <span className="absolute left-3 top-3 rounded-pill bg-primary px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-primary-foreground">
+          <span className="absolute left-3 top-3 rounded-pill bg-accent px-2.5 py-1 font-mono text-2xs font-medium uppercase tracking-mono text-accent-foreground">
             Новое
           </span>
         )}
@@ -77,7 +77,7 @@ export function ListingCard({
           {listing.title}
         </h3>
       </Link>
-      {price && <p className="font-mark text-sm font-bold text-primary">{price}</p>}
+      {price && <p className="font-mark text-sm font-bold">{price}</p>}
 
       {availabilityMap && from && (
         <div className="mt-2">

@@ -7,7 +7,7 @@ import { addDaysStr, dayOfMonth, weekdayShort } from "@/lib/catalog/dates";
 
 function dayTone(free: number, quantity: number): string {
   if (free <= 0) return "bg-destructive/15 text-muted-foreground line-through";
-  if (free < quantity) return "bg-primary/10 text-foreground";
+  if (free < quantity) return "bg-accent/10 text-foreground";
   return "bg-muted text-foreground";
 }
 
@@ -29,7 +29,7 @@ export function MiniCalendar({
           <div
             key={d}
             title={`${d}: свободно ${free} из ${quantity}`}
-            className={`flex h-8 w-8 flex-col items-center justify-center rounded-sm text-[10px] leading-tight ${dayTone(free, quantity)}`}
+            className={`flex h-8 w-8 flex-col items-center justify-center rounded-sm text-micro leading-snug ${dayTone(free, quantity)}`}
           >
             <span className="text-muted-foreground">{weekdayShort(d)}</span>
             <span>{dayOfMonth(d)}</span>
@@ -69,7 +69,7 @@ export function FullCalendar({
       </div>
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-muted" /> свободно</span>
-        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-primary/10" /> частично занято</span>
+        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-accent/10" /> частично занято</span>
         <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-destructive/15" /> занято</span>
       </div>
     </div>

@@ -46,7 +46,7 @@ export function Hero({
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
                   Рядом · {cityName}
-                  <Link href={`/${citySlug}` as never} className="text-primary hover:underline">
+                  <Link href={`/${citySlug}` as never} className="text-accent hover:underline">
                     изменить
                   </Link>
                 </span>

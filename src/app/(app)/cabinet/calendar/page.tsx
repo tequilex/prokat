@@ -47,7 +47,7 @@ export default async function CabinetCalendarPage({
             href={`/cabinet/calendar?listing=${l.id}` as never}
             className={`rounded-pill border px-3 py-1.5 text-sm ${
               l.id === selected.id
-                ? "border-primary bg-primary/10 text-foreground"
+                ? "border-accent bg-accent/10 text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >

@@ -48,7 +48,7 @@ export function PhotoDrop({
           >
             <Image src={p.url} alt={`Фото ${i + 1}`} fill sizes="132px" className="object-cover" />
             {i === 0 && (
-              <span className="absolute left-2 top-2 rounded-pill bg-primary px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-primary-foreground">
+              <span className="absolute left-2 top-2 rounded-pill bg-accent px-2 py-0.5 font-mono text-micro font-medium uppercase tracking-mono text-accent-foreground">
                 Обложка
               </span>
             )}
@@ -76,8 +76,8 @@ export function PhotoDrop({
               if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files);
             }}
             className={cn(
-              "flex h-[100px] min-w-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-[1.5px] border-dashed border-primary px-3 text-center transition-colors",
-              dragging ? "bg-primary/15" : "bg-primary/5",
+              "flex h-[100px] min-w-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-[1.5px] border-dashed border-accent px-3 text-center transition-colors",
+              dragging ? "bg-accent/15" : "bg-accent/5",
             )}
           >
             <Logo size={26} showWord={false} className="brackets-breathe" />

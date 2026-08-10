@@ -4,13 +4,17 @@
   --color-header:     #EDF0EE;
   --color-card:       #FFFFFF;
   --color-card-fg:    #17171C;
+  /* Закон цвета: зелёный = действие (можно нажать), охра = предмет и его
+   * состояние, серый = служебное, красный = отмена и спор. Если элемент нельзя
+   * нажать — он не зелёный. */
   --color-primary:    #34C759;
   --color-primary-fg: #06240F;
-  --color-accent:     #34C759;
+  --color-accent:     #C97A18;  /* охра для светлого фона */
+  --color-accent-fg:  #16150F;
   --color-muted:      #EAEBEE;
   --color-muted-fg:   #6E6E73;
   --color-border:     #E1E3E6;
-  --color-ring:       #34C759;
+  --color-ring:       #C97A18;  /* фокус — «предмет в работе» */
   --color-danger:     #EF4444;
 
   --radius-sm: 6px;
@@ -56,11 +60,12 @@
   --color-card-fg:    #F5F5F7;
   --color-primary:    #30D158;
   --color-primary-fg: #06240F;
-  --color-accent:     #30D158;
+  --color-accent:     #E0902A;  /* охра для тёмного фона */
+  --color-accent-fg:  #16150F;
   --color-muted:      #202224;
   --color-muted-fg:   #B4B4BC;
   --color-border:     #24262A;
-  --color-ring:       #30D158;
+  --color-ring:       #E0902A;
   --color-danger:     #DD4242;
 
   --glass-bg:     rgba(22, 24, 23, 0.55);

@@ -7,6 +7,7 @@ export const REQUIRED_TOKENS = [
   "--color-primary",
   "--color-primary-fg",
   "--color-accent",
+  "--color-accent-fg",
   "--color-muted",
   "--color-muted-fg",
   "--color-border",

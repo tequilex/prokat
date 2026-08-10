@@ -173,9 +173,13 @@
 .rdp-theme .rdp-day:not(.rdp-selected) .rdp-day_button:hover:not([disabled]) {
   background: var(--color-muted);
 }
+/* «В аренде» — состояние предмета, значит охра. Красный по закону цвета
+ * означает отмену и спор, занятость к ним не относится. */
 .rdp-theme .rdp-booked .rdp-day_button {
-  text-decoration: line-through;
-  color: color-mix(in srgb, var(--color-danger) 80%, var(--color-muted-fg));
+  text-decoration: none;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  border-radius: var(--radius-sm);
 }
 /* Прошедшие дни — приглушённое зачёркивание (не красное, как «занято»). */
 .rdp-theme .rdp-past .rdp-day_button {

@@ -15,7 +15,7 @@ export function WhyChoose() {
           const Icon = ICONS[i] ?? Leaf;
           return (
             <div key={item.title} className="flex flex-col items-center text-center">
-              <span className="flex h-24 w-24 items-center justify-center rounded-full bg-primary text-white shadow-[0_10px_30px_-8px] shadow-primary/40">
+              <span className="flex h-24 w-24 items-center justify-center rounded-full bg-accent text-white shadow-[0_10px_30px_-8px] shadow-accent/40">
                 <Icon className="h-10 w-10" aria-hidden="true" strokeWidth={1.75} />
               </span>
               <h3 className="mt-5 text-xl font-bold text-foreground">{item.title}</h3>

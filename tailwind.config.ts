@@ -20,7 +20,10 @@ export default {
           DEFAULT:    c("--color-primary"),
           foreground: c("--color-primary-fg"),
         },
-        accent: c("--color-accent"),
+        accent: {
+          DEFAULT:    c("--color-accent"),
+          foreground: c("--color-accent-fg"),
+        },
         card: {
           DEFAULT:    c("--color-card"),
           foreground: c("--color-card-fg"),
@@ -48,6 +51,8 @@ export default {
         mono: "var(--font-mono)",
       },
       fontSize: {
+        micro: "var(--text-micro)",
+        "2xs": "var(--text-2xs)",
         xs:   "var(--text-xs)",
         sm:   "var(--text-sm)",
         base: "var(--text-base)",
@@ -58,7 +63,13 @@ export default {
       },
       lineHeight: {
         tight: "var(--leading-tight)",
+        snug:  "var(--leading-snug)",
         body:  "var(--leading-body)",
+      },
+      letterSpacing: {
+        display: "var(--tracking-display)",
+        mark:    "var(--tracking-mark)",
+        mono:    "var(--tracking-mono)",
       },
     },
   },

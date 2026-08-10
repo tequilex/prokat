@@ -30,7 +30,7 @@ export default async function CabinetRequestsPage() {
               ? formatDayMonth(request.dateFrom)
               : `${formatDayMonth(request.dateFrom)} — ${formatDayMonth(request.dateTo)}`;
             return (
-              <li key={request.id} className={`rounded-lg border bg-card p-4 ${status === "new" ? "border-primary" : "border-border"}`}>
+              <li key={request.id} className={`rounded-lg border bg-card p-4 ${status === "new" ? "border-accent" : "border-border"}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">{listingTitle}</p>

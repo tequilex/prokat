@@ -89,7 +89,7 @@ export function ListingFilters({
           href={`${categoryBasePath}/${s.slug}` as never}
           className={`rounded-pill border px-3 py-1.5 text-sm transition-colors ${
             s.slug === activeSubSlug
-              ? "border-primary bg-primary/10 text-foreground"
+              ? "border-accent bg-accent/10 text-foreground"
               : "border-border text-muted-foreground hover:text-foreground"
           }`}
         >
