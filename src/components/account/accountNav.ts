@@ -1,22 +1,50 @@
-// Единый источник навигации кабинета. Личные табы («я арендую») и owner-табы
-// («я сдаю», за разделителем) доступны любому залогиненному юзеру — отдельной
-// роли/сущности «владелец» нет.
+// Единый источник навигации кабинета. Разделы сгруппированы по роли, в которой
+// человек сейчас находится: «я арендую» и «мои вещи». Отдельной сущности
+// «владелец» нет — обе группы доступны любому залогиненному юзеру.
+
+// Иконка передаётся ключом, а не компонентом: навигацию собирает серверный
+// layout, а функции через границу RSC не сериализуются. Словарь ключ → иконка
+// живёт в AccountShell, на клиенте.
+export type AccountNavIcon = "summary" | "requests" | "inbox" | "listings" | "calendar" | "profile";
 
 export interface AccountNavItem {
   href: string;
   label: string;
   badge?: number;
-  separatorBefore?: boolean;
+  icon?: AccountNavIcon;
+  /** Совпадение только точное. Нужно там, где адрес — префикс соседних
+   *  разделов: /cabinet иначе подсвечивался бы на всех страницах кабинета. */
+  exact?: boolean;
+}
+
+export interface AccountNavGroup {
+  title: string;
+  items: AccountNavItem[];
 }
 
 export function buildAccountNav(
   { newRequestsCount }: { newRequestsCount: number },
-): AccountNavItem[] {
+): AccountNavGroup[] {
   return [
-    { href: "/requests", label: "Мои заявки" },
-    { href: "/profile", label: "Профиль" },
-    { href: "/cabinet/requests", label: "Заявки на мои вещи", badge: newRequestsCount, separatorBefore: true },
-    { href: "/cabinet/listings", label: "Мои объявления" },
-    { href: "/cabinet/calendar", label: "Календарь" },
+    {
+      title: "сейчас",
+      items: [{ href: "/cabinet", label: "Сводка", icon: "summary", exact: true }],
+    },
+    {
+      title: "мои вещи",
+      items: [
+        { href: "/cabinet/requests", label: "Заявки на мои вещи", badge: newRequestsCount, icon: "inbox" },
+        { href: "/cabinet/listings", label: "Мои объявления", icon: "listings" },
+        { href: "/cabinet/calendar", label: "Календарь занятости", icon: "calendar" },
+      ],
+    },
+    {
+      title: "я арендую",
+      items: [{ href: "/requests", label: "Мои заявки", icon: "requests" }],
+    },
+    {
+      title: "аккаунт",
+      items: [{ href: "/profile", label: "Профиль", icon: "profile" }],
+    },
   ];
 }

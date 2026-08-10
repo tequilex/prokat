@@ -5,6 +5,7 @@
 import { requireAuthState } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
 import { countNewRequests } from "@/server/owner";
+import { getCabinetIdentity } from "@/server/me";
 import { AccountShell } from "@/components/account/AccountShell";
 import { buildAccountNav } from "@/components/account/accountNav";
 
@@ -12,10 +13,16 @@ export default async function CabinetLayout({ children }: { children: React.Reac
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
 
-  const newCount = await countNewRequests(session.user.id);
+  const [newCount, identity] = await Promise.all([
+    countNewRequests(session.user.id),
+    getCabinetIdentity(session.user.id),
+  ]);
 
   return (
-    <AccountShell title="Кабинет" items={buildAccountNav({ newRequestsCount: newCount })}>
+    <AccountShell
+      groups={buildAccountNav({ newRequestsCount: newCount })}
+      identity={identity}
+    >
       {children}
     </AccountShell>
   );

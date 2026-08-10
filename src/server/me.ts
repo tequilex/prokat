@@ -1,8 +1,8 @@
 // Read-слой личного кабинета покупателя.
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { accounts, users } from "@db/schema";
+import { accounts, bookingRequests, listings, users } from "@db/schema";
 
 export async function getUserProfile(userId: string) {
   const db = getDb();
@@ -13,4 +13,56 @@ export async function getUserProfile(userId: string) {
   const user = userRows[0];
   if (!user) return null;
   return { user, providers: accountRows.map((a) => a.provider) };
+}
+
+export interface CabinetIdentity {
+  name: string | null;
+  username: string | null;
+  image: string | null;
+  isVerified: boolean;
+  activeListings: number;
+  deals: number;
+}
+
+/* Шапка кабинета: кто я и как у меня идут дела. Рейтинга и отзывов в модели
+ * нет, поэтому считаем то, что есть на самом деле — сколько вещей выставлено
+ * и сколько аренд доведено до конца, по обе стороны сделки. */
+export async function getCabinetIdentity(userId: string): Promise<CabinetIdentity | null> {
+  const db = getDb();
+  const [userRows, listingRows, dealRows] = await Promise.all([
+    db
+      .select({
+        name: users.name,
+        username: users.username,
+        image: users.image,
+        isVerified: users.isVerified,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+    db
+      .select({ cnt: sql<number>`count(*)::int` })
+      .from(listings)
+      .where(and(eq(listings.ownerUserId, userId), eq(listings.status, "active"))),
+    db
+      .select({ cnt: sql<number>`count(*)::int` })
+      .from(bookingRequests)
+      .where(and(
+        or(
+          eq(bookingRequests.ownerUserId, userId),
+          eq(bookingRequests.customerUserId, userId),
+        ),
+        // Аренда состоялась: вещь вернули или не вернули, но событие было.
+        inArray(bookingRequests.status, ["completed", "no_show"]),
+      )),
+  ]);
+
+  const user = userRows[0];
+  if (!user) return null;
+
+  return {
+    ...user,
+    activeListings: listingRows[0]?.cnt ?? 0,
+    deals: dealRows[0]?.cnt ?? 0,
+  };
 }
