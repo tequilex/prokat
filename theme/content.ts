@@ -57,11 +57,36 @@ export const content = {
     backToHome: "На главную",
   },
   footer: {
-    about: "О проекте",
-    rules: "Правила",
-    contacts: "Контакты",
+    about: "Аренда вещей у людей рядом. Берите у соседей вместо того, чтобы покупать.",
     disclaimer: "Используем cookies и Яндекс.Метрика для аналитики.",
     privacyLink: "Политика",
+    themeLabel: "Тема",
+    // Только существующие разделы: страниц «О проекте», «Правила» и «Контакты»
+    // в проекте нет, и ссылки на них вели в 404.
+    columns: [
+      {
+        title: "аренда",
+        links: [
+          { label: "Найти вещь", href: "/search" },
+          { label: "Как это работает", href: "/#how" },
+        ],
+      },
+      {
+        title: "владельцам",
+        links: [
+          { label: "Разместить вещь", href: "/cabinet/listings/new" },
+          { label: "Мои вещи", href: "/cabinet/listings" },
+          { label: "Входящие заявки", href: "/cabinet/requests" },
+        ],
+      },
+      {
+        title: "поддержка",
+        links: [
+          { label: "Политика", href: "/privacy" },
+          { label: "Написать нам", href: `mailto:${SITE_CONTACT_EMAIL}` },
+        ],
+      },
+    ] as { title: string; links: { label: string; href: string }[] }[],
   },
   banned: {
     heading: "Ваша учётная запись заблокирована",
