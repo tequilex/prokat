@@ -29,7 +29,10 @@ export async function Header() {
           <div className="flex min-w-0 items-center gap-2.5 md:contents">
             {/* Бренд + город — одна пилюля (ужимается на узких экранах) */}
             <div className="glass flex h-12 min-w-0 items-center gap-3 rounded-pill pl-5 pr-3 md:order-1">
-              <Link href="/" className="shrink-0" aria-label={content.site.name}>
+              {/* flex, а не просто shrink-0: знак — inline-flex, и внутри
+               * строки он садится на baseline с пустотой под ним, из-за чего
+               * пилюля центрирует ссылку вместе с этим «хвостом». */}
+              <Link href="/" className="flex shrink-0 items-center" aria-label={content.site.name}>
                 <Logo size={20} word={content.site.name} />
               </Link>
               <span className="h-5 w-px shrink-0 bg-border" aria-hidden="true" />
