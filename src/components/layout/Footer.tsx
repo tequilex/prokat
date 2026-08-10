@@ -11,7 +11,9 @@ export function Footer() {
          * краям. На мобайле два столбца, знак над ними во всю ширину. */}
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-[1.5fr_repeat(3,1fr)] lg:gap-x-8">
           <div className="col-span-2 flex flex-col items-start gap-3 lg:col-span-1">
-            <Logo size={22} />
+            <Link href="/" className="flex items-center" aria-label={content.site.name}>
+              <Logo size={22} />
+            </Link>
             <p className="max-w-64 text-xs leading-relaxed text-muted-foreground">
               {content.footer.about}
             </p>

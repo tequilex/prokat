@@ -31,7 +31,11 @@ export function Logo({
   const bracket = (side: "left" | "right") => (
     <span
       aria-hidden="true"
-      className={cn("block shrink-0", bracketClassName)}
+      className={cn(
+        "block shrink-0 transition-transform duration-200 ease-out",
+        side === "left" ? "logo-brk-l" : "logo-brk-r",
+        bracketClassName,
+      )}
       style={{
         width: flare,
         height,
@@ -44,7 +48,8 @@ export function Logo({
   return (
     <span
       className={cn("inline-flex items-center leading-none", className)}
-      style={{ gap }}
+      // Ход скобок под курсором — от кегля: знак 20 px разводит на 2 px.
+      style={{ gap, ["--logo-shift" as string]: `${Math.max(1.5, size * 0.1).toFixed(1)}px` }}
       aria-label={word}
     >
       {bracket("left")}

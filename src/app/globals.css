@@ -141,6 +141,19 @@
   .brackets-react > span:last-child {
     animation: brackets-react-r 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
+  /* Знак под курсором чуть раскрывается — скобки подаются в стороны, слово
+   * стоит на месте. Правило висит на ссылке, а не на самом знаке: шевелится
+   * только там, где по знаку можно кликнуть (шапка, подвал), и не трогает
+   * заголовок формы или таб-бар. Тач-устройства исключены — там ховер залипает. */
+  @media (hover: hover) {
+    a:hover .logo-brk-l {
+      transform: translateX(calc(-1 * var(--logo-shift)));
+    }
+    a:hover .logo-brk-r {
+      transform: translateX(var(--logo-shift));
+    }
+  }
+
   /* «Выдача вещи»: слово покидает скобки вправо и гаснет, следующее влетает
    * слева. Ход берётся из --fly, он привязан к кеглю. */
   .handoff-out {
@@ -159,6 +172,10 @@
     .handoff-out,
     .handoff-in {
       animation-duration: 1ms;
+    }
+    .logo-brk-l,
+    .logo-brk-r {
+      transition: none;
     }
   }
 
