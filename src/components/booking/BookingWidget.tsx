@@ -225,17 +225,27 @@ export function BookingWidget(props: BookingWidgetProps) {
       )}
 
       {/* Mobile: прилипшая к низу кнопка */}
+      {/* Верхний ярус той же карточки, что и таб-бар: полоса садится вплотную на
+       * него и скругляется только сверху — снизу их стык держит волосяная
+       * линия. Навигация на карточке товара остаётся доступной. */}
       <div
         data-booking-bar
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-40 px-4 md:hidden"
       >
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-1">
-          <span className="font-mark text-sm font-bold">
-            {estimate !== null
-              ? `≈ ${formatPrice(estimate)}`
-              : props.priceDay !== null ? `${formatPrice(props.priceDay)}/сутки` : ""}
+        <div className="glass mx-auto flex max-w-[420px] items-center justify-between gap-3 rounded-t-[22px] border-b-0 px-4 py-2.5">
+          <span className="min-w-0">
+            <span className="block font-mark text-base font-bold">
+              {estimate !== null
+                ? `≈ ${formatPrice(estimate)}`
+                : props.priceDay !== null ? `${formatPrice(props.priceDay)}/сутки` : ""}
+            </span>
+            {hasComplete && (
+              <span className="block text-2xs text-muted-foreground">
+                {formatDayMonth(sel.from)} — {formatDayMonth(sel.to)}
+              </span>
+            )}
           </span>
-          {bookButton("")}
+          {bookButton("shrink-0")}
         </div>
       </div>
 

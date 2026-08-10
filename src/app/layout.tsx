@@ -35,8 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NextTopLoader color="#34C759" height={3} showSpinner={false} />
           <Header />
           <div className="flex-1">{children}</div>
-          {/* Отступ под парящий таб-бар: только на мобайле, где он существует. */}
-          <div className="pb-[72px] md:pb-0">
+          {/* Отступ под парящий таб-бар: на десктопе --tabbar-h равна нулю. */}
+          <div className="pb-[var(--tabbar-h)]">
             <Footer />
           </div>
           <MobileNav />

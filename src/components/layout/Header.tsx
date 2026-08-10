@@ -22,25 +22,29 @@ export async function Header() {
     // прокручивающимся контентом (backdrop-blur внутри .glass).
     <header className="sticky top-0 z-40 w-full">
       <div className="mx-auto max-w-[1200px] px-4 py-3">
-        {/* Мобайл: две строки (бренд+действия / поиск). Десктоп: один ряд —
-         * обёртка строки-1 схлопывается через md:contents, и её дети встают в
-         * общий flex-row по md:order. */}
-        <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:gap-3">
+        {/* Мобайл: один ряд — бренд с городом и поиск. «Разместить», профиль и
+         * тема оттуда убраны: их место внизу, в таб-баре. Десктоп: тот же ряд,
+         * плюс действия справа, порядок задаётся через md:order. */}
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="flex min-w-0 items-center gap-2.5 md:contents">
-            {/* Бренд + город — одна пилюля (ужимается на узких экранах) */}
-            <div className="glass flex h-12 min-w-0 items-center gap-3 rounded-pill pl-5 pr-3 md:order-1">
+            {/* На мобайле в пилюле только знак: город переехал в ленту фильтров
+             * первым чипом, и поиск получает всю освободившуюся ширину. */}
+            <div className="glass flex h-12 shrink-0 items-center gap-2 rounded-pill px-4 md:min-w-0 md:gap-3 md:pl-5 md:pr-3 md:order-1">
               {/* flex, а не просто shrink-0: знак — inline-flex, и внутри
                * строки он садится на baseline с пустотой под ним, из-за чего
                * пилюля центрирует ссылку вместе с этим «хвостом». */}
               <Link href="/" className="flex shrink-0 items-center" aria-label={content.site.name}>
                 <Logo size={20} word={content.site.name} />
               </Link>
-              <span className="h-5 w-px shrink-0 bg-border" aria-hidden="true" />
-              <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />
+              <span className="hidden h-5 w-px shrink-0 bg-border md:block" aria-hidden="true" />
+              <div className="hidden md:block">
+                <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />
+              </div>
             </div>
 
-            {/* Разместить + действия — единый блок, всегда в одной строке справа */}
-            <div className="ml-auto flex shrink-0 items-center gap-2.5 md:order-3 md:ml-0 md:contents">
+            {/* Разместить + действия: на мобайле их роль берёт таб-бар — «Сдать»,
+             * «Профиль», а переключатель темы живёт в подвале. */}
+            <div className="hidden md:order-3 md:contents">
               <Button
                 asChild
                 className="h-12 shrink-0 rounded-pill px-5 shadow-[var(--glass-shadow)] md:order-3"
@@ -75,8 +79,8 @@ export async function Header() {
             </div>
           </div>
 
-          {/* Поиск: десктоп — в середине (flex-1); мобайл — отдельной строкой. */}
-          <HeaderSearch className="w-full md:order-2 md:w-auto md:flex-1" />
+          {/* Поиск занимает всё оставшееся место в ряду. */}
+          <HeaderSearch className="min-w-0 flex-1 md:order-2" />
         </div>
       </div>
     </header>
