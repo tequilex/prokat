@@ -1,12 +1,12 @@
 "use client";
 import { useTransition } from "react";
-import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Brackets } from "@/components/brand/Brackets";
 import { Avatar } from "@/components/ui/Avatar";
 import { content } from "@theme/content";
 
@@ -55,7 +55,7 @@ export function UserMenu({ username, name, image, isAdmin = false }: Props) {
             startSignOut(() => { signOut({ callbackUrl: "/" }); });
           }}
         >
-          {isSigningOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+          {isSigningOut && <Brackets size={14} running className="mr-2 text-current" />}
           {content.auth.signOut}
         </DropdownMenuItem>
       </DropdownMenuContent>

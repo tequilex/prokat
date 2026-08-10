@@ -53,11 +53,10 @@
   }
 }
 
-/* Высота плавающего хедера: мобайл — 2 ряда (выше), с md — один ряд. Используется
- * геро-блоком главной, чтобы уйти фоном под хедер до верха экрана. */
 :root {
   /* Высота плавающего хедера — один ряд на всех ширинах: на мобайле «Разместить»
-   * и профиль ушли в таб-бар, поэтому второй ряд больше не нужен. */
+   * и профиль ушли в таб-бар, поэтому второй ряд больше не нужен. Ею живёт
+   * геро-блок главной, уходящий фоном под хедер до верха экрана. */
   --header-h: 72px;
 
   /* Высота мобильного таб-бара вместе с отступом от нижней кромки. Ею живут
@@ -123,17 +122,43 @@
     border-top-right-radius: 0;
   }
 
-  /* Дышащие скобки: пустое состояние зоны фото. Двигается только содержимое —
-   * знак никогда не вращается и не масштабируется. Ход ±5 px, 1400 мс. */
-  .brackets-breathe > span:first-child {
-    animation: brackets-breathe-l 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  /* Ожидание вместо спиннера: между скобками ходит блик, и та скобка, к которой
+   * он подбежал, подаётся в сторону — двигается содержимое, скобки только
+   * реагируют. Размеры и ход приходят из компонента переменными. */
+  .brackets-run::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: var(--dot);
+    border-radius: inherit;
+    background: currentColor;
+    animation: brackets-run 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
-  .brackets-breathe > span:last-child {
-    animation: brackets-breathe-r 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  .brackets-react > span:first-child {
+    animation: brackets-react-l 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
+  .brackets-react > span:last-child {
+    animation: brackets-react-r 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  /* «Выдача вещи»: слово покидает скобки вправо и гаснет, следующее влетает
+   * слева. Ход берётся из --fly, он привязан к кеглю. */
+  .handoff-out {
+    animation: handoff-out 280ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+  .handoff-in {
+    animation: handoff-in 280ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .brackets-breathe > span {
+    .brackets-run::after,
+    .brackets-react > span {
       animation: none;
+    }
+    /* Слова продолжают меняться, но без полёта — просто проявляются. */
+    .handoff-out,
+    .handoff-in {
+      animation-duration: 1ms;
     }
   }
 
@@ -221,11 +246,29 @@
   color: var(--color-muted-fg);
 }
 
-@keyframes brackets-breathe-l {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(-5px); }
+@keyframes brackets-run {
+  0%   { left: 0; }
+  50%  { left: calc(100% - var(--dot)); }
+  100% { left: 0; }
 }
-@keyframes brackets-breathe-r {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(5px); }
+/* Скобка отклоняется ровно тогда, когда блик у неё: левая — в начале и конце
+ * цикла, правая — в середине. */
+@keyframes brackets-react-l {
+  0%   { transform: translateX(calc(-1 * var(--amp))); }
+  50%  { transform: none; }
+  100% { transform: translateX(calc(-1 * var(--amp))); }
+}
+@keyframes brackets-react-r {
+  0%   { transform: none; }
+  50%  { transform: translateX(var(--amp)); }
+  100% { transform: none; }
+}
+
+@keyframes handoff-out {
+  from { transform: none; opacity: 1; }
+  to   { transform: translateX(var(--fly)); opacity: 0; }
+}
+@keyframes handoff-in {
+  from { transform: translateX(calc(-1 * var(--fly))); opacity: 0; }
+  to   { transform: none; opacity: 1; }
 }

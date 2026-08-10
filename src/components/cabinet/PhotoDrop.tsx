@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
-import { Logo } from "@/components/brand/Logo";
+import { Brackets } from "@/components/brand/Brackets";
 import { cn } from "@/lib/utils";
 
 export interface Photo {
@@ -80,7 +80,7 @@ export function PhotoDrop({
               dragging ? "bg-accent/15" : "bg-accent/5",
             )}
           >
-            <Logo size={26} showWord={false} className="brackets-breathe" />
+            <Brackets size={26} running={uploading} />
             <span className="text-sm text-muted-foreground">
               {uploading ? "Загружаем фото…" : "Положите вещь в скобки — перетащите фото"}
             </span>

@@ -1,9 +1,9 @@
 "use client";
-import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import type { IconType } from "react-icons";
 import { SiMaildotru, SiOdnoklassniki, SiVk } from "react-icons/si";
 import { FaYandex } from "react-icons/fa6";
+import { Brackets } from "@/components/brand/Brackets";
 import { useAsyncLock } from "@/hooks/use-async-lock";
 
 type CustomButton = { kind: "custom"; label: string; href: string; Icon: IconType; bg: string; fg: string };
@@ -52,8 +52,8 @@ export function ProviderButtons({
       {buttons.map((b, i) => {
         const id = b.kind === "nextauth" ? `na-${b.providerId}` : `vk-${i}`;
         const isPending = lock.isPending(id);
-        const Icon = isPending ? Loader2 : b.Icon;
-        const iconCls = `h-6 w-6 shrink-0${isPending ? " animate-spin" : ""}`;
+        const Icon = b.Icon;
+        const iconCls = "h-6 w-6 shrink-0";
         const dim = lock.isLocked && !isPending ? " opacity-50" : "";
 
         if (b.kind === "custom") {
@@ -70,7 +70,7 @@ export function ProviderButtons({
               className={`${ROW_CLASS}${dim}${lock.isLocked ? " cursor-not-allowed" : ""}`}
             >
               <span>{b.label}</span>
-              <Icon className={iconCls} aria-hidden="true" />
+              {isPending ? <Brackets size={18} running className="text-current" /> : <Icon className={iconCls} aria-hidden="true" />}
             </a>
           );
         }
@@ -84,7 +84,7 @@ export function ProviderButtons({
             className={`${ROW_CLASS}${dim} disabled:cursor-not-allowed`}
           >
             <span>{b.label}</span>
-            <Icon className={iconCls} aria-hidden="true" />
+            {isPending ? <Brackets size={18} running className="text-current" /> : <Icon className={iconCls} aria-hidden="true" />}
           </button>
         );
       })}

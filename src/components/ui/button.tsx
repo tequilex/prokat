@@ -1,8 +1,8 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Loader2 } from "lucide-react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { Brackets } from "@/components/brand/Brackets";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-pill text-sm font-medium ring-offset-background transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
@@ -57,7 +57,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || pending}
         {...props}
       >
-        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+        {pending && <Brackets size={14} running className="mr-2 text-current" />}
         {children}
       </button>
     );
