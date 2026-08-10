@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { content } from "@theme/content";
 import { Logo } from "@/components/brand/Logo";
-import { ThemeToggle } from "@/components/providers/ThemeToggle";
+import { ThemeSegmented } from "@/components/providers/ThemeSegmented";
 
 export function Footer() {
   return (
@@ -37,15 +37,15 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Переключатель темы — в правом нижнем углу: на мобайле в шапке он
-         * скрыт, и это единственное место, где тему можно сменить. */}
+        {/* Переключатель темы — в правом нижнем углу. Тот же, что в меню
+         * пользователя; здесь он для анонима, у которого меню нет. */}
         <div className="mt-9 flex items-end justify-between gap-4">
           <p className="text-xs text-muted-foreground">
             {content.copyright} · {content.footer.disclaimer}
           </p>
           <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
             {content.footer.themeLabel}
-            <ThemeToggle />
+            <ThemeSegmented />
           </span>
         </div>
       </div>

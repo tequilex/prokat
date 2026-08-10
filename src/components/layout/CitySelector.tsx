@@ -26,7 +26,7 @@ export function CitySelector({
   return (
     // modal={false}: без него Radix включает scroll-lock (overflow:hidden на
     // body), из-за чего sticky-хедер пересчитывается и прыгает к началу
-    // страницы. См. тот же приём в ThemeToggle/UserMenu.
+    // страницы. См. тот же приём в UserMenu.
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger className="inline-flex h-10 min-w-0 items-center gap-1 rounded-pill px-3 text-sm text-foreground transition-colors hover:bg-foreground/5">
         <span className="min-w-0 max-w-[8rem] truncate">{current?.name ?? content.nav.city}</span>

@@ -3,7 +3,6 @@ import { Plus } from "lucide-react";
 import { content } from "@theme/content";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/providers/ThemeToggle";
 import { auth } from "@/lib/auth";
 import { getActiveCities } from "@/server/catalog";
 import { UserMenu } from "@/components/auth/UserMenu";
@@ -55,12 +54,9 @@ export async function Header() {
                 </Link>
               </Button>
 
-              {/* Действия — одна стеклянная пилюля: тема + профиль/вход */}
+              {/* Профиль или вход. Тема переехала в меню пользователя, у анонима
+                * она остаётся в подвале. */}
               <div className="glass flex h-12 shrink-0 items-center gap-1 rounded-pill px-1.5 md:order-4">
-                {/* Тема скрыта на маленьких экранах — там она следует за системной */}
-                <div className="hidden sm:block">
-                  <ThemeToggle />
-                </div>
                 {user?.username ? (
                   <UserMenu
                     username={user.username}
