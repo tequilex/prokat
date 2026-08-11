@@ -55,6 +55,18 @@ export const content = {
     errorReserved: "Этот username зарезервирован",
     errorTaken: "Этот username уже занят",
     backToHome: "На главную",
+    mail: {
+      brand: "prokat",
+      verifySubject: "Подтвердите почту — prokat",
+      verifyIntro: "Вы зарегистрировались на prokat. Чтобы завершить регистрацию, откройте ссылку:",
+      verifyAgainSubject: "Ссылка для подтверждения почты — prokat",
+      verifyAgainIntro: "Вы запросили новое письмо для подтверждения почты. Ссылка:",
+      verifyTtl: "Ссылка действительна 24 часа.",
+      resetSubject: "Смена пароля — prokat",
+      resetIntro: "Вы запросили смену пароля на prokat. Чтобы задать новый, откройте ссылку:",
+      resetTtl: "Ссылка действительна 1 час.",
+      ignore: "Если это были не вы — просто проигнорируйте письмо.",
+    },
   },
   loading: {
     title: "Ищем рядом…",
