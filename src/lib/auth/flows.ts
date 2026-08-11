@@ -1,5 +1,5 @@
 import { emailDomain, isBlockedDomain, normalizeEmail } from "@/lib/auth/email";
-import { issueToken } from "@/lib/auth/email-tokens";
+import { consumeToken, issueToken } from "@/lib/auth/email-tokens";
 import { checkPasswordRules, hashPassword } from "@/lib/auth/password";
 import type { AuthStore } from "@/lib/auth/store";
 import type { Mail } from "@/lib/mail/mailer";
@@ -96,6 +96,22 @@ export async function resendVerification(deps: FlowDeps, rawEmail: string): Prom
     return { ok: true };
   }
   return { ok: true };
+}
+
+export type ConfirmResult =
+  | { ok: true; userId: string; sessionToken: string; expires: Date }
+  | { ok: false };
+
+// Стоп-лист доменов здесь НЕ применяется: аккаунт уже существует, а отказ на
+// этом шаге сделал бы его невосстановимым — войти нельзя (не подтверждён),
+// подтвердить нельзя (домен в списке).
+export async function confirmEmail(store: AuthStore, token: string, now = new Date()): Promise<ConfirmResult> {
+  const consumed = await consumeToken(store, token, "verify", now);
+  if (!consumed.ok) return { ok: false };
+
+  await store.markEmailVerified(consumed.userId);
+  const session = await store.issueSession(consumed.userId);
+  return { ok: true, userId: consumed.userId, ...session };
 }
 
 export { resetEmail, resetLink };
