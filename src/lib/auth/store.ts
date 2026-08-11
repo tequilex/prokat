@@ -45,6 +45,7 @@ export type CreateWithAccountInput = {
 
 export interface AuthStore {
   findUserByEmail(email: string): Promise<AuthUser | null>;
+  findUserById(id: string): Promise<AuthUser | null>;
   createUser(email: string, passwordHash: string): Promise<AuthUser>;
   setPassword(userId: string, passwordHash: string): Promise<void>;
   markEmailVerified(userId: string): Promise<void>;
@@ -81,6 +82,31 @@ export function drizzleAuthStore(): AuthStore {
         .from(users)
         .leftJoin(accounts, eq(accounts.userId, users.id))
         .where(eq(users.email, email))
+        .limit(1);
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        id: row.id,
+        email: row.email,
+        passwordHash: row.passwordHash,
+        emailVerified: row.emailVerified,
+        bannedAt: row.bannedAt,
+        hasOAuthAccounts: row.provider !== null,
+      };
+    },
+
+    async findUserById(id) {
+      const rows = await getDb().select({
+        id: users.id,
+        email: users.email,
+        passwordHash: users.passwordHash,
+        emailVerified: users.emailVerified,
+        bannedAt: users.bannedAt,
+        provider: accounts.provider,
+      })
+        .from(users)
+        .leftJoin(accounts, eq(accounts.userId, users.id))
+        .where(eq(users.id, id))
         .limit(1);
       const row = rows[0];
       if (!row) return null;

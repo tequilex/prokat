@@ -36,6 +36,9 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []): FakeStore {
     async findUserByEmail(email) {
       return users.find((u) => u.email === email) ?? null;
     },
+    async findUserById(id) {
+      return users.find((u) => u.id === id) ?? null;
+    },
     async createUser(email, passwordHash) {
       const user: AuthUser = {
         id: `u${nextId++}`, email, passwordHash,

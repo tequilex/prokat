@@ -6,7 +6,10 @@
 
 import { cookies, headers } from "next/headers";
 import { emailDomain, isBlockedDomain, normalizeEmail } from "@/lib/auth/email";
-import { loginWithPassword, registerWithPassword, resendVerification, type FlowDeps } from "@/lib/auth/flows";
+import {
+  loginWithPassword, registerWithPassword, requestPasswordReset, resendVerification, resetPassword,
+  type FlowDeps,
+} from "@/lib/auth/flows";
 import { safeCallback, sessionCookieName, sessionCookieOptions } from "@/lib/auth/session";
 import { drizzleAuthStore } from "@/lib/auth/store";
 import { clientIp } from "@/lib/http/client-ip";
@@ -43,6 +46,7 @@ const MESSAGES: Record<string, string> = {
   invalid_credentials: "Неверная почта или пароль",
   use_oauth: "У этой почты вход через Яндекс или VK",
   email_not_verified: "Почта не подтверждена — отправьте письмо ещё раз",
+  invalid_token: "Ссылка недействительна или устарела — запросите новую",
 };
 
 export async function register(input: { email: string; password: string }): Promise<ActionResult<{ sentTo: string }>> {
@@ -83,6 +87,31 @@ export async function resendVerificationEmail(rawEmail: string): Promise<ActionR
 
   await resendVerification(flowDeps(), email);
   return { ok: true, data: undefined };
+}
+
+export async function requestReset(rawEmail: string): Promise<ActionResult> {
+  const email = normalizeEmail(rawEmail);
+  const byEmail = checkLimit(email, "reset");
+  const byIp = checkLimit(await ip(), "mail_ip");
+  // Даже при отказе лимитера ответ тот же: форма не должна выдавать, есть ли аккаунт.
+  if (!byEmail.ok || !byIp.ok) return { ok: true, data: undefined };
+
+  await requestPasswordReset(flowDeps(), email);
+  return { ok: true, data: undefined };
+}
+
+export async function submitNewPassword(
+  input: { token: string; password: string },
+): Promise<ActionResult<{ redirectTo: string }>> {
+  const res = await resetPassword(drizzleAuthStore(), input.token, input.password);
+  if (!res.ok) {
+    if (res.error === "weak_password") return { ok: false, error: res.message };
+    return { ok: false, error: MESSAGES.invalid_token };
+  }
+
+  const jar = await cookies();
+  jar.set(sessionCookieName(), res.sessionToken, sessionCookieOptions(res.expires));
+  return { ok: true, data: { redirectTo: "/" } };
 }
 
 // Дёргается формой на blur: список доменов остаётся на сервере и в браузерный

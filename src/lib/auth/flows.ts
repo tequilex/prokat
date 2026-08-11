@@ -147,4 +147,51 @@ export async function confirmEmail(store: AuthStore, token: string, now = new Da
   return { ok: true, userId: consumed.userId, ...session };
 }
 
+// Ответ всегда одинаковый — форма «забыли пароль» не должна работать проверялкой
+// «зарегистрирован ли этот человек».
+export async function requestPasswordReset(deps: FlowDeps, rawEmail: string): Promise<{ ok: boolean }> {
+  if (!deps.transportAvailable) return { ok: false };
+
+  const email = normalizeEmail(rawEmail);
+  const user = await deps.store.findUserByEmail(email);
+
+  // Токен только подтверждённому password-аккаунту: у OAuth-юзера сброс приделал бы
+  // пароль к чужому аккаунту, у неподтверждённого — увёл бы в петлю (сессию выдали,
+  // а следующий вход отклоняется по emailVerified).
+  if (!user || !user.passwordHash || !user.emailVerified) return { ok: true };
+
+  const token = await issueToken(deps.store, user.id, "reset", deps.now);
+  try {
+    await deps.sendMail(resetEmail(email, resetLink(deps.baseUrl, token)));
+  } catch {
+    return { ok: true };
+  }
+  return { ok: true };
+}
+
+export type ResetResult =
+  | { ok: true; userId: string; sessionToken: string; expires: Date }
+  | { ok: false; error: "invalid_token" }
+  | { ok: false; error: "weak_password"; message: string };
+
+export async function resetPassword(
+  store: AuthStore, token: string, newPassword: string, now = new Date(),
+): Promise<ResetResult> {
+  const consumed = await consumeToken(store, token, "reset", now);
+  if (!consumed.ok) return { ok: false, error: "invalid_token" };
+
+  const user = await store.findUserById(consumed.userId);
+  const rulesError = checkPasswordRules(newPassword, user?.email ?? "");
+  if (rulesError) return { ok: false, error: "weak_password", message: rulesError };
+
+  await store.setPassword(consumed.userId, await hashPassword(newPassword));
+  // Сброс — реакция на угон: злоумышленник с живой cookie должен потерять доступ
+  // немедленно, а неиспользованные ссылки сброса перестать работать.
+  await store.dropAllSessions(consumed.userId);
+  await store.deleteTokens(consumed.userId, "reset");
+
+  const session = await store.issueSession(consumed.userId);
+  return { ok: true, userId: consumed.userId, ...session };
+}
+
 export { resetEmail, resetLink };
