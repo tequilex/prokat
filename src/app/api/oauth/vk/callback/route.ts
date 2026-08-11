@@ -56,6 +56,10 @@ export async function GET(req: NextRequest) {
     return fail(req, "vk_db_failed");
   }
 
+  // Почта занята другим способом входа: склейки по адресу больше нет, поэтому
+  // здесь понятный отказ вместо молчаливого присоединения к чужому аккаунту.
+  if (!session.ok) return fail(req, "email_taken");
+
   const res = NextResponse.redirect(new URL(callbackUrl, env.NEXTAUTH_URL));
   res.cookies.delete(COOKIE_VERIFIER);
   res.cookies.delete(COOKIE_STATE);

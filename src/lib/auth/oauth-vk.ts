@@ -1,9 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/lib/db";
-import { accounts, sessions, users } from "@db/schema";
-import { newId } from "@/lib/auth/id";
 import { getEnv } from "@/lib/env";
+import { drizzleAuthStore, type AuthStore } from "@/lib/auth/store";
 import { sessionTtlSeconds } from "@/lib/auth/session";
 
 // Выдача сессии и имя cookie общие с остальными способами входа — живут в session.ts.
@@ -148,63 +145,41 @@ export async function fetchUserInfo(accessToken: string): Promise<VkProfile> {
   };
 }
 
+export type VkUpsertResult =
+  | { ok: true; sessionToken: string; expires: Date }
+  | { ok: false; reason: "email_taken" };
+
+// Склейки по e-mail здесь больше нет. Раньше юзер с совпадающим адресом
+// подшивался к VK-аккаунту — вместе с паролями это стало вектором захвата:
+// аккаунт с подтверждённой почтой …@mail.ru перехватывался входом через
+// VK-шлюз с sub-провайдером mail_ru. Теперь ищем только по строке в accounts,
+// а занятый адрес — понятный отказ. Уже склеенные аккаунты не затронуты.
 export async function upsertUserAndSession(opts: {
   profile: VkProfile;
   tokens: VkTokens;
-}): Promise<{ sessionToken: string; expires: Date }> {
-  const db = getDb();
+  store?: AuthStore;
+}): Promise<VkUpsertResult> {
+  const store = opts.store ?? drizzleAuthStore();
   const { profile, tokens } = opts;
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() || null;
 
-  const existingAcc = await db.select().from(accounts).where(
-    and(eq(accounts.provider, "vk"), eq(accounts.providerAccountId, profile.user_id)),
-  ).limit(1);
-
-  let userId: string;
-
-  if (existingAcc.length > 0) {
-    userId = existingAcc[0].userId;
-  } else {
-    let linkedUserId: string | null = null;
-    if (profile.email) {
-      const u = await db.select().from(users).where(eq(users.email, profile.email)).limit(1);
-      if (u.length > 0) linkedUserId = u[0].id;
-    }
-
-    if (linkedUserId) {
-      userId = linkedUserId;
-    } else {
-      userId = newId();
-      const email = profile.email ?? `vk-${profile.user_id}@vk.placeholder`;
-      await db.insert(users).values({
-        id: userId,
-        email,
-        name: fullName,
-        image: profile.avatar,
-      });
-    }
-
-    const expiresAt = tokens.expiresIn
-      ? Math.floor(Date.now() / 1000) + tokens.expiresIn
-      : null;
-    await db.insert(accounts).values({
-      userId,
-      type: "oauth",
-      provider: "vk",
-      providerAccountId: profile.user_id,
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-      expires_at: expiresAt,
-      token_type: "Bearer",
-      scope: "email",
-      id_token: null,
-      session_state: null,
-    });
+  const existingUserId = await store.findUserIdByAccount("vk", profile.user_id);
+  if (existingUserId) {
+    return { ok: true, ...await store.issueSession(existingUserId) };
   }
 
-  const sessionToken = randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + sessionTtlSeconds * 1000);
-  await db.insert(sessions).values({ sessionToken, userId, expires });
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() || null;
+  const created = await store.createUserWithAccount({
+    email: profile.email ?? `vk-${profile.user_id}@vk.placeholder`,
+    name: fullName,
+    image: profile.avatar,
+    provider: "vk",
+    providerAccountId: profile.user_id,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    expiresAt: tokens.expiresIn ? Math.floor(Date.now() / 1000) + tokens.expiresIn : null,
+    scope: "email",
+  });
+  if (!created.ok) return { ok: false, reason: "email_taken" };
 
-  return { sessionToken, expires };
+  return { ok: true, ...await store.issueSession(created.userId) };
 }
