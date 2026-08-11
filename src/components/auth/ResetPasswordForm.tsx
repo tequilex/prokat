@@ -6,7 +6,7 @@ import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import { submitNewPassword } from "@/server/actions/auth-email";
 
-const INPUT = "h-11 w-full rounded-md border border-border bg-background px-3 text-foreground";
+const INPUT = "h-11 w-full rounded-pill border border-border bg-background px-5 text-foreground";
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
@@ -32,11 +32,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <label className="flex flex-col gap-1 text-sm">
         Новый пароль
         <input type="password" required minLength={8} autoComplete="new-password" className={INPUT}
+          placeholder="Не короче 8 символов"
           value={password} onChange={(e) => setPassword(e.target.value)} />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Повторите пароль
         <input type="password" required minLength={8} autoComplete="new-password" className={INPUT}
+          placeholder="Тот же пароль ещё раз"
           value={password2} onChange={(e) => setPassword2(e.target.value)} />
       </label>
 

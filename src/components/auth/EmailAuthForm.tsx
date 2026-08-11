@@ -8,7 +8,7 @@ import {
   checkEmailDomain, login, register, requestReset, resendVerificationEmail,
 } from "@/server/actions/auth-email";
 
-const INPUT = "h-11 w-full rounded-md border border-border bg-background px-3 text-foreground";
+const INPUT = "h-11 w-full rounded-pill border border-border bg-background px-5 text-foreground";
 
 type Mode = "login" | "register" | "forgot";
 
@@ -114,6 +114,7 @@ export function EmailAuthForm({
         Почта
         <input
           type="email" required autoComplete="email" value={email} className={INPUT}
+          placeholder="pochta@example.ru"
           onChange={(e) => { setEmail(e.target.value); setDomainError(null); }}
           onBlur={checkDomain}
         />
@@ -125,6 +126,7 @@ export function EmailAuthForm({
           Пароль
           <input
             type="password" required minLength={8} className={INPUT}
+            placeholder={mode === "register" ? "Не короче 8 символов" : "Ваш пароль"}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
             value={password} onChange={(e) => setPassword(e.target.value)}
           />
@@ -135,6 +137,7 @@ export function EmailAuthForm({
         <label className="flex flex-col gap-1 text-sm">
           Повторите пароль
           <input type="password" required minLength={8} autoComplete="new-password" className={INPUT}
+            placeholder="Тот же пароль ещё раз"
             value={password2} onChange={(e) => setPassword2(e.target.value)} />
         </label>
       )}

@@ -15,24 +15,24 @@ describe("AuthPanel", () => {
   it("starts on the email step", () => {
     render(<AuthPanel {...providers} />);
     expect(screen.getByLabelText("Почта")).toBeInTheDocument();
-    expect(screen.queryByText("Выберите сервис")).toBeNull();
+    expect(screen.queryByText("Выберите сервис для входа")).toBeNull();
   });
 
   it("switches to the providers step and back", () => {
     render(<AuthPanel {...providers} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Войти через сервис" }));
-    expect(screen.getByText("Выберите сервис")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Войти с помощью/ }));
+    expect(screen.getByText("Выберите сервис для входа")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Яндекс/ })).toBeInTheDocument();
     expect(screen.queryByLabelText("Почта")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Войти по почте" }));
+    fireEvent.click(screen.getByRole("button", { name: "Назад ко входу по почте" }));
     expect(screen.getByLabelText("Почта")).toBeInTheDocument();
   });
 
   it("hides the switch when no provider is configured", () => {
     render(<AuthPanel nextAuthProviders={[]} vkEnabled={false} canRegister />);
-    expect(screen.queryByRole("button", { name: "Войти через сервис" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Войти с помощью/ })).toBeNull();
     expect(screen.getByLabelText("Почта")).toBeInTheDocument();
   });
 });

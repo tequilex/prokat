@@ -1,31 +1,21 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { content } from "@theme/content";
+import { Logo } from "@/components/brand/Logo";
 
 // Suspense-fallback для /login: Next.js показывает его сразу после клика по
-// ссылке, пока RSC `LoginPage` блокирует на `await auth()`. Геометрия и
-// back-link дублируют page.tsx — чтобы между фолбэком и реальной формой не
-// было визуальных скачков.
+// ссылке, пока RSC `LoginPage` блокирует на `await auth()`. Геометрия повторяет
+// карточку из page.tsx — знак сверху, поля, кнопки — чтобы между фолбэком и
+// реальной формой не было скачка.
 export default function LoginLoading() {
   return (
     <main className="container mx-auto flex min-h-[calc(100vh-14rem)] max-w-md flex-col items-center justify-center px-4 py-12">
-      <div className="w-full">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {content.auth.backToHome}
-        </Link>
-        <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <h1 className="font-display text-2xl text-center mb-2">{content.auth.loginTitle}</h1>
-          <p className="text-muted-foreground text-center mb-8">{content.auth.loginSubtitle}</p>
-          <div className="space-y-3" aria-hidden="true">
-            <div className="h-11 rounded-md bg-muted animate-pulse" />
-            <div className="h-11 rounded-md bg-muted animate-pulse" />
-            <div className="h-11 rounded-md bg-muted animate-pulse" />
-            <div className="h-11 rounded-md bg-muted animate-pulse" />
-          </div>
+      <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <div className="mb-5 flex justify-center">
+          <Logo size={22} />
+        </div>
+        <div className="flex flex-col gap-3" aria-hidden="true">
+          <div className="h-11 animate-pulse rounded-pill bg-muted" />
+          <div className="h-11 animate-pulse rounded-pill bg-muted" />
+          <div className="h-11 animate-pulse rounded-pill bg-muted" />
+          <div className="mt-2 h-12 animate-pulse rounded-pill bg-muted" />
         </div>
       </div>
     </main>
