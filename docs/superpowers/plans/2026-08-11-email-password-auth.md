@@ -23,9 +23,9 @@
 | 1 | Схема БД | — |
 | 2 | Переменные окружения | — |
 | 3 | Нормализация почты и стоп-лист | 2 |
-| 4 | Хэш пароля | — |
+| 4 | Хэш пароля | 3 |
 | 5 | Общий модуль сессий | — |
-| 6 | Порт данных `store.ts` | 1 |
+| 6 | Порт данных `store.ts` | 1, 5 |
 | 7 | Одноразовые токены | 1, 6 |
 | 8 | Отправка писем | 2 |
 | 9 | Лимиты и IP клиента | — |
@@ -45,7 +45,7 @@
 
 | Файл | Ответственность |
 |---|---|
-| `src/lib/auth/email.ts` | нормализация адреса, стоп-лист доменов |
+| `src/lib/auth/email.ts` | нормализация адреса, стоп-лист доменов (спека называет файл `blocked-email-domains.ts` — там название устарело, берём `email.ts`: в нём же живёт нормализация) |
 | `src/lib/auth/password.ts` | argon2id: хэш, проверка, фиктивная проверка, правила |
 | `src/lib/auth/session.ts` | выдача/удаление database-сессии, имя cookie, TTL, `safeCallback` |
 | `src/lib/auth/store.ts` | порт данных + drizzle-реализация |
@@ -155,11 +155,23 @@ git commit -m "feat(db): password hash column and email tokens table"
 
 **Files:**
 - Modify: `src/lib/env.ts`
-- Test: `tests/env.test.ts`
+- Test: `tests/auth/env-smtp.test.ts`
 
-- [ ] **Step 1: Дописать падающие тесты в `tests/env.test.ts`**
+- [ ] **Step 1: Написать падающие тесты**
+
+Новый файл: `base` в существующих тестах живёт в `tests/auth/env-oauth.test.ts` и в `tests/env.test.ts` его нет — объявляем свой.
 
 ```ts
+import { describe, it, expect } from "vitest";
+import { parseEnv } from "@/lib/env";
+
+const base = {
+  NODE_ENV: "test",
+  DATABASE_URL: "postgres://app:test@localhost:5432/app",
+  NEXTAUTH_URL: "http://localhost:3000",
+  NEXTAUTH_SECRET: "x".repeat(32),
+};
+
 const smtp = {
   SMTP_HOST: "smtp.yandex.ru",
   SMTP_PORT: "465",
@@ -191,7 +203,7 @@ describe("env: SMTP", () => {
 
 - [ ] **Step 2: Убедиться, что падает**
 
-Run: `pnpm vitest run tests/env.test.ts`
+Run: `pnpm vitest run tests/auth/env-smtp.test.ts`
 Expected: FAIL — `SMTP_PORT` не число, `BLOCKED_EMAIL_DOMAINS` не массив.
 
 - [ ] **Step 3: Расширить схему env**
@@ -219,13 +231,13 @@ Expected: FAIL — `SMTP_PORT` не число, `BLOCKED_EMAIL_DOMAINS` не м�
 
 - [ ] **Step 4: Прогнать тесты**
 
-Run: `pnpm vitest run tests/env.test.ts`
+Run: `pnpm vitest run tests/auth/env-smtp.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Коммит**
 
 ```bash
-git add src/lib/env.ts tests/env.test.ts
+git add src/lib/env.ts tests/auth/env-smtp.test.ts
 git commit -m "feat(env): smtp settings and blocked email domains"
 ```
 
@@ -346,7 +358,7 @@ Run: `pnpm add @node-rs/argon2`
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { hashPassword, verifyPassword, fakeVerify, checkPasswordRules } from "@/lib/auth/password";
+import { hashPassword, verifyPassword, fakeVerify, checkPasswordRules, devSeedPassword } from "@/lib/auth/password";
 
 describe("password hashing", () => {
   it("round-trips", async () => {
@@ -379,6 +391,15 @@ describe("checkPasswordRules", () => {
     expect(checkPasswordRules("normalnyi-parol", "a@ya.ru")).toBeNull();
   });
 });
+
+describe("devSeedPassword", () => {
+  it("returns null in production", async () => {
+    expect(await devSeedPassword("production")).toBeNull();
+  });
+  it("returns a hash outside production", async () => {
+    expect(await devSeedPassword("development")).toMatch(/^\$argon2id\$/);
+  });
+});
 ```
 
 - [ ] **Step 3: Убедиться, что падает**
@@ -388,13 +409,17 @@ Expected: FAIL — модуль не найден.
 
 - [ ] **Step 4: Реализовать**
 
+**Важно:** `Algorithm` в `@node-rs/argon2` объявлен как `declare const enum`, а в `tsconfig.json` включён `isolatedModules` — импорт этого символа валит сборку с `TS2748`. Argon2id и так дефолт пакета, поэтому просто не импортируем его.
+
 ```ts
 // src/lib/auth/password.ts
-import { hash, verify, Algorithm } from "@node-rs/argon2";
+import { hash, verify } from "@node-rs/argon2";
 import { normalizeEmail } from "@/lib/auth/email";
 
 // Параметры заданы явно, а не взяты из дефолтов пакета: рекомендация OWASP.
-const OPTS = { algorithm: Algorithm.Argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 };
+// algorithm не указываем — Argon2id и так дефолт, а его enum нельзя импортировать
+// при isolatedModules (TS2748).
+const OPTS = { memoryCost: 19456, timeCost: 2, parallelism: 1 };
 
 // Хэш заведомо несуществующего пароля: гоняем его, когда юзера нет, чтобы по
 // времени ответа нельзя было определить, зарегистрирован ли адрес.
@@ -419,6 +444,16 @@ export async function fakeVerify(): Promise<void> {
   dummyHash ??= await hash("dummy-password-for-timing", OPTS);
   await verifyPassword(dummyHash, "definitely-not-the-password");
 }
+
+// Kill-switch для seed'а: пароли тестовым владельцам раздаются только вне прода.
+// Живёт здесь, а не в scripts/seed.ts, потому что scripts/ вне алиаса @/ и
+// seed.ts вызывает main() на верхнем уровне — импорт из теста полез бы в Postgres.
+export async function devSeedPassword(nodeEnv: string | undefined): Promise<string | null> {
+  if (nodeEnv === "production") return null;
+  return hashPassword(DEV_SEED_PASSWORD);
+}
+
+export const DEV_SEED_PASSWORD = "prokat-dev-12345";
 
 export function checkPasswordRules(plain: string, email: string): string | null {
   if (plain.length < MIN_LENGTH) return `Пароль короче ${MIN_LENGTH} символов`;
@@ -451,10 +486,12 @@ git commit -m "feat(auth): argon2id password hashing and rules"
 
 - [ ] **Step 1: Написать падающий тест**
 
+Переменные окружения трогаем через хелпер `withEnv` — скопировать из `tests/auth/oauth-vk.test.ts:22-31`. Прямая запись в `process.env` без восстановления течёт между файлами внутри одного vitest-воркера.
+
 ```ts
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { safeCallback, sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
-import { _resetEnvCacheForTests } from "@/lib/env";
+// withEnv — копия хелпера из tests/auth/oauth-vk.test.ts
 
 describe("safeCallback", () => {
   it("keeps relative paths", () => {
@@ -468,16 +505,16 @@ describe("safeCallback", () => {
 });
 
 describe("sessionCookieName", () => {
-  beforeEach(() => { _resetEnvCacheForTests(); });
-
   it("uses the __Secure- prefix on https", () => {
-    process.env.NEXTAUTH_URL = "https://example.ru";
-    expect(sessionCookieName()).toBe("__Secure-authjs.session-token");
+    withEnv({ NEXTAUTH_URL: "https://example.ru" }, () => {
+      expect(sessionCookieName()).toBe("__Secure-authjs.session-token");
+    });
   });
 
   it("uses the plain name on http", () => {
-    process.env.NEXTAUTH_URL = "http://localhost:3000";
-    expect(sessionCookieName()).toBe("authjs.session-token");
+    withEnv({ NEXTAUTH_URL: "http://localhost:3000" }, () => {
+      expect(sessionCookieName()).toBe("authjs.session-token");
+    });
   });
 });
 
@@ -546,11 +583,14 @@ export async function dropAllSessions(userId: string): Promise<void> {
 
 - [ ] **Step 4: Переключить потребителей**
 
-В `src/lib/auth/oauth-vk.ts` удалить `sessionCookieName`, `sessionTtlSeconds`, `SESSION_TTL_SECONDS` и ре-экспортировать из нового модуля, чтобы не трогать пока остальной код:
+В `src/lib/auth/oauth-vk.ts` удалить `sessionCookieName`, `sessionTtlSeconds`, `SESSION_TTL_SECONDS`. Ре-экспорт локальной привязки **не** создаёт, а `SESSION_TTL_SECONDS` используется внутри `upsertUserAndSession` (`oauth-vk.ts:210`) — нужны обе строки:
 
 ```ts
+import { sessionTtlSeconds } from "@/lib/auth/session";
 export { sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
 ```
+
+и заменить в теле `SESSION_TTL_SECONDS` на `sessionTtlSeconds`.
 
 В `src/app/api/oauth/vk/callback/route.ts` и `src/app/api/dev/login/route.ts` заменить импорты этих двух символов на `@/lib/auth/session`; в callback-роуте удалить локальный `safeCallback` и импортировать его оттуда же.
 
@@ -606,6 +646,14 @@ export type StoredToken = {
 export interface AuthStore {
   findUserByEmail(email: string): Promise<AuthUser | null>;
   createUser(email: string, passwordHash: string): Promise<AuthUser>;
+  // Нужны Task 15: VK-флоу переезжает на порт, иначе его нечем тестировать —
+  // сейчас он ходит в getDb() напрямую.
+  findUserIdByAccount(provider: string, providerAccountId: string): Promise<string | null>;
+  createUserWithAccount(input: {
+    email: string; name: string | null; image: string | null;
+    provider: string; providerAccountId: string;
+    accessToken: string; refreshToken: string | null; expiresAt: number | null; scope: string;
+  }): Promise<{ ok: true; userId: string } | { ok: false; reason: "email_taken" }>;
   setPassword(userId: string, passwordHash: string): Promise<void>;
   markEmailVerified(userId: string): Promise<void>;
   insertToken(t: StoredToken): Promise<void>;
@@ -634,7 +682,9 @@ const rows = await db.select({
   .limit(1);
 ```
 
-`hasOAuthAccounts` = `rows[0].accountId !== null`. `issueSession` и `dropAllSessions` делегируют в `@/lib/auth/session`.
+`hasOAuthAccounts` = `rows[0].accountId !== null`. `issueSession` и `dropAllSessions` делегируют в `@/lib/auth/session` (поэтому задача зависит от Task 5).
+
+`createUserWithAccount` оборачивает обе вставки в `db.transaction(...)`: сейчас `users` и `accounts` пишутся двумя несвязанными запросами (`oauth-vk.ts:183` и `:194`), и падение второй оставляет юзера-сироту без единого способа входа. Занятая почта возвращается как `{ ok: false, reason: "email_taken" }`, а не бросает исключение на `unique`.
 
 - [ ] **Step 3: Написать реализацию в памяти**
 
@@ -659,7 +709,7 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []) {
 
 - [ ] **Step 4: Тест на саму фикстуру**
 
-Проверить `createUser` → `findUserByEmail` → `setPassword` → `dropAllSessions`; что `deleteTokens` сносит только нужный `purpose`; что `deleteExpiredTokens` не трогает живые токены.
+Проверить `createUser` → `findUserByEmail` → `setPassword` → `dropAllSessions`; что `deleteTokens` сносит только нужный `purpose`; что `deleteExpiredTokens` не трогает живые токены; что `createUserWithAccount` отдаёт `email_taken` на занятый адрес и что при ошибке вставки аккаунта юзер не остаётся (транзакционность фикстуры имитируется откатом массива).
 
 Run: `pnpm vitest run tests/auth/store-fake.test.ts`
 Expected: PASS.
@@ -867,8 +917,14 @@ Expected: FAIL.
 ```ts
   login:    { windowMs: 15 * 60 * 1000, maxInWindow: 10, gapMs: 0 },
   register: { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 5_000 },
+  resend:   { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 60_000 },
   reset:    { windowMs: 60 * 60 * 1000, maxInWindow: 3,  gapMs: 60_000 },
+  // Второй, более широкий контур по IP для всего, что шлёт письма: без него
+  // смена IP снимает лимит по почте, а лимит по почте не мешает бомбить разные ящики.
+  mail_ip:  { windowMs: 60 * 60 * 1000, maxInWindow: 10, gapMs: 0 },
 ```
+
+`resend` и `reset` ключуются по почте, `mail_ip` — по IP; оба проверяются вместе (спека, таблица лимитов).
 
 Обновить `LimitKind`. Комментарий в шапке файла про «ключ — userId» поправить: теперь ключом может быть почта или IP.
 
@@ -888,7 +944,7 @@ export function clientIp(headers: Headers): string {
 - [ ] **Step 5: Прогнать тесты**
 
 Run: `pnpm vitest run tests/lib/`
-Expected: PASS, старые тесты лимитера тоже зелёные.
+Expected: PASS. Готовых тестов лимитера в репозитории нет — этот файл первый, поэтому проверить заодно, что старые виды (`comment`, `post`, `booking`) продолжают работать после переименования параметра.
 
 - [ ] **Step 6: Коммит**
 
@@ -943,16 +999,31 @@ Server Action `register(formData)`:
 
 Там же — `checkEmailDomain(email)`: возвращает `{ blocked: boolean; domain: string | null }`, вызывается формой на blur. Список в браузер не уезжает.
 
-- [ ] **Step 4: Прогнать тесты**
+- [ ] **Step 4: Повторное письмо подтверждения**
+
+Спека требует его в трёх местах: кнопка «Отправить ещё раз» на экране «письмо отправлено», предложение переотправить при попытке входа в неподтверждённый аккаунт и отдельная строка в таблице лимитов. Без него аккаунт, до которого не дошло первое письмо, оказывается в тупике.
+
+Тесты (дописать в тот же файл):
+
+```ts
+it("re-issues a verify token and sends the email again", async () => { /* … */ });
+it("invalidates the previous link when a new one is sent", async () => { /* старый токен удалён */ });
+it("answers identically for unknown and already verified emails", async () => { /* без перечисления */ });
+it("respects the resend limit", async () => { /* resend по почте + mail_ip по IP */ });
+```
+
+Реализация `resendVerification(email)`: транспорт доступен → `checkLimit(email, "resend")` и `checkLimit(clientIp(...), "mail_ip")` → `findUserByEmail` → письмо шлём **только** если юзер есть, `passwordHash !== null` и `emailVerified === null`; шаблон `verifyEmailAgain` из Task 8. Ответ всегда одинаковый: «Если подтверждение требуется — письмо отправлено».
+
+- [ ] **Step 5: Прогнать тесты**
 
 Run: `pnpm vitest run tests/auth/register.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Коммит**
+- [ ] **Step 6: Коммит**
 
 ```bash
 git add src/server/actions/auth-email.ts tests/auth/register.test.ts
-git commit -m "feat(auth): registration with email confirmation"
+git commit -m "feat(auth): registration with email confirmation and resend"
 ```
 
 ---
@@ -1016,7 +1087,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Реализовать `loginWithPassword`**
 
-Порядок ровно как в спеке: юзера нет → `fakeVerify()` + `invalid_credentials`; `passwordHash` пуст и есть привязки → `use_oauth`; `passwordHash` пуст и привязок нет → как «юзера нет»; пароль не сошёлся → `invalid_credentials`; `emailVerified` пуст → `email_not_verified`; иначе `issueSession` + cookie + `safeCallback`.
+Порядок ровно как в спеке: юзера нет → `fakeVerify()` + `invalid_credentials`; `passwordHash` пуст и есть привязки → `use_oauth`; `passwordHash` пуст и привязок нет → как «юзера нет»; пароль не сошёлся → `invalid_credentials`; `emailVerified` пуст → `email_not_verified` (форма на этот код показывает кнопку, дёргающую `resendVerification` из Task 10); иначе `issueSession` + cookie + `safeCallback`.
 
 Забаненного пускаем: сессия выдаётся, `requireAuthState` уводит на `/banned` — одна дорога вместо двух.
 
@@ -1103,6 +1174,10 @@ Expected: FAIL.
 
 В `src/app/(auth)/login/page.tsx`: форма входа рендерится всегда; регистрация и «забыли пароль» — при `mailTransportAvailable()`. Добавить разбор `?error=`: `OAuthAccountNotLinked` → «У этой почты уже есть вход по паролю», `email_taken` → то же для VK, `verify_token_invalid` → «Ссылка недействительна или устарела».
 
+Страница сейчас вообще не принимает `searchParams`, а в Next 15 это `Promise` — сигнатура будет `{ searchParams: Promise<{ error?: string }> }` с `await`, иначе уйдёт время на отладку типов.
+
+Экран «письмо отправлено» после регистрации и ответ `email_not_verified` при входе показывают кнопку «Отправить письмо ещё раз», дёргающую `resendVerification`; кнопка блокируется тем же `useAsyncLock`, что и провайдеры.
+
 - [ ] **Step 5: Прогнать тесты и типы**
 
 Run: `pnpm vitest run && pnpm exec tsc --noEmit && pnpm lint`
@@ -1127,12 +1202,15 @@ git commit -m "feat(auth): email form on the login screen"
 - Modify: `src/lib/auth/oauth-vk.ts`, `src/app/api/oauth/vk/callback/route.ts`
 - Test: `tests/auth/oauth-vk.test.ts`
 
+Предварительно: `upsertUserAndSession` сейчас ходит в `getDb()` напрямую, поэтому тестировать её нечем — в репозитории есть единственный прецедент мока БД (`tests/storage/upload-route.test.ts`), и он покрывает только один `insert`. Первым делом функция переводится на порт `store.ts` из Task 6 (`findUserIdByAccount`, `findUserByEmail`, `createUserWithAccount`), после чего тесты пишутся на фикстуре в памяти без моков drizzle-цепочек.
+
 - [ ] **Step 1: Написать падающие тесты**
 
 ```ts
 it("finds an existing user by the accounts row", async () => { /* прежнее поведение живо */ });
 it("does not link by email anymore", async () => { /* коллизия → email_taken, чужой аккаунт не тронут */ });
-it("creates user and account in one transaction", async () => { /* падение вставки accounts не оставляет сироту */ });
+it("creates user and account atomically", async () => { /* падение вставки accounts не оставляет сироту */ });
+it("still works for a vk account without email (placeholder address)", async () => { /* … */ });
 ```
 
 - [ ] **Step 2: Убедиться, что падают**
@@ -1142,7 +1220,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Убрать склейку и добавить транзакцию**
 
-В `upsertUserAndSession` удалить ветку поиска по `profile.email` (`oauth-vk.ts:172-179`). Новое поведение: нет строки в `accounts` → если почта занята, вернуть `{ error: "email_taken" }`; иначе создать `users` и `accounts` **в одной транзакции** (`db.transaction`), чтобы не появлялись юзеры-сироты. Callback-роут на `email_taken` редиректит на `/login?error=email_taken`.
+`upsertUserAndSession` принимает `store: AuthStore` аргументом (по умолчанию — `drizzleAuthStore()`), и её тело сводится к: `findUserIdByAccount("vk", profile.user_id)` → нашли, выдаём сессию; не нашли — `createUserWithAccount(...)`, который сам вернёт `email_taken` на занятый адрес и сделает обе вставки в одной транзакции. Ветка поиска по `profile.email` (`oauth-vk.ts:172-179`) удаляется целиком. Callback-роут на `email_taken` редиректит на `/login?error=email_taken`.
 
 Уже склеенные аккаунты не затрагиваются: они находятся по строке в `accounts`.
 
@@ -1166,13 +1244,18 @@ git commit -m "fix(auth): stop linking vk accounts by email"
 - Modify: `scripts/seed.ts`, `.env.example`, `docs/DEPLOY.md`, `CLAUDE.md`
 - Test: `tests/auth/seed-passwords.test.ts`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Убедиться, что kill-switch покрыт**
 
-Функция `devSeedPassword(nodeEnv)` возвращает хэш при `nodeEnv !== "production"` и `null` при `"production"`. Тест проверяет обе ветки — это kill-switch, он должен быть покрыт.
+`devSeedPassword` уже написана и покрыта в Task 4 — она живёт в `src/lib/auth/password.ts`, а не в `scripts/seed.ts`: каталог `scripts/` вне алиаса `@/`, а `seed.ts` вызывает `main()` на верхнем уровне, поэтому импорт из теста полез бы в Postgres. Здесь только проверить, что тест из Task 4 зелёный.
+
+Run: `pnpm vitest run tests/auth/password.test.ts`
+Expected: PASS.
 
 - [ ] **Step 2: Проставить пароли seed-юзерам**
 
-В `scripts/seed.ts` пятерым владельцам добавить `passwordHash` и `emailVerified: new Date()` — **только** при `process.env.NODE_ENV !== "production"`, тем же жёстким выключателем, что стоит в `/api/dev/login`. Пароль печатается в вывод seed'а, чтобы им можно было войти сразу после `pnpm db:seed`.
+В `scripts/seed.ts` пятерым владельцам добавить `passwordHash: await devSeedPassword(process.env.NODE_ENV)` и `emailVerified: new Date()`. Пароль (`DEV_SEED_PASSWORD`) печатается в вывод seed'а, чтобы им можно было войти сразу после `pnpm db:seed`.
+
+**Идемпотентность:** seed выходит раньше, если город `kazan` уже есть, — на уже засеянной базе пароли не появятся. Поэтому проставление паролей делается отдельным шагом до этой проверки: `update users set password_hash=…, email_verified=now() where email like '%@seed.local' and password_hash is null`. Тогда `pnpm db:seed` на старой базе доводит владельцев до входибельного состояния, не пересевая всё заново.
 
 Смысл: адреса `ownerN@seed.local` несуществующие, письмо туда не дойдёт, поэтому без этого шага вход по паролю на деве проверить нечем.
 
