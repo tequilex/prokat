@@ -95,7 +95,7 @@ describe("fakeAuthStore: tokens", () => {
   it("stamps usedAt on the token it is given", async () => {
     const { store } = fakeAuthStore([{ email: "a@ya.ru" }]);
     await store.insertToken(token());
-    await store.markTokenUsed("t1");
+    await store.markTokenUsed("t1", new Date());
     expect((await store.findTokenByHash("hash-1"))?.usedAt).toBeInstanceOf(Date);
   });
 });

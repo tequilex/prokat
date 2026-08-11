@@ -56,7 +56,9 @@ export interface AuthStore {
 
   insertToken(t: StoredToken): Promise<void>;
   findTokenByHash(tokenHash: string): Promise<StoredToken | null>;
-  markTokenUsed(id: string): Promise<void>;
+  // Время передаётся аргументом, а не берётся системное: иначе льготное окно
+  // на повторный клик нечем протестировать и оно молча не истекает.
+  markTokenUsed(id: string, usedAt: Date): Promise<void>;
   deleteTokens(userId: string, purpose: TokenPurpose): Promise<void>;
   deleteExpiredTokens(userId: string, now: Date): Promise<void>;
 
@@ -153,8 +155,8 @@ export function drizzleAuthStore(): AuthStore {
       return rows[0] ?? null;
     },
 
-    async markTokenUsed(id) {
-      await getDb().update(emailTokens).set({ usedAt: new Date() }).where(eq(emailTokens.id, id));
+    async markTokenUsed(id, usedAt) {
+      await getDb().update(emailTokens).set({ usedAt }).where(eq(emailTokens.id, id));
     },
 
     async deleteTokens(userId, purpose) {

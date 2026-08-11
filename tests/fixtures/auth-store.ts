@@ -75,9 +75,9 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []): FakeStore {
 
     async insertToken(t) { tokens.push({ ...t }); },
     async findTokenByHash(tokenHash) { return tokens.find((t) => t.tokenHash === tokenHash) ?? null; },
-    async markTokenUsed(id) {
+    async markTokenUsed(id, usedAt) {
       const t = tokens.find((x) => x.id === id);
-      if (t) t.usedAt = new Date();
+      if (t) t.usedAt = usedAt;
     },
     async deleteTokens(userId: string, purpose: TokenPurpose) {
       for (let i = tokens.length - 1; i >= 0; i--) {
