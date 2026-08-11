@@ -17,6 +17,19 @@ const schema = z.object({
   VK_CLIENT_ID: z.string().min(1).optional(),
   VK_CLIENT_SECRET: z.string().min(1).optional(),
 
+  SMTP_HOST:     z.string().min(1).optional(),
+  SMTP_PORT:     z.coerce.number().int().positive().optional(),
+  SMTP_USER:     z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  SMTP_FROM:     z.string().email().optional(),
+
+  // Дополняет встроенный список в src/lib/auth/email.ts: домен закрывается
+  // рестартом контейнера, без пересборки.
+  BLOCKED_EMAIL_DOMAINS: z.string()
+    .transform((s) => s.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean))
+    .pipe(z.array(z.string()))
+    .optional(),
+
   STORAGE_ENDPOINT:          z.string().url().optional(),
   STORAGE_BUCKET:            z.string().min(1).optional(),
   STORAGE_ACCESS_KEY_ID:     z.string().min(1).optional(),
@@ -32,8 +45,8 @@ const schema = z.object({
   YANDEX_METRIKA_ID: z.string().regex(/^\d+$/, "YANDEX_METRIKA_ID must be digits").optional(),
 }).superRefine((v, ctx) => {
   for (const p of ["YANDEX", "VK"] as const) {
-    const id = (v as Record<string, string | undefined>)[`${p}_CLIENT_ID`];
-    const sec = (v as Record<string, string | undefined>)[`${p}_CLIENT_SECRET`];
+    const id = (v as Record<string, unknown>)[`${p}_CLIENT_ID`];
+    const sec = (v as Record<string, unknown>)[`${p}_CLIENT_SECRET`];
     if (!!id !== !!sec) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -47,7 +60,7 @@ const schema = z.object({
     "STORAGE_ENDPOINT", "STORAGE_BUCKET", "STORAGE_ACCESS_KEY_ID",
     "STORAGE_SECRET_ACCESS_KEY", "STORAGE_PUBLIC_BASE",
   ] as const;
-  const storagePresence = storageKeys.map(k => Boolean((v as Record<string, string | undefined>)[k]));
+  const storagePresence = storageKeys.map(k => Boolean((v as Record<string, unknown>)[k]));
   const storageAll = storagePresence.every(Boolean);
   const storageNone = storagePresence.every(p => !p);
   if (!storageAll && !storageNone) {
@@ -58,11 +71,23 @@ const schema = z.object({
     });
   }
 
+  // Почта: все или ни одной. Отсутствие SMTP в проде допустимо — регистрация и
+  // сброс пароля тогда просто скрыты, вход по уже заведённому паролю работает.
+  const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"] as const;
+  const smtpPresence = smtpKeys.map(k => Boolean((v as Record<string, unknown>)[k]));
+  if (!smtpPresence.every(Boolean) && !smtpPresence.every(p => !p)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["SMTP_HOST"],
+      message: "SMTP_* env vars must be all set or all empty",
+    });
+  }
+
   const backupKeys = [
     "BACKUP_S3_ENDPOINT", "BACKUP_S3_BUCKET",
     "BACKUP_S3_ACCESS_KEY_ID", "BACKUP_S3_SECRET_ACCESS_KEY",
   ] as const;
-  const backupPresence = backupKeys.map(k => Boolean((v as Record<string, string | undefined>)[k]));
+  const backupPresence = backupKeys.map(k => Boolean((v as Record<string, unknown>)[k]));
   const backupAll = backupPresence.every(Boolean);
   const backupNone = backupPresence.every(p => !p);
   if (!backupAll && !backupNone) {
