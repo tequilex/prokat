@@ -6,8 +6,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { content } from "@theme/content";
-import { ProviderButtons } from "@/components/auth/ProviderButtons";
-import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
+import { AuthPanel } from "@/components/auth/AuthPanel";
 
 export function LoginDialog({
   open, onOpenChange, callbackUrl, nextAuthProviders, vkEnabled, isDev, canRegisterByEmail,
@@ -34,23 +33,19 @@ export function LoginDialog({
             Выбранные даты сохранятся — после входа вы вернётесь на этот шаг.
           </Dialog.Description>
 
+          {/* Тот же двухшаговый вход, что и на /login: callbackUrl возвращает
+              на позицию с выбранными датами. */}
           <div className="mt-5">
-            {hasAny ? (
-              <ProviderButtons
+            {hasAny || canRegisterByEmail ? (
+              <AuthPanel
                 nextAuthProviders={nextAuthProviders}
                 vkEnabled={vkEnabled}
+                canRegister={canRegisterByEmail}
                 callbackUrl={callbackUrl}
               />
             ) : (
               <p className="text-center text-sm text-muted-foreground">{content.auth.noProviders}</p>
             )}
-          </div>
-
-          {/* Вход по почте здесь тот же, что и на /login: callbackUrl возвращает
-              на позицию с выбранными датами. */}
-          <div className="mt-5 border-t border-border pt-5">
-            <p className="mb-3 text-center text-xs text-muted-foreground">или по почте</p>
-            <EmailAuthForm canRegister={canRegisterByEmail} callbackUrl={callbackUrl} />
           </div>
 
           {isDev && (

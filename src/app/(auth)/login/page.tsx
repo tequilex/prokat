@@ -5,8 +5,7 @@ import { buildEdgeConfig } from "@/lib/auth/config.edge";
 import { getEnv } from "@/lib/env";
 import { redirect } from "next/navigation";
 import { content } from "@theme/content";
-import { ProviderButtons } from "@/components/auth/ProviderButtons";
-import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
+import { AuthPanel } from "@/components/auth/AuthPanel";
 import { mailTransportAvailable } from "@/lib/mail/mailer";
 
 // Тексты ошибок, с которыми сюда редиректят OAuth-роуты и подтверждение почты.
@@ -67,14 +66,14 @@ export default async function LoginPage({
               {errorText}
             </p>
           )}
-          {hasAny
-            ? <ProviderButtons nextAuthProviders={nextAuthProviders} vkEnabled={vkEnabled} />
-            : <p className="text-sm text-muted-foreground text-center">{content.auth.noProviders}</p>}
-
-          <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center mb-3">или по почте</p>
-            <EmailAuthForm canRegister={canRegister} />
-          </div>
+          <AuthPanel
+            nextAuthProviders={nextAuthProviders}
+            vkEnabled={vkEnabled}
+            canRegister={canRegister}
+          />
+          {!hasAny && !canRegister && (
+            <p className="mt-4 text-sm text-muted-foreground text-center">{content.auth.noProviders}</p>
+          )}
           {isDev && (
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-xs text-muted-foreground text-center mb-3">dev only</p>
