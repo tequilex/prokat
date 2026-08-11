@@ -6,7 +6,7 @@
 // что владелец созвонится для подтверждения.
 
 import { useState, useTransition } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
+import { Modal, ModalContent, ModalDescription, ModalTitle } from "@/components/ui/Modal";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,29 +71,27 @@ export function BookingFormDialog({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 shadow-lg">
+    <Modal open={open} onOpenChange={onOpenChange}>
+      <ModalContent className="md:max-w-md">
           {done ? (
             <>
-              <Dialog.Title className="font-display text-xl">Заявка отправлена</Dialog.Title>
-              <Dialog.Description className="mt-2 text-sm text-muted-foreground">
+              <ModalTitle className="font-display text-xl">Заявка отправлена</ModalTitle>
+              <ModalDescription className="mt-2 text-sm text-muted-foreground">
                 Владелец получил заявку и обычно созванивается для
                 подтверждения. Если ответа нет 24 часа, заявка истечёт автоматически.
-              </Dialog.Description>
+              </ModalDescription>
               <Button asChild className="mt-5 w-full">
                 <Link href={"/requests" as never}>Мои заявки</Link>
               </Button>
             </>
           ) : (
             <>
-              <Dialog.Title className="font-display text-xl">Заявка на бронь</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted-foreground">
+              <ModalTitle className="font-display text-xl">Заявка на бронь</ModalTitle>
+              <ModalDescription className="mt-1 text-sm text-muted-foreground">
                 {listingTitle}: {period}
                 {sel.qty > 1 ? `, ${sel.qty} шт.` : ""}
                 {estimate !== null ? ` · ≈ ${formatPrice(estimate)}` : ""}
-              </Dialog.Description>
+              </ModalDescription>
 
               <form onSubmit={submit} className="mt-5 flex flex-col gap-3">
                 <label className="flex flex-col gap-1 text-sm">
@@ -132,16 +130,7 @@ export function BookingFormDialog({
             </>
           )}
 
-          <Dialog.Close asChild>
-            <button
-              type="button" aria-label="Закрыть"
-              className="absolute right-3 top-3 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </Dialog.Close>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      </ModalContent>
+    </Modal>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useId } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
+import { Modal, ModalClose, ModalContent, ModalDescription, ModalTitle, ModalTrigger } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
 
 type Props = {
@@ -31,15 +31,13 @@ export function ConfirmDialog({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (!v) setInput(""); }}>
-      <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(90vw,420px)] rounded-md bg-background border border-border p-6 shadow-lg">
-          <Dialog.Title className="font-display text-lg mb-2">{title}</Dialog.Title>
-          <Dialog.Description className="text-sm text-muted-foreground mb-4">
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) setInput(""); }}>
+      <ModalTrigger asChild>{trigger}</ModalTrigger>
+      <ModalContent className="md:w-[min(90vw,420px)]">
+          <ModalTitle className="font-display text-lg mb-2">{title}</ModalTitle>
+          <ModalDescription className="text-sm text-muted-foreground mb-4">
             {description}
-          </Dialog.Description>
+          </ModalDescription>
           {typedConfirm && (
             <div className="mb-4">
               <label htmlFor={inputId} className="block text-xs text-muted-foreground mb-1">
@@ -54,9 +52,9 @@ export function ConfirmDialog({
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <Dialog.Close asChild>
+            <ModalClose asChild>
               <Button variant="outline" type="button">Отмена</Button>
-            </Dialog.Close>
+            </ModalClose>
             <Button
               type="button"
               variant={destructive ? "destructive" : "default"}
@@ -67,8 +65,7 @@ export function ConfirmDialog({
               {confirmLabel}
             </Button>
           </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      </ModalContent>
+    </Modal>
   );
 }
