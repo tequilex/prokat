@@ -4,6 +4,10 @@ import { getDb } from "@/lib/db";
 import { accounts, sessions, users } from "@db/schema";
 import { newId } from "@/lib/auth/id";
 import { getEnv } from "@/lib/env";
+import { sessionTtlSeconds } from "@/lib/auth/session";
+
+// Выдача сессии и имя cookie общие с остальными способами входа — живут в session.ts.
+export { sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
 
 export const VK_AUTHORIZE_URL = "https://id.vk.com/authorize";
 export const VK_TOKEN_URL = "https://id.vk.com/oauth2/auth";
@@ -13,7 +17,6 @@ export const COOKIE_VERIFIER = "oauth-vk-verifier";
 export const COOKIE_STATE = "oauth-vk-state";
 export const COOKIE_CALLBACK = "oauth-vk-callback";
 
-const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const PKCE_TTL_SECONDS = 10 * 60;
 
 export type VkSubProvider = "vkid" | "mail_ru" | "ok_ru";
@@ -27,14 +30,7 @@ export function vkCallbackUrl(): string {
   return `${base}/api/oauth/vk/callback`;
 }
 
-export function sessionCookieName(): string {
-  return getEnv().NEXTAUTH_URL.startsWith("https://")
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
-}
-
 export const pkceTtlSeconds = PKCE_TTL_SECONDS;
-export const sessionTtlSeconds = SESSION_TTL_SECONDS;
 
 function b64url(buf: Buffer): string {
   return buf.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
@@ -207,7 +203,7 @@ export async function upsertUserAndSession(opts: {
   }
 
   const sessionToken = randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
+  const expires = new Date(Date.now() + sessionTtlSeconds * 1000);
   await db.insert(sessions).values({ sessionToken, userId, expires });
 
   return { sessionToken, expires };

@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { users, sessions } from "@db/schema";
 import { getEnv } from "@/lib/env";
 import { newId } from "@/lib/auth/id";
-import { sessionCookieName, sessionTtlSeconds } from "@/lib/auth/oauth-vk";
+import { sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
 
 // Dev-only быстрый логин тестовым юзером. В production route отвечает 404 —
 // нет никакого секрета или дефолт-флага, который бы спас от случайного

@@ -6,19 +6,12 @@ import {
   COOKIE_VERIFIER,
   exchangeCode,
   fetchUserInfo,
-  sessionCookieName,
-  sessionTtlSeconds,
   upsertUserAndSession,
 } from "@/lib/auth/oauth-vk";
+import { safeCallback, sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-function safeCallback(input: string | null): string {
-  if (!input) return "/";
-  if (!input.startsWith("/") || input.startsWith("//")) return "/";
-  return input;
-}
 
 function fail(_req: NextRequest, code: string): NextResponse {
   const url = new URL("/login", getEnv().NEXTAUTH_URL);
