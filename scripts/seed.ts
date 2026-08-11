@@ -3,7 +3,7 @@
 // Запуск: pnpm db:seed (нужен DATABASE_URL в .env, миграции применены).
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, like, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import {
   users, cities, categories, listings, availability,
@@ -11,6 +11,7 @@ import {
 import { newId } from "../src/lib/id";
 import { slugify } from "../src/lib/slugify";
 import { addDaysStr, todayStr } from "../src/lib/catalog/dates";
+import { DEV_SEED_PASSWORD, devSeedPassword } from "../src/lib/auth/password";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -20,6 +21,19 @@ async function main() {
   }
   const pool = new Pool({ connectionString: url });
   const db = drizzle(pool);
+
+  // Пароли раздаются до проверки идемпотентности: на уже засеянной базе seed
+  // выходит раньше, и владельцы остались бы без входа по паролю.
+  const seedHash = await devSeedPassword(process.env.NODE_ENV);
+  if (seedHash) {
+    const updated = await db.update(users)
+      .set({ passwordHash: seedHash, emailVerified: new Date() })
+      .where(and(like(users.email, "%@seed.local"), isNull(users.passwordHash)))
+      .returning({ id: users.id });
+    if (updated.length > 0) {
+      console.log(`Seed owners got a dev password (${updated.length}): ${DEV_SEED_PASSWORD}`);
+    }
+  }
 
   const existing = await db.select({ id: cities.id }).from(cities).where(eq(cities.slug, "kazan")).limit(1);
   if (existing.length > 0) {

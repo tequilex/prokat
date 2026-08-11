@@ -12,11 +12,11 @@ commit-сообщения — на английском.
 
 - **Fullstack:** Next.js 15 (App Router, Server Components, Server Actions), React 19, TypeScript. SSR на всех публичных страницах.
 - **БД:** PostgreSQL 16 (docker-compose) + Drizzle ORM. Схема — единственный источник в `drizzle/schema.ts`.
-- **Auth:** Auth.js v5 (`@auth/drizzle-adapter`) — Яндекс ID (штатный провайдер) + VK ID (собственный OAuth 2.1 + PKCE, см. `src/lib/auth/oauth-vk.ts`).
+- **Auth:** Auth.js v5 (`@auth/drizzle-adapter`) — Яндекс ID (штатный провайдер), VK ID (собственный OAuth 2.1 + PKCE, см. `src/lib/auth/oauth-vk.ts`) и почта с паролем (argon2id + подтверждение по письму, см. `src/lib/auth/flows.ts`). Сессии — database, выдаются общим `src/lib/auth/session.ts`.
 - **Storage:** S3-совместимое (Yandex Object Storage); загрузка изображений через `sharp` → webp (`/api/upload`).
 - **Стили:** Tailwind + CSS-токены в `theme/`, светлая/тёмная темы (`next-themes`).
 - **ID:** ULID (`newId()` в `src/lib/id.ts`). **Цены:** целые рубли. **Слаги:** `slugify()`.
-- **Тесты:** Vitest (194 теста, только в `tests/**`, импорт через `@/`).
+- **Тесты:** Vitest (331 тест, только в `tests/**`, импорт через `@/`).
 - **Деплой:** docker-compose (Caddy + app + Postgres + backup), HTTPS via Let's Encrypt. См. `docs/DEPLOY.md`, `docs/RECOVERY.md`.
 
 ## Команды
@@ -63,13 +63,13 @@ booking_requests; listing 1—N availability; city/category 1—N listings.
 | `/{city}/{categorySlug}/{slug}-{id}` | **карточка товара** — `id` это ULID в хвосте; резолв по нему, при неканоничном адресе 301 |
 | `/u/{username}` | публичный профиль продавца (товары, «на сайте с», значок «Проверен») |
 | `/search?q=` | поиск по названию/описанию в пределах города |
-| `/login`, `/welcome` (выбор username), `/banned` | вход/онбординг |
+| `/login`, `/welcome` (выбор username), `/reset`, `/banned` | вход/онбординг/смена пароля по ссылке из письма |
 | `/requests` | «Мои заявки» (как арендатор) |
 | `/cabinet/listings`, `/cabinet/listings/new`, `/cabinet/listings/[id]` | мои объявления, размещение, редактирование |
 | `/cabinet/requests`, `/cabinet/calendar` | входящие заявки (как владелец), календарь занятости |
 | `/profile` | профиль + настройки (имя, телефон, bio) — единый экран |
 | `/admin/{users,listings,cities,categories,requests}` | админка (role=admin); в `/admin/users` — verify + бан |
-| `/api/{auth,oauth/vk,upload,health}` | системные; `/api/dev/login[?role=admin]` — быстрый dev-вход (404 в prod) |
+| `/api/{auth,oauth/vk,upload,health}` | системные; `/api/auth/email/verify` — подтверждение почты; `/api/dev/login[?role=admin]` — быстрый dev-вход (404 в prod) |
 
 Резолвер сегментов — `src/app/(public)/[city]/[seg]/[sub]/page.tsx` + хелпер
 `src/lib/catalog/listing-path.ts` (`extractListingId`, `listingPath`).
@@ -80,7 +80,7 @@ booking_requests; listing 1—N availability; city/category 1—N listings.
 - **`scripts/`** — `seed.ts`, `migrate.ts`.
 - **`src/server/*.ts`** — read-слой (запросы): `catalog.ts` (публичный каталог, продавцы), `owner.ts` (кабинет владельца), `booking.ts` (заявки покупателя), `me.ts` (профиль), `admin.ts`.
 - **`src/server/actions/*.ts`** — мутации (Server Actions): `owner.ts` (создать/править товар, решения по заявкам, календарь), `booking.ts` (создать/отменить заявку), `admin.ts` (модерация, города/категории, бан, verify), `profile.ts`.
-- **`src/lib/`** — `auth/` (config, guard `requireAuthState`, VK OAuth, username), `catalog/` (`availability`, `dates`, `filters`, `format`, `listing-path`, `booking-status`), `booking/` (валидация, параметры), `owner/` (валидация форм, `categories`), `images/`, `storage/`, `db.ts`, `id.ts`, `rate-limit.ts`, `jsonld.ts`.
+- **`src/lib/`** — `auth/` (config, guard `requireAuthState`, VK OAuth, username, `flows`/`store`/`session`/`password`/`email-tokens`/`email` — вход по почте), `mail/` (SMTP или консоль + шаблоны писем), `http/`, `catalog/` (`availability`, `dates`, `filters`, `format`, `listing-path`, `booking-status`), `booking/` (валидация, параметры), `owner/` (валидация форм, `categories`), `images/`, `storage/`, `db.ts`, `id.ts`, `rate-limit.ts`, `jsonld.ts`.
 - **`src/components/`** — по зонам: `catalog/`, `booking/`, `cabinet/`, `admin/`, `me/`, `account/` (навигация кабинета), `home/`, `layout/`, `auth/`, `seo/`, `ui/`, `providers/` (**= `ThemeProvider`**, не доменная сущность).
 - **`src/app/`** — роуты: `(public)/`, `(app)/` (`cabinet`, `(me)`, `admin`), `(auth)/`, `api/`.
 - **`theme/`** — `tokens.css` (цвета/радиусы), `content.ts` (тексты), `seo.ts`.
@@ -89,9 +89,10 @@ booking_requests; listing 1—N availability; city/category 1—N listings.
 
 ## Ключевые флоу
 
-- **Auth:** VK ID (свой OAuth 2.1+PKCE) или Яндекс ID → новый юзер идёт на `/welcome` выбрать `username` (guard `requireAuthState` редиректит без ника). Дальше username — часть публичного URL профиля и подписи на карточках.
+- **Auth:** VK ID (свой OAuth 2.1+PKCE), Яндекс ID или почта с паролем → новый юзер идёт на `/welcome` выбрать `username` (guard `requireAuthState` редиректит без ника). Дальше username — часть публичного URL профиля и подписи на карточках.
 - **Размещение:** любой залогиненный юзер → `/cabinet/listings/new` → `createListing` (город, категория, цены, фото, опц. район). Публикуется сразу `active` (премодерации нет).
 - **Бронь:** карточка товара → `BookingWidget` → `createBookingRequest` (заявка `new`, даты НЕ занимаются). Владелец в `/cabinet/requests` подтверждает → `confirmed` транзакционно увеличивает `bookedQty` с перепроверкой занятости под блокировкой. Телефоны раскрываются сторонам после подтверждения.
+- **Регистрация по почте:** форма на `/login` → письмо со ссылкой (24 ч) → подтверждение проставляет `emailVerified`, выдаёт сессию и ведёт на `/welcome`. До подтверждения вход запрещён. Сброс пароля (ссылка 1 ч) удаляет все сессии юзера. Автосклейки с OAuth нет: коллизия почты — понятный отказ (дискриминатор — строки в `accounts`, **не** `emailVerified`: у OAuth-юзеров он всегда NULL). Стоп-лист иностранных доменов (`src/lib/auth/email.ts` + `BLOCKED_EMAIL_DOMAINS`) действует **только** на регистрации.
 - **Верификация:** админ в `/admin/users` жмёт «Проверить» → `users.isVerified`. Значок «Проверен» на профиле и в блоке продавца.
 
 ## Инварианты домена (см. `src/lib/catalog/booking-status.ts`, `availability.ts`)
@@ -115,3 +116,4 @@ booking_requests; listing 1—N availability; city/category 1—N listings.
 - `.next/types` держит устаревшие типы удалённых роутов после dev-сервера → ложные `TS2307`; лечит `rm -rf .next/types`.
 - Перед `pnpm build` останавливать dev-сервер (общий каталог `.next`).
 - Seed создаёт: 1 город (Казань), 7 категорий, 5 юзеров-владельцев (2 «проверенных», с телефоном), 20 товаров.
+- Вне production seed раздаёт владельцам (`ownerN@seed.local`) пароль `prokat-dev-12345` и проставляет `emailVerified` — чтобы вход по паролю можно было проверить без возни с письмами. В production ветка не выполняется (`devSeedPassword`). Без `SMTP_*` письма печатаются в консоль dev-сервера — ссылку подтверждения брать оттуда.
