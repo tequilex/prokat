@@ -17,6 +17,8 @@ export const users = pgTable("users", {
   phoneVerifiedAt: timestamp("phone_verified_at"),
   image: text("image"),
   bio: text("bio"),
+  // argon2id. NULL у OAuth-юзеров: пароль есть только у тех, кто регистрировался почтой.
+  passwordHash: text("password_hash"),
   role: userRole("role").notNull().default("user"),
   // «Проверенный продавец» — ставится вручную админом (см. Фаза 6).
   isVerified: boolean("is_verified").notNull().default(false),
@@ -59,6 +61,24 @@ export const verificationTokens = pgTable("verification_tokens", {
   expires: timestamp("expires").notNull(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.identifier, t.token] }),
+}));
+
+export const emailTokenPurpose = pgEnum("email_token_purpose", ["verify", "reset"]);
+
+// Одноразовые ссылки из писем. В БД лежит sha256 от токена, оригинал уходит в письмо:
+// дамп базы не должен давать вход в чужие аккаунты.
+export const emailTokens = pgTable("email_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  purpose: emailTokenPurpose("purpose").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  // Штамп предъявления. Токены, отменённые выпуском нового письма, не штампуются,
+  // а удаляются — иначе льготное окно на повторный клик оживляло бы их.
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userPurposeIdx: index("email_tokens_user_purpose_idx").on(t.userId, t.purpose),
 }));
 
 // uploads — изображения, нормализованные через /api/upload (webp) и положенные в S3.

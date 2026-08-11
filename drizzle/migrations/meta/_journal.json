@@ -8,6 +8,13 @@
       "when": 1784582967615,
       "tag": "0000_thick_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786454834968,
+      "tag": "0001_adorable_shard",
+      "breakpoints": true
     }
   ]
 }
