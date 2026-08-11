@@ -4,6 +4,8 @@ import { content } from "@theme/content";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
+import { authPanelProps } from "@/lib/auth/panel-props";
+import { LoginTrigger } from "@/components/auth/LoginTrigger";
 import { getActiveCities } from "@/server/catalog";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { CitySelector } from "./CitySelector";
@@ -15,6 +17,9 @@ export async function Header() {
   // Аноним → /login; авторизованный без username → /welcome (гейт онбординга);
   // иначе прямиком в создание объявления.
   const placeHref = !user ? "/login" : user.username ? "/cabinet/listings/new" : "/welcome";
+
+  // Флаги для модалки входа: аноним входит, не уходя со страницы.
+  const authProps = authPanelProps();
 
   return (
     // Прозрачный sticky-контейнер: сами блоки «парят» стеклянными пилюлями над
@@ -48,10 +53,19 @@ export async function Header() {
                 asChild
                 className="h-12 shrink-0 rounded-pill px-5 shadow-[var(--glass-shadow)] md:order-3"
               >
-                <Link href={placeHref as never} aria-label={content.nav.place}>
-                  <Plus className="h-4 w-4 sm:mr-1.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">{content.nav.place}</span>
-                </Link>
+                {/* Анониму «Разместить» открывает вход модалкой и возвращает
+                  * на ту же страницу; остальным — обычная ссылка. */}
+                {user ? (
+                  <Link href={placeHref as never} aria-label={content.nav.place}>
+                    <Plus className="h-4 w-4 sm:mr-1.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{content.nav.place}</span>
+                  </Link>
+                ) : (
+                  <LoginTrigger {...authProps} aria-label={content.nav.place}>
+                    <Plus className="h-4 w-4 sm:mr-1.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{content.nav.place}</span>
+                  </LoginTrigger>
+                )}
               </Button>
 
               {/* Профиль или вход. Тема переехала в меню пользователя, у анонима
@@ -66,9 +80,11 @@ export async function Header() {
                   />
                 ) : (
                   <Button asChild variant="ghost" size="sm" className="rounded-pill">
-                    <Link href={user ? "/welcome" : "/login"}>
-                      {user ? content.auth.chooseUsername : content.nav.login}
-                    </Link>
+                    {user ? (
+                      <Link href="/welcome">{content.auth.chooseUsername}</Link>
+                    ) : (
+                      <LoginTrigger {...authProps}>{content.nav.login}</LoginTrigger>
+                    )}
                   </Button>
                 )}
               </div>

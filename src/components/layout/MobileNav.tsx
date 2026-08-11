@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { authPanelProps } from "@/lib/auth/panel-props";
 import { TabBar } from "./TabBar";
 
 // Серверная обёртка таб-бара: та же логика гейта «Разместить», что и в Header
@@ -8,9 +9,12 @@ export async function MobileNav() {
   const user = session?.user;
   const placeHref = !user ? "/login" : user.username ? "/cabinet/listings/new" : "/welcome";
 
+  const authProps = authPanelProps();
+
   return (
     <TabBar
       placeHref={placeHref}
+      authProps={authProps}
       user={
         user
           ? { name: user.name ?? null, username: user.username ?? null, image: user.image ?? null }

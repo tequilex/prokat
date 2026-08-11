@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "@/components/auth/LoginDialog";
+import type { AuthPanelProps } from "@/lib/auth/panel-props";
 import { BookingFormDialog } from "@/components/booking/BookingFormDialog";
 import { BookingCalendar } from "@/components/booking/BookingCalendar";
 import {
@@ -40,10 +41,7 @@ export interface BookingWidgetProps {
   sellerHref: string;
   sellerLocation: string | null;
   isAuthed: boolean;
-  nextAuthProviders: string[];
-  vkEnabled: boolean;
-  isDev: boolean;
-  canRegisterByEmail: boolean;
+  authProps: AuthPanelProps;
 }
 
 export function BookingWidget(props: BookingWidgetProps) {
@@ -254,10 +252,7 @@ export function BookingWidget(props: BookingWidgetProps) {
         open={loginOpen}
         onOpenChange={setLoginOpen}
         callbackUrl={callbackUrl}
-        nextAuthProviders={props.nextAuthProviders}
-        vkEnabled={props.vkEnabled}
-        isDev={props.isDev}
-        canRegisterByEmail={props.canRegisterByEmail}
+        {...props.authProps}
       />
 
       <BookingFormDialog

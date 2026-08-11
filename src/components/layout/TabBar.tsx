@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LoginTrigger } from "@/components/auth/LoginTrigger";
 import { Search, ClipboardList, Plus, User } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/ui/Avatar";
@@ -16,9 +17,13 @@ import { cn } from "@/lib/utils";
 export function TabBar({
   placeHref,
   user,
+  authProps,
 }: {
   placeHref: string;
   user: { name: string | null; username: string | null; image: string | null } | null;
+  // Флаги входа: анониму «Сдать» открывает модалку, а не уводит на /login —
+  // так же, как кнопка в десктопном хедере.
+  authProps: { nextAuthProviders: string[]; vkEnabled: boolean; canRegisterByEmail: boolean };
 }) {
   const pathname = usePathname();
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
@@ -27,6 +32,16 @@ export function TabBar({
     cn(
       "flex min-h-[44px] min-w-12 flex-col items-center justify-center gap-1 text-xs leading-none",
       on ? "text-primary" : "text-muted-foreground",
+    );
+
+  // Аноним ни в один закрытый раздел не попадёт — middleware выбросит его на
+  // /login. Поэтому вместо ссылки даём вход модалкой, а после входа ведём туда,
+  // куда он жал.
+  const tab = (href: string, className: string, children: React.ReactNode) =>
+    user ? (
+      <Link href={href as never} className={className}>{children}</Link>
+    ) : (
+      <LoginTrigger {...authProps} redirectTo={href} className={className}>{children}</LoginTrigger>
     );
 
   const myItems = isOn("/cabinet/listings");
@@ -45,45 +60,47 @@ export function TabBar({
           Поиск
         </Link>
 
-        <Link href={"/cabinet/listings" as never} className={itemClass(myItems)}>
-          <span className="flex h-[22px] items-center">
-            <Logo
-              size={20}
-              showWord={false}
-              bracketClassName={myItems ? "border-accent" : "border-muted-foreground"}
-            />
-          </span>
-          Мои вещи
-        </Link>
+        {tab("/cabinet/listings", itemClass(myItems), (
+          <>
+            <span className="flex h-[22px] items-center">
+              <Logo
+                size={20}
+                showWord={false}
+                bracketClassName={myItems ? "border-accent" : "border-muted-foreground"}
+              />
+            </span>
+            Мои вещи
+          </>
+        ))}
 
-        <Link
-          href={placeHref as never}
-          className="flex min-h-[44px] min-w-12 flex-col items-center justify-center gap-1 text-xs leading-none text-muted-foreground"
-        >
-          {/* Круг держим вровень со строкой иконок, иначе колонка «Сдать»
-           * оказывается выше остальных и тянет за собой всю панель. */}
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-          </span>
-          Сдать
-        </Link>
+        {tab(placeHref, "flex min-h-[44px] min-w-12 flex-col items-center justify-center gap-1 text-xs leading-none text-muted-foreground", (
+          <>
+            {/* Круг держим вровень со строкой иконок, иначе колонка «Сдать»
+             * оказывается выше остальных и тянет за собой всю панель. */}
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </span>
+            Сдать
+          </>
+        ))}
 
-        <Link href={"/requests" as never} className={itemClass(requests)}>
-          <ClipboardList className="h-[22px] w-[22px]" aria-hidden="true" />
-          Заявки
-        </Link>
+        {tab("/requests", itemClass(requests), (
+          <>
+            <ClipboardList className="h-[22px] w-[22px]" aria-hidden="true" />
+            Заявки
+          </>
+        ))}
 
-        <Link
-          href={(user ? "/profile" : "/login") as never}
-          className={itemClass(profile)}
-        >
-          {user ? (
-            <Avatar src={user.image} name={user.name} username={user.username} size={22} />
-          ) : (
-            <User className="h-[22px] w-[22px]" aria-hidden="true" />
-          )}
-          Профиль
-        </Link>
+        {tab("/profile", itemClass(profile), (
+          <>
+            {user ? (
+              <Avatar src={user.image} name={user.name} username={user.username} size={22} />
+            ) : (
+              <User className="h-[22px] w-[22px]" aria-hidden="true" />
+            )}
+            Профиль
+          </>
+        ))}
       </div>
     </nav>
   );

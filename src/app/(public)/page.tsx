@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { seo } from "@theme/seo";
 import { auth } from "@/lib/auth";
+import { authPanelProps } from "@/lib/auth/panel-props";
 import {
   getActiveCities, getAllCategories, getListingCountsByCategory, getRecentListings, rollupToRoots,
 } from "@/server/catalog";
@@ -45,6 +46,9 @@ export default async function HomePage() {
   const user = session?.user;
   const placeHref = !user ? "/login" : user.username ? "/cabinet/listings/new" : "/welcome";
 
+  // Анониму баннер «Разместить» открывает вход модалкой, а не уводит на /login.
+  const authProps = authPanelProps();
+
   return (
     <main>
       <Hero
@@ -60,7 +64,7 @@ export default async function HomePage() {
       <div className="mx-auto w-full max-w-[1200px] space-y-10 px-4 pb-12 pt-6">
         <WhyChoose />
 
-        <ListYourItemBand href={placeHref} />
+        <ListYourItemBand href={placeHref} authProps={user ? undefined : authProps} />
       </div>
     </main>
   );
