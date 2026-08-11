@@ -43,6 +43,7 @@ export interface BookingWidgetProps {
   nextAuthProviders: string[];
   vkEnabled: boolean;
   isDev: boolean;
+  canRegisterByEmail: boolean;
 }
 
 export function BookingWidget(props: BookingWidgetProps) {
@@ -256,6 +257,7 @@ export function BookingWidget(props: BookingWidgetProps) {
         nextAuthProviders={props.nextAuthProviders}
         vkEnabled={props.vkEnabled}
         isDev={props.isDev}
+        canRegisterByEmail={props.canRegisterByEmail}
       />
 
       <BookingFormDialog

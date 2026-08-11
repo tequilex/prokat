@@ -27,6 +27,7 @@ import { siteConfig } from "@/lib/site-config";
 import { freeQty } from "@/lib/catalog/availability";
 import { BOOKING_HORIZON_DAYS, parseBookingParams } from "@/lib/booking/params";
 import { BookingWidget } from "@/components/booking/BookingWidget";
+import { mailTransportAvailable } from "@/lib/mail/mailer";
 import { OwnerCard } from "@/components/booking/OwnerCard";
 import { auth } from "@/lib/auth";
 import { buildEdgeConfig } from "@/lib/auth/config.edge";
@@ -180,6 +181,8 @@ async function ListingPage({
   });
   const vkEnabled = Boolean(env.VK_CLIENT_ID && env.VK_CLIENT_SECRET);
   const isDev = env.NODE_ENV !== "production";
+  // Регистрация и сброс требуют письма, вход по паролю — нет.
+  const canRegisterByEmail = mailTransportAvailable();
 
   const from = todayStr();
   const rows = await getAvailabilityRows([listing.id], from, addDaysStr(from, BOOKING_HORIZON_DAYS));
@@ -330,6 +333,7 @@ async function ListingPage({
             nextAuthProviders={nextAuthProviders}
             vkEnabled={vkEnabled}
             isDev={isDev}
+            canRegisterByEmail={canRegisterByEmail}
           />
         </aside>
       </div>

@@ -7,9 +7,10 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { content } from "@theme/content";
 import { ProviderButtons } from "@/components/auth/ProviderButtons";
+import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
 
 export function LoginDialog({
-  open, onOpenChange, callbackUrl, nextAuthProviders, vkEnabled, isDev,
+  open, onOpenChange, callbackUrl, nextAuthProviders, vkEnabled, isDev, canRegisterByEmail,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -17,6 +18,7 @@ export function LoginDialog({
   nextAuthProviders: string[];
   vkEnabled: boolean;
   isDev: boolean;
+  canRegisterByEmail: boolean;
 }) {
   const hasAny = nextAuthProviders.length > 0 || vkEnabled;
 
@@ -42,6 +44,13 @@ export function LoginDialog({
             ) : (
               <p className="text-center text-sm text-muted-foreground">{content.auth.noProviders}</p>
             )}
+          </div>
+
+          {/* Вход по почте здесь тот же, что и на /login: callbackUrl возвращает
+              на позицию с выбранными датами. */}
+          <div className="mt-5 border-t border-border pt-5">
+            <p className="mb-3 text-center text-xs text-muted-foreground">или по почте</p>
+            <EmailAuthForm canRegister={canRegisterByEmail} callbackUrl={callbackUrl} />
           </div>
 
           {isDev && (
