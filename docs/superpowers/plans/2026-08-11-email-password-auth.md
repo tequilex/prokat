@@ -16,7 +16,7 @@
 
 ## Порядок и зависимости
 
-Задачи 1–9 — фундамент без UI, каждая самодостаточна и коммитится отдельно. Задачи 10–13 — флоу поверх фундамента. 14 — UI. 15–16 — правки соседнего кода и документация.
+Задачи 1–9 — фундамент без UI, 10–13 — флоу поверх него, 14 — UI, 15–16 — правки соседнего кода и документация. Таблица ниже — не украшение: `subagent-driven-development` параллелит именно по ней, поэтому зависимости проставлены полностью, включая те, что при последовательном прогоне сошлись бы сами (задачи 12, 13 и 16 правят файлы, которые создаются раньше).
 
 | # | Задача | Зависит от |
 |---|---|---|
@@ -31,11 +31,11 @@
 | 9 | Лимиты и IP клиента | — |
 | 10 | Регистрация | 3, 4, 6, 7, 8, 9 |
 | 11 | Подтверждение почты | 5, 6, 7 |
-| 12 | Вход | 4, 5, 6, 9 |
-| 13 | Сброс пароля | 4, 5, 6, 7, 8, 9 |
+| 12 | Вход | 4, 5, 6, 9, 10 |
+| 13 | Сброс пароля | 4, 5, 6, 7, 8, 9, 10 |
 | 14 | UI на `/login` и `/reset` | 10–13 |
 | 15 | Правка VK-флоу | 5, 6 |
-| 16 | Seed, dev-логин и документация | 4, 5 |
+| 16 | Seed, dev-логин и документация | 1, 4, 5 |
 
 ---
 
@@ -700,10 +700,13 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []) {
   }));
   const tokens: StoredToken[] = [];
   const sessions: Array<{ token: string; userId: string }> = [];
-  let seq = users.length;
+
+  // Рычаг для теста отката: следующий createUserWithAccount упадёт после вставки юзера.
+  let failAccountInsert = false;
+  const failNextAccountInsert = () => { failAccountInsert = true; };
 
   const store: AuthStore = { /* методы поверх этих массивов */ } as AuthStore;
-  return { store, users, tokens, sessions };
+  return { store, users, tokens, sessions, failNextAccountInsert };
 }
 ```
 
@@ -1209,7 +1212,7 @@ git commit -m "feat(auth): email form on the login screen"
 ```ts
 it("finds an existing user by the accounts row", async () => { /* прежнее поведение живо */ });
 it("does not link by email anymore", async () => { /* коллизия → email_taken, чужой аккаунт не тронут */ });
-it("creates user and account atomically", async () => { /* падение вставки accounts не оставляет сироту */ });
+it("rolls back when the account insert fails", async () => { /* через failNextAccountInsert() у фикстуры */ });
 it("still works for a vk account without email (placeholder address)", async () => { /* … */ });
 ```
 
@@ -1242,7 +1245,7 @@ git commit -m "fix(auth): stop linking vk accounts by email"
 
 **Files:**
 - Modify: `scripts/seed.ts`, `.env.example`, `docs/DEPLOY.md`, `CLAUDE.md`
-- Test: `tests/auth/seed-passwords.test.ts`
+- Test: отдельного нет — `devSeedPassword` покрыта в Task 4 (`tests/auth/password.test.ts`)
 
 - [ ] **Step 1: Убедиться, что kill-switch покрыт**
 
@@ -1291,7 +1294,7 @@ Expected: всё зелёное.
 - [ ] **Step 7: Коммит**
 
 ```bash
-git add scripts/seed.ts .env.example docs/DEPLOY.md CLAUDE.md tests/auth/seed-passwords.test.ts
+git add scripts/seed.ts .env.example docs/DEPLOY.md CLAUDE.md
 git commit -m "chore(auth): dev seed passwords and deployment docs"
 ```
 
@@ -1299,4 +1302,4 @@ git commit -m "chore(auth): dev seed passwords and deployment docs"
 
 ## Ручная проверка после всего плана
 
-Из спеки, раздел «Ручная проверка после реализации» — восемь пунктов. Отдельно стоит выделить последний: `@node-rs/argon2` нативный, а образ собирается на `node:20-alpine` с `output: "standalone"`. Прецедент `sharp` говорит, что трассировка справляется, но проверить старт контейнера и регистрацию внутри него надо явно, до продового деплоя.
+Из спеки, раздел «Ручная проверка после реализации» — восемь пунктов. К ним добавляется девятый: настоящая атомарность `createUserWithAccount` держится на `db.transaction` в drizzle-реализации порта, а её тесты не покрывают (по решению спеки drizzle-адаптер проверяется руками) — убедиться на живой базе, что прерванная вставка аккаунта не оставляет юзера без способов входа. Отдельно стоит выделить последний: `@node-rs/argon2` нативный, а образ собирается на `node:20-alpine` с `output: "standalone"`. Прецедент `sharp` говорит, что трассировка справляется, но проверить старт контейнера и регистрацию внутри него надо явно, до продового деплоя.
