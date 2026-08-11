@@ -1,7 +1,10 @@
 // In-memory rate limiter — single-instance деплой (Hetzner V1).
 // TODO(phase-2): persistent backend (Redis/Postgres) при scale-out.
+//
+// Ключ — произвольная строка: для доменных действий это userId, для входа и
+// писем — почта, IP или их пара.
 
-export type LimitKind = "comment" | "post" | "booking";
+export type LimitKind = "comment" | "post" | "booking" | "login" | "register" | "resend" | "reset" | "mail_ip";
 export type LimitResult =
   | { ok: true }
   | { ok: false; retryAfterSec: number; reason: "gap" | "window" };
@@ -13,6 +16,14 @@ const RULES: Record<LimitKind, Rule> = {
   post:    { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 30_000 },
   // Антиспам заявок вместо СМС-верификации (по ТЗ): 5 заявок в час, пауза 30с.
   booking: { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 30_000 },
+  // Вход: паузы нет, работает счётчик попыток.
+  login:    { windowMs: 15 * 60 * 1000, maxInWindow: 10, gapMs: 0 },
+  register: { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 5_000 },
+  resend:   { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 60_000 },
+  reset:    { windowMs: 60 * 60 * 1000, maxInWindow: 3,  gapMs: 60_000 },
+  // Второй контур для всего, что шлёт письма: лимит по почте не мешает бомбить
+  // разные ящики, а смена IP снимала бы лимит по почте.
+  mail_ip:  { windowMs: 60 * 60 * 1000, maxInWindow: 10, gapMs: 0 },
 };
 
 const MAX_KEYS = 10_000;
@@ -24,10 +35,10 @@ function evictIfFull(): void {
   if (firstKey !== undefined) store.delete(firstKey);
 }
 
-export function checkLimit(userId: string, kind: LimitKind): LimitResult {
+export function checkLimit(subject: string, kind: LimitKind): LimitResult {
   const rule = RULES[kind];
   const now = Date.now();
-  const key = `${userId}:${kind}`;
+  const key = `${subject}:${kind}`;
   const arr = store.get(key) ?? [];
 
   const fresh = arr.filter((t) => now - t < rule.windowMs);
