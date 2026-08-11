@@ -1,6 +1,6 @@
 import { emailDomain, isBlockedDomain, normalizeEmail } from "@/lib/auth/email";
 import { consumeToken, issueToken } from "@/lib/auth/email-tokens";
-import { checkPasswordRules, hashPassword } from "@/lib/auth/password";
+import { checkPasswordRules, fakeVerify, hashPassword, verifyPassword } from "@/lib/auth/password";
 import type { AuthStore } from "@/lib/auth/store";
 import type { Mail } from "@/lib/mail/mailer";
 import { resetEmail, verifyEmail, verifyEmailAgain } from "@/lib/mail/templates";
@@ -96,6 +96,39 @@ export async function resendVerification(deps: FlowDeps, rawEmail: string): Prom
     return { ok: true };
   }
   return { ok: true };
+}
+
+export type LoginResult =
+  | { ok: true; userId: string; sessionToken: string; expires: Date }
+  | { ok: false; error: "invalid_credentials" | "use_oauth" | "email_not_verified" };
+
+export async function loginWithPassword(
+  store: AuthStore, input: { email: string; password: string },
+): Promise<LoginResult> {
+  const email = normalizeEmail(input.email);
+  const user = await store.findUserByEmail(email);
+
+  // Юзера нет — всё равно гоняем argon2, иначе время ответа выдаёт, зарегистрирован
+  // ли адрес. Аккаунт без единого способа входа ведёт себя так же: войти в него
+  // нельзя, и подсказывать нечего.
+  if (!user || (!user.passwordHash && !user.hasOAuthAccounts)) {
+    await fakeVerify();
+    return { ok: false, error: "invalid_credentials" };
+  }
+
+  if (!user.passwordHash) return { ok: false, error: "use_oauth" };
+  if (!await verifyPassword(user.passwordHash, input.password)) {
+    return { ok: false, error: "invalid_credentials" };
+  }
+
+  // Проверка подтверждения — после пароля: иначе форма подтверждает существование
+  // аккаунта тому, кто пароля не знает.
+  if (!user.emailVerified) return { ok: false, error: "email_not_verified" };
+
+  // Забаненного пускаем: сессия выдаётся, requireAuthState уводит на /banned —
+  // одна дорога вместо двух, как с VK и Яндексом.
+  const session = await store.issueSession(user.id);
+  return { ok: true, userId: user.id, ...session };
 }
 
 export type ConfirmResult =
