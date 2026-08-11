@@ -19,7 +19,10 @@ import { getEnv } from "@/lib/env";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
-  | { ok: false; error: string };
+  // code — машинный повод отказа: UI решает по нему, показывать ли кнопку
+  // «отправить письмо ещё раз». Сверять текст сообщения нельзя — правка
+  // формулировки молча сломала бы поведение.
+  | { ok: false; error: string; code?: string };
 
 function flowDeps(): FlowDeps {
   const env = getEnv();
@@ -71,7 +74,7 @@ export async function login(
   if (!limit.ok) return { ok: false, error: MESSAGES.rate_limited };
 
   const res = await loginWithPassword(drizzleAuthStore(), { email, password: input.password });
-  if (!res.ok) return { ok: false, error: MESSAGES[res.error] ?? MESSAGES.invalid_credentials };
+  if (!res.ok) return { ok: false, error: MESSAGES[res.error] ?? MESSAGES.invalid_credentials, code: res.error };
 
   const jar = await cookies();
   jar.set(sessionCookieName(), res.sessionToken, sessionCookieOptions(res.expires));

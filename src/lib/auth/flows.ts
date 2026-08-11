@@ -1,5 +1,5 @@
 import { emailDomain, isBlockedDomain, normalizeEmail } from "@/lib/auth/email";
-import { consumeToken, issueToken } from "@/lib/auth/email-tokens";
+import { consumeToken, hashToken, issueToken } from "@/lib/auth/email-tokens";
 import { checkPasswordRules, fakeVerify, hashPassword, verifyPassword } from "@/lib/auth/password";
 import type { AuthStore } from "@/lib/auth/store";
 import type { Mail } from "@/lib/mail/mailer";
@@ -167,6 +167,14 @@ export async function requestPasswordReset(deps: FlowDeps, rawEmail: string): Pr
     return { ok: true };
   }
   return { ok: true };
+}
+
+// Проверка без погашения: страница /reset должна отличить живую ссылку от
+// протухшей до того, как человек введёт новый пароль.
+export async function isResetTokenUsable(store: AuthStore, token: string, now = new Date()): Promise<boolean> {
+  const row = await store.findTokenByHash(hashToken(token));
+  if (!row || row.purpose !== "reset" || row.usedAt) return false;
+  return row.expiresAt.getTime() > now.getTime();
 }
 
 export type ResetResult =

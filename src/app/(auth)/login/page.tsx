@@ -6,8 +6,22 @@ import { getEnv } from "@/lib/env";
 import { redirect } from "next/navigation";
 import { content } from "@theme/content";
 import { ProviderButtons } from "@/components/auth/ProviderButtons";
+import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
+import { mailTransportAvailable } from "@/lib/mail/mailer";
 
-export default async function LoginPage() {
+// Тексты ошибок, с которыми сюда редиректят OAuth-роуты и подтверждение почты.
+const ERRORS: Record<string, string> = {
+  OAuthAccountNotLinked: "У этой почты уже есть вход по паролю — войдите паролем",
+  email_taken: "Эта почта уже занята другим способом входа",
+  verify_token_invalid: "Ссылка недействительна или устарела — запросите новую",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  // В Next 15 searchParams — Promise.
+  searchParams: Promise<{ error?: string }>;
+}) {
   const session = await auth();
   if (session?.user) {
     if (session.user.bannedAt) redirect("/");
@@ -24,6 +38,12 @@ export default async function LoginPage() {
   const vkEnabled = Boolean(env.VK_CLIENT_ID && env.VK_CLIENT_SECRET);
   const hasAny = nextAuthProviders.length > 0 || vkEnabled;
   const isDev = env.NODE_ENV !== "production";
+
+  // Вход по паролю доступен всегда, регистрация и сброс — только при рабочем
+  // почтовом транспорте: без письма их всё равно не завершить.
+  const canRegister = mailTransportAvailable();
+  const { error } = await searchParams;
+  const errorText = error ? ERRORS[error] ?? null : null;
 
   // /login без FeedShell — это самостоятельная страница входа. Центрируем
   // карточку по обеим осям через flex на <main>. Над карточкой — back-link
@@ -42,9 +62,19 @@ export default async function LoginPage() {
         <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="font-display text-2xl text-center mb-2">{content.auth.loginTitle}</h1>
           <p className="text-muted-foreground text-center mb-8">{content.auth.loginSubtitle}</p>
+          {errorText && (
+            <p className="mb-6 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-destructive">
+              {errorText}
+            </p>
+          )}
           {hasAny
             ? <ProviderButtons nextAuthProviders={nextAuthProviders} vkEnabled={vkEnabled} />
             : <p className="text-sm text-muted-foreground text-center">{content.auth.noProviders}</p>}
+
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-xs text-muted-foreground text-center mb-3">или по почте</p>
+            <EmailAuthForm canRegister={canRegister} />
+          </div>
           {isDev && (
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-xs text-muted-foreground text-center mb-3">dev only</p>
