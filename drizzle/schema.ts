@@ -9,7 +9,6 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: timestamp("email_verified"),
-  username: varchar("username", { length: 20 }).unique(),
   name: varchar("name", { length: 100 }),
   // Телефон запрашивается в первой заявке на бронь и служит контактом продавца.
   // СМС-верификации нет: phone_verified_at заложен, всегда NULL.
@@ -26,9 +25,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   banReason: text("ban_reason"),
   bannedAt: timestamp("banned_at"),
-}, (t) => ({
-  usernameIdx: index("users_username_idx").on(t.username),
-}));
+});
 
 // NB: TS-keys в `accounts` намеренно mixed case (camelCase для userId/providerAccountId,
 // snake_case для refresh_token/access_token/etc) — этого требует @auth/drizzle-adapter,

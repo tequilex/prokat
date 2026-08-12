@@ -5,7 +5,7 @@ describe("auth schema shape", () => {
   it("exports users table with required columns", () => {
     const cols = Object.keys(users);
     expect(cols).toEqual(expect.arrayContaining([
-      "id", "email", "emailVerified", "username", "name", "image", "bio", "role", "createdAt", "bannedAt",
+      "id", "email", "emailVerified", "name", "image", "bio", "role", "createdAt", "bannedAt",
     ]));
   });
 
@@ -30,5 +30,12 @@ describe("auth schema shape", () => {
 
   it("exports userRole enum with 3 values", () => {
     expect(userRole.enumValues).toEqual(["user", "moderator", "admin"]);
+  });
+});
+
+// Ник удалён: профиль адресуется по id, человека представляет name.
+describe("users: ника больше нет", () => {
+  it("колонки username в схеме не существует", () => {
+    expect((users as Record<string, unknown>).username).toBeUndefined();
   });
 });
