@@ -240,9 +240,10 @@ async function main() {
     }
   }
 
-  await pool.end();
+  // Счётчик — последний запрос, пул закрываем строго после него.
   const catCount = (await db.select({ c: sql<number>`count(*)::int` }).from(categories))[0].c;
   console.log(`Seeded: 1 city, ${catCount} categories, ${ownerDefs.length} owners, ${listingDefs.length} listings, ${availRows} availability rows`);
+  await pool.end();
 }
 
 main().catch((err) => {

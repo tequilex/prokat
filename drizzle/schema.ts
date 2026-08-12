@@ -95,7 +95,7 @@ export const uploads = pgTable("uploads", {
 
 // ============================== Каталог ==============================
 // URL-структура публичной части: /{city}/{category}[/{sub}]/ (списки),
-// /{city}/{categorySlug}/{slug}-{id}/ (карточка товара), /u/{username}/ (продавец).
+// /{city}/{categorySlug}/{slug}-{id}/ (карточка товара), /u/{id}/ (продавец).
 
 export const cities = pgTable("cities", {
   id: text("id").primaryKey(),                        // ULID, newId()
