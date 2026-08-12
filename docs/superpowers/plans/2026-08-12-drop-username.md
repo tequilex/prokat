@@ -26,7 +26,7 @@
 | 6 | Профиль по id | 2 |
 | 7 | Экраны и подписи | 2, 6 |
 | 8 | Форма размещения: имя продавца | 2 |
-| 9 | Seed, dev-вход, документация | 1–8 |
+| 9 | Документация и комментарии | 1–8 |
 
 Задачи 1 и 2 независимы; после 2 проект какое-то время не компилируется — это ожидаемо, компилятор служит списком мест для задач 5–8.
 
@@ -241,7 +241,7 @@ git commit -m "feat(auth): ask for a name during email sign-up"
 - Modify: `src/server/actions/auth-email.ts` (`register`, `resendVerificationEmail`)
 - Modify: `src/components/auth/EmailAuthForm.tsx`
 - Modify: `src/app/api/auth/email/verify/route.ts`
-- Test: `tests/auth/register.test.ts`, `tests/auth/verify.test.ts`
+- Test: `tests/auth/register.test.ts` (в `verify.test.ts` новых тестов не появится — см. ниже)
 
 - [ ] **Step 1: Написать падающие тесты**
 
@@ -266,7 +266,7 @@ it("подделанный адрес возврата не уезжает в п
 
 - [ ] **Step 2: Убедиться, что падают**
 
-Run: `pnpm vitest run tests/auth/register.test.ts tests/auth/verify.test.ts`
+Run: `pnpm vitest run tests/auth/register.test.ts`
 Expected: FAIL.
 
 - [ ] **Step 3: Реализовать**
@@ -360,6 +360,9 @@ Expected: FAIL.
 - [ ] **Step 3: Переименовать роут и резолвер**
 
 - каталог `[username]` → `[id]`, внутри `const { id } = await params`, `getSellerById(id)`, `notFound()` при `null`;
+- **сразу после переименования выполнить `rm -rf .next/types`**: при `typedRoutes: true`
+  там остаются типы удалённого роута, и `tsc` начинает выдавать `TS2307` на
+  несуществующие пути. Ловушка описана в `CLAUDE.md` в разделе dev-заметок;
 - `canonical` в `generateMetadata` меняется на `/u/{id}`; индексация остаётся включённой;
 - `getSellerByUsername` удаляется целиком, `Seller` теряет поле `username`;
 - на странице товара `sellerHref` становится `` `/u/${seller.id}` `` без тернарника.
@@ -431,8 +434,12 @@ Expected: чисто; правятся тесты `AccountShell`, `OwnerCard`, `
 - [ ] **Step 5: Коммит**
 
 ```bash
-git add -A
+git add src/ tests/
 git commit -m "refactor(ui): show names instead of usernames"
+
+# Seed и dev-вход правились здесь же, но к UI не относятся — отдельным коммитом.
+git add scripts/seed.ts src/app/api/dev/login/route.ts
+git commit -m "chore: drop usernames from seed and dev login"
 ```
 
 ---
@@ -478,7 +485,9 @@ git commit -m "feat(cabinet): let sellers set their public name when publishing"
 
 ---
 
-## Task 9: Seed, dev-вход и документация
+## Task 9: Документация и комментарии
+
+Seed и dev-вход почищены в Task 7 — они ломали компиляцию и не могли ждать.
 
 **Files:**
 - Modify: `CLAUDE.md`, `docs/QA-email-auth.md`, `drizzle/schema.ts:101` и `src/app/api/auth/email/verify/route.ts:11` (комментарии)
@@ -511,7 +520,7 @@ pnpm db:migrate && pnpm db:seed
 
 ```bash
 git add -A
-git commit -m "chore: drop usernames from seed, dev login and docs"
+git commit -m "docs: drop usernames from project docs"
 ```
 
 ---
