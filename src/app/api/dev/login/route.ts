@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { users, sessions } from "@db/schema";
 import { getEnv } from "@/lib/env";
 import { newId } from "@/lib/auth/id";
-import { sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
+import { safeCallback, sessionCookieName, sessionTtlSeconds } from "@/lib/auth/session";
 
 // Dev-only быстрый логин тестовым юзером. В production route отвечает 404 —
 // нет никакого секрета или дефолт-флага, который бы спас от случайного
@@ -64,9 +64,9 @@ export async function GET(req: NextRequest) {
   const expires = new Date(Date.now() + sessionTtlSeconds * 1000);
   await db.insert(sessions).values({ sessionToken, userId, expires });
 
-  // callbackUrl — только same-origin relative path (без open redirect даже в dev).
-  const cb = req.nextUrl.searchParams.get("callbackUrl");
-  const target = cb && cb.startsWith("/") && !cb.startsWith("//") ? cb : "/";
+  // callbackUrl — только same-origin relative path. Проверка общая с остальными
+  // флоу: вторая копия правила это способ вернуть уже закрытую дыру.
+  const target = safeCallback(req.nextUrl.searchParams.get("callbackUrl"));
   const res = NextResponse.redirect(new URL(target, req.url));
   res.cookies.set(sessionCookieName(), sessionToken, {
     httpOnly: true,

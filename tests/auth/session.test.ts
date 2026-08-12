@@ -34,6 +34,31 @@ describe("safeCallback", () => {
     expect(safeCallback(null)).toBe("/");
     expect(safeCallback(undefined)).toBe("/");
   });
+
+  it("отбивает обратный слэш — браузер трактует его как /", () => {
+    expect(safeCallback("/\\evil.com")).toBe("/");
+    expect(safeCallback("/\\\\evil.com")).toBe("/");
+  });
+
+  it("отбивает управляющие символы внутри пути", () => {
+    // URL вырезает tab/LF/CR ещё до резолва, поэтому ловим их сами.
+    expect(safeCallback("/\tevil.com")).toBe("/");
+    expect(safeCallback("/\nevil.com")).toBe("/");
+    expect(safeCallback("/\revil.com")).toBe("/");
+  });
+
+  it("пропускает нормальный путь со слагом, query и якорем", () => {
+    // Дефис в слаге не должен считаться подозрительным — иначе любой возврат
+    // на карточку товара схлопнется в корень.
+    expect(safeCallback("/kazan/bicycles/trek-01j?from=1#top"))
+      .toBe("/kazan/bicycles/trek-01j?from=1#top");
+    expect(safeCallback("/nizhniy-novgorod/velosipedy/gorny-velosiped-01j"))
+      .toBe("/nizhniy-novgorod/velosipedy/gorny-velosiped-01j");
+  });
+
+  it("выбрасывает всё, кроме пути, query и якоря", () => {
+    expect(safeCallback("/a/../../b")).toBe("/b");
+  });
 });
 
 describe("sessionCookieName", () => {
