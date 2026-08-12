@@ -112,7 +112,7 @@ function Section({
 }
 
 function peerLabel(deal: CabinetDeal): string {
-  return deal.peerName ?? (deal.peerUsername ? `@${deal.peerUsername}` : "человек");
+  return deal.peerName ?? "человек";
 }
 
 function dates(deal: CabinetDeal): string {

@@ -10,11 +10,10 @@ function memberSince(date: Date): string {
 // Блок продавца под фото: слева — инфо (аватар, имя-ссылка, проверен, локация,
 // на сайте с), справа — карта-заглушка (интеграции карт пока нет).
 export function OwnerCard({
-  name, href, username, image, isVerified, location, cityName, createdAt,
+  name, href, image, isVerified, location, cityName, createdAt,
 }: {
   name: string;
   href: string;
-  username: string | null;
   image: string | null;
   isVerified: boolean;
   location?: string | null;
@@ -25,7 +24,7 @@ export function OwnerCard({
     <div className="surface grid gap-4 p-4 sm:p-5 md:grid-cols-[1fr_280px]">
       <div>
         <div className="flex items-center gap-3.5">
-          <Avatar src={image} name={name} username={username} size={48} />
+          <Avatar src={image} name={name} size={48} />
           <div className="font-display text-lg font-bold leading-snug sm:text-xl">
             Владелец{" "}
             <Link href={href as never} className="text-accent hover:underline">

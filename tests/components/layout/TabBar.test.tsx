@@ -7,7 +7,7 @@ const AUTH = { nextAuthProviders: ["yandex"], vkEnabled: true, canRegisterByEmai
 const pathname = vi.hoisted(() => ({ current: "/" }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
 
-const user = { name: "Марина", username: "marina", image: null };
+const user = { name: "Марина", image: null };
 
 describe("TabBar", () => {
   it("renders all five destinations", () => {

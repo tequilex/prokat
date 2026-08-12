@@ -36,6 +36,6 @@ describe("auth schema shape", () => {
 // Ник удалён: профиль адресуется по id, человека представляет name.
 describe("users: ника больше нет", () => {
   it("колонки username в схеме не существует", () => {
-    expect((users as Record<string, unknown>).username).toBeUndefined();
+    expect((users as unknown as Record<string, unknown>).username).toBeUndefined();
   });
 });

@@ -251,7 +251,6 @@ async function ListingPage({
             <OwnerCard
               name={sellerName}
               href={sellerHref}
-              username={seller.username}
               image={seller.image}
               isVerified={seller.isVerified}
               location={listing.location}

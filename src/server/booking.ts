@@ -21,7 +21,6 @@ export async function getCustomerRequests(userId: string) {
       categorySlug: categories.slug,
       citySlug: cities.slug,
       ownerName: users.name,
-      ownerUsername: users.username,
       ownerPhone: users.phone,
     })
     .from(bookingRequests)

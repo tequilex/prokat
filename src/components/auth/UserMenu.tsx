@@ -13,7 +13,7 @@ import { ThemeSegmented } from "@/components/providers/ThemeSegmented";
 import { content } from "@theme/content";
 
 type Props = {
-  username: string;
+  email: string | null;
   name: string | null;
   image: string | null;
   isAdmin?: boolean;
@@ -31,7 +31,7 @@ const LINKS = [
   { href: "/profile", label: "Настройки", Icon: Settings },
 ] as const;
 
-export function UserMenu({ username, name, image, isAdmin = false }: Props) {
+export function UserMenu({ email, name, image, isAdmin = false }: Props) {
   // signOut делает XHR + redirect, без feedback'а пункт меню «зависает».
   // useTransition держит pending до окончания навигации.
   const [isSigningOut, startSignOut] = useTransition();
@@ -68,7 +68,7 @@ export function UserMenu({ username, name, image, isAdmin = false }: Props) {
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => setOpen(false)}
         >
-          <Avatar src={image} name={name} username={username} size={36} />
+          <Avatar src={image} name={name} size={36} />
         </Link>
       </DropdownMenuTrigger>
 
@@ -84,10 +84,10 @@ export function UserMenu({ username, name, image, isAdmin = false }: Props) {
       >
         <DropdownMenuItem asChild className="gap-2.5 px-2 py-2">
           <Link href={"/cabinet" as never}>
-            <Avatar src={image} name={name} username={username} size={32} />
+            <Avatar src={image} name={name} size={32} />
             <span className="min-w-0">
-              <span className="block truncate font-medium">{name ?? `@${username}`}</span>
-              {name && <span className="block truncate text-xs text-muted-foreground">@{username}</span>}
+              <span className="block truncate font-medium">{name ?? "Без имени"}</span>
+              {email && <span className="block truncate text-xs text-muted-foreground">{email}</span>}
             </span>
           </Link>
         </DropdownMenuItem>

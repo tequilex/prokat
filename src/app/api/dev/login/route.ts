@@ -20,13 +20,11 @@ import { safeCallback, sessionCookieName, sessionTtlSeconds } from "@/lib/auth/s
 const TEST_USERS = {
   user: {
     email: "dev-user@local.test",
-    username: "devuser",
     name: "Dev User",
     role: "user" as const,
   },
   admin: {
     email: "dev-admin@local.test",
-    username: "devadmin",
     name: "Dev Admin",
     role: "admin" as const,
   },
@@ -47,14 +45,13 @@ export async function GET(req: NextRequest) {
   if (existing.length > 0) {
     userId = existing[0].id;
     await db.update(users)
-      .set({ username: profile.username, name: profile.name, role: profile.role, bannedAt: null, banReason: null })
+      .set({ name: profile.name, role: profile.role, bannedAt: null, banReason: null })
       .where(eq(users.id, userId));
   } else {
     userId = newId();
     await db.insert(users).values({
       id: userId,
       email: profile.email,
-      username: profile.username,
       name: profile.name,
       role: profile.role,
     });

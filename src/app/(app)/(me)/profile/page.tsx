@@ -28,12 +28,12 @@ export default async function ProfilePage() {
       <div className="surface p-5 sm:p-6">
         <h2 className="mb-3 text-lg font-semibold">Данные</h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          @{user.username} · {user.email}
+          {user.email}
         </p>
         <ProfileForm initialName={user.name ?? ""} initialPhone={user.phone ?? ""} initialBio={user.bio ?? ""} />
-        {user.username && (
+        {(
           <p className="mt-3 text-sm">
-            <a href={`/u/${user.username}`} className="text-accent hover:underline underline-offset-2">
+            <a href={`/u/${user.id}`} className="text-accent hover:underline underline-offset-2">
               Открыть мой публичный профиль →
             </a>
           </p>

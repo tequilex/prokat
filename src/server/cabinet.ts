@@ -19,7 +19,6 @@ export interface CabinetDeal {
   qty: number;
   expiresAt: Date;
   peerName: string | null;
-  peerUsername: string | null;
 }
 
 export interface CabinetSummary {
@@ -131,7 +130,6 @@ async function deals(
       qty: bookingRequests.qty,
       expiresAt: bookingRequests.expiresAt,
       peerName: peer.name,
-      peerUsername: peer.username,
     })
     .from(bookingRequests)
     .innerJoin(listings, eq(listings.id, bookingRequests.listingId))

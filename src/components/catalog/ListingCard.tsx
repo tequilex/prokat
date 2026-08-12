@@ -35,7 +35,7 @@ export function ListingCard({
   availabilityMap?: AvailabilityMap;
   from?: string;
 }) {
-  const { listing, ownerName, ownerUsername, ownerImage, categorySlug } = item;
+  const { listing, ownerName, ownerImage, categorySlug } = item;
   const photo = listingPhotos(listing)[0];
   const href = listingPath(citySlug, categorySlug, listing.slug, listing.id);
   const price = priceLabel(listing);
@@ -68,7 +68,7 @@ export function ListingCard({
         )}
 
         <span className="absolute bottom-3 right-3 rounded-full ring-2 ring-white/80">
-          <Avatar src={ownerImage} name={ownerName} username={ownerUsername} size={36} />
+          <Avatar src={ownerImage} name={ownerName} size={36} />
         </span>
       </Link>
 

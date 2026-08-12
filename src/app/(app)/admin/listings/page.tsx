@@ -22,7 +22,7 @@ export default async function AdminListingsPage() {
     <section aria-label="Объявления">
       <p className="mb-4 text-sm text-muted-foreground">Последние {rows.length} объявлений</p>
       <ul className="flex flex-col gap-2">
-        {rows.map(({ listing, ownerName, ownerUsername, citySlug, categorySlug }) => (
+        {rows.map(({ listing, ownerName, citySlug, categorySlug }) => (
           <li key={listing.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
             <div className="min-w-0">
               <Link
@@ -32,7 +32,7 @@ export default async function AdminListingsPage() {
                 {listing.title}
               </Link>
               <p className="text-sm text-muted-foreground">
-                {ownerName ?? `@${ownerUsername ?? "—"}`}
+                {ownerName ?? "—"}
                 {listing.priceDay !== null ? ` · ${formatPrice(listing.priceDay)}/сутки` : ""}
                 {" · "}{STATUS_LABEL[listing.status] ?? listing.status}
               </p>

@@ -33,7 +33,7 @@ export default async function RequestsPage() {
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {rows.map(({ request, listingTitle, listingSlug, listingId, categorySlug, citySlug, ownerName, ownerUsername, ownerPhone }) => {
+          {rows.map(({ request, listingTitle, listingSlug, listingId, categorySlug, citySlug, ownerName, ownerPhone }) => {
             const status = request.status as BookingStatus;
             const period = request.dateFrom === request.dateTo
               ? formatDayMonth(request.dateFrom)
@@ -53,8 +53,8 @@ export default async function RequestsPage() {
                       {period}
                       {request.qty > 1 ? ` · ${request.qty} шт.` : ""}
                       {" · "}
-                      {ownerUsername ? (
-                        <Link href={`/u/${ownerUsername}` as never} className="hover:text-foreground">
+                      {request.ownerUserId ? (
+                        <Link href={`/u/${request.ownerUserId}` as never} className="hover:text-foreground">
                           {sellerLabel}
                         </Link>
                       ) : sellerLabel}

@@ -16,8 +16,8 @@ export default async function AdminUsersPage() {
         {rows.map(({ user, listingCount, requestCount }) => (
           <li key={user.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
             <div className="min-w-0">
-              <span className="font-medium">{user.name ?? user.email}</span>
-              {user.username && <span className="ml-2 text-sm text-muted-foreground">@{user.username}</span>}
+              <span className="font-medium">{user.name ?? "—"}</span>
+              <span className="ml-2 text-sm text-muted-foreground">{user.email}</span>
               {user.isVerified && (
                 <span className="ml-2 rounded-pill bg-accent/10 px-2 py-0.5 text-xs text-accent">проверен</span>
               )}

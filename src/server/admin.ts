@@ -12,7 +12,6 @@ export async function adminListListings(limit = 200) {
     .select({
       listing: listings,
       ownerName: users.name,
-      ownerUsername: users.username,
       citySlug: cities.slug,
       categorySlug: categories.slug,
     })

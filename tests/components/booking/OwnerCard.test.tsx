@@ -8,7 +8,6 @@ describe("OwnerCard", () => {
       <OwnerCard
         name="Артём"
         href="/u/prokatmaster"
-        username="prokatmaster"
         image={null}
         cityName="Казань"
         isVerified
@@ -25,7 +24,6 @@ describe("OwnerCard", () => {
       <OwnerCard
         name="Частник"
         href="/u/chastnik"
-        username="chastnik"
         image={null}
         cityName="Казань"
         isVerified={false}

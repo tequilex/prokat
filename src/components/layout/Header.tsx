@@ -14,9 +14,9 @@ import { HeaderSearch } from "./HeaderSearch";
 export async function Header() {
   const [session, cities] = await Promise.all([auth(), getActiveCities()]);
   const user = session?.user;
-  // Аноним → /login; авторизованный без username → /welcome (гейт онбординга);
-  // иначе прямиком в создание объявления.
-  const placeHref = !user ? "/login" : user.username ? "/cabinet/listings/new" : "/welcome";
+  // Аноним входит модалкой, остальные идут прямиком в создание объявления:
+  // гейта на ник больше нет.
+  const placeHref = user ? "/cabinet/listings/new" : "/login";
 
   // Флаги для модалки входа: аноним входит, не уходя со страницы.
   const authProps = authPanelProps();
@@ -71,20 +71,16 @@ export async function Header() {
               {/* Профиль или вход. Тема переехала в меню пользователя, у анонима
                 * она остаётся в подвале. */}
               <div className="glass flex h-12 shrink-0 items-center gap-1 rounded-pill px-1.5 md:order-4">
-                {user?.username ? (
+                {user ? (
                   <UserMenu
-                    username={user.username}
                     name={user.name ?? null}
+                    email={user.email ?? null}
                     image={user.image ?? null}
                     isAdmin={user.role === "admin"}
                   />
                 ) : (
                   <Button asChild variant="ghost" size="sm" className="rounded-pill">
-                    {user ? (
-                      <Link href="/welcome">{content.auth.chooseUsername}</Link>
-                    ) : (
-                      <LoginTrigger {...authProps}>{content.nav.login}</LoginTrigger>
-                    )}
+                    <LoginTrigger {...authProps}>{content.nav.login}</LoginTrigger>
                   </Button>
                 )}
               </div>

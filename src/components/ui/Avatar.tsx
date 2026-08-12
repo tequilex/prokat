@@ -3,7 +3,6 @@ import Image from "next/image";
 interface AvatarProps {
   src: string | null;
   name?: string | null;
-  username?: string | null;
   size: number;
   className?: string;
 }
@@ -18,17 +17,17 @@ function hueFromString(s: string): number {
   return Math.abs(h) % 360;
 }
 
-function pickLetter(name?: string | null, username?: string | null): string {
-  const src = (name ?? username ?? "").trim();
+function pickLetter(name?: string | null): string {
+  const src = (name ?? "").trim();
   if (!src) return "?";
   return src.charAt(0).toUpperCase();
 }
 
 // Единая аватарка для всех мест UI: header, comments, post-card, profile.
-// Есть src → next/image; нет → круг с первой буквой, фон hsl от хеша username
-// (или name, если username пуст). Текст белый, насыщенность/светлота
+// Есть src → next/image; нет → круг с первой буквой, фон hsl от хеша имени.
+// Текст белый, насыщенность/светлота
 // фиксированы так, чтобы контраст работал в обеих темах.
-export function Avatar({ src, name, username, size, className = "" }: AvatarProps) {
+export function Avatar({ src, name, size, className = "" }: AvatarProps) {
   if (src) {
     return (
       <Image
@@ -40,7 +39,7 @@ export function Avatar({ src, name, username, size, className = "" }: AvatarProp
       />
     );
   }
-  const seed = (username ?? name ?? "?").toLowerCase();
+  const seed = (name ?? "?").toLowerCase();
   const hue = hueFromString(seed);
   return (
     <div
@@ -53,7 +52,7 @@ export function Avatar({ src, name, username, size, className = "" }: AvatarProp
       }}
       className={`rounded-full shrink-0 inline-flex items-center justify-center text-white font-medium leading-none select-none ${className}`}
     >
-      {pickLetter(name, username)}
+      {pickLetter(name)}
     </div>
   );
 }

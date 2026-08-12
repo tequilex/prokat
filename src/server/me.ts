@@ -17,7 +17,6 @@ export async function getUserProfile(userId: string) {
 
 export interface CabinetIdentity {
   name: string | null;
-  username: string | null;
   image: string | null;
   isVerified: boolean;
   activeListings: number;
@@ -33,7 +32,6 @@ export async function getCabinetIdentity(userId: string): Promise<CabinetIdentit
     db
       .select({
         name: users.name,
-        username: users.username,
         image: users.image,
         isVerified: users.isVerified,
       })

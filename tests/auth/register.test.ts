@@ -48,13 +48,13 @@ describe("registerWithPassword", () => {
 
   it("rejects a malformed email", async () => {
     const fake = fakeAuthStore();
-    const res = await registerWithPassword(deps(fake.store).deps, { email: "not-an-email", password: "normalnyi-parol" });
+    const res = await registerWithPassword(deps(fake.store).deps, { email: "not-an-email", name: "Марина", password: "normalnyi-parol" });
     expect(res).toMatchObject({ ok: false, error: "invalid_email" });
   });
 
   it("rejects a password shorter than 8 chars", async () => {
     const fake = fakeAuthStore();
-    const res = await registerWithPassword(deps(fake.store).deps, { email: "a@ya.ru", password: "short" });
+    const res = await registerWithPassword(deps(fake.store).deps, { email: "a@ya.ru", name: "Марина", password: "short" });
     expect(res).toMatchObject({ ok: false, error: "weak_password" });
     expect(fake.users).toHaveLength(0);
   });

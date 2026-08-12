@@ -20,7 +20,7 @@ export function TabBar({
   authProps,
 }: {
   placeHref: string;
-  user: { name: string | null; username: string | null; image: string | null } | null;
+  user: { name: string | null; image: string | null } | null;
   // Флаги входа: анониму «Сдать» открывает модалку, а не уводит на /login —
   // так же, как кнопка в десктопном хедере.
   authProps: { nextAuthProviders: string[]; vkEnabled: boolean; canRegisterByEmail: boolean };
@@ -94,7 +94,7 @@ export function TabBar({
         {tab("/profile", itemClass(profile), (
           <>
             {user ? (
-              <Avatar src={user.image} name={user.name} username={user.username} size={22} />
+              <Avatar src={user.image} name={user.name} size={22} />
             ) : (
               <User className="h-[22px] w-[22px]" aria-hidden="true" />
             )}

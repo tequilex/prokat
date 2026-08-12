@@ -24,7 +24,7 @@ export default async function CabinetRequestsPage() {
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {rows.map(({ request, listingTitle, customerName, customerUsername }) => {
+          {rows.map(({ request, listingTitle, customerName }) => {
             const status = request.status as BookingStatus;
             const period = request.dateFrom === request.dateTo
               ? formatDayMonth(request.dateFrom)
@@ -37,7 +37,7 @@ export default async function CabinetRequestsPage() {
                     <p className="mt-0.5 text-sm text-muted-foreground">
                       {period}
                       {request.qty > 1 ? ` · ${request.qty} шт.` : ""}
-                      {" · "}{customerName ?? `@${customerUsername ?? "клиент"}`}
+                      {" · "}{customerName ?? "клиент"}
                     </p>
                   </div>
                   <span className={`rounded-pill px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_CLASSES[status]}`}>

@@ -76,7 +76,6 @@ export interface ListingFilters {
 export interface ListingWithOwner {
   listing: Listing;
   ownerName: string | null;
-  ownerUsername: string | null;
   ownerImage: string | null;
   categorySlug: string;
 }

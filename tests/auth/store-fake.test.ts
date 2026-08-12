@@ -16,7 +16,7 @@ function token(over: Partial<StoredToken> = {}): StoredToken {
 describe("fakeAuthStore: users", () => {
   it("creates and finds a user, then sets the password", async () => {
     const { store } = fakeAuthStore();
-    const created = await store.createUser("a@ya.ru", "hash");
+    const created = await store.createUser("a@ya.ru", "hash", "Марина");
     expect(await store.findUserByEmail("a@ya.ru")).toMatchObject({ id: created.id, passwordHash: "hash" });
 
     await store.setPassword(created.id, "hash-2");

@@ -141,11 +141,11 @@ async function main() {
 
   // --- Юзеры-владельцы (телефон = контакт продавца) ---
   const ownerDefs = [
-    { username: "prokatmaster", name: "Артём", phone: "+7 900 111-22-33" },
-    { username: "instrument116", name: "Роман", phone: "+7 900 222-33-44" },
-    { username: "velokazan", name: "Дмитрий", phone: "+7 900 333-44-55" },
-    { username: "sup-kazanka", name: "Игорь", phone: "+7 900 444-55-66" },
-    { username: "platye-naprokat", name: "Марина", phone: "+7 900 555-66-77" },
+    { name: "Артём", phone: "+7 900 111-22-33" },
+    { name: "Роман", phone: "+7 900 222-33-44" },
+    { name: "Дмитрий", phone: "+7 900 333-44-55" },
+    { name: "Игорь", phone: "+7 900 444-55-66" },
+    { name: "Марина", phone: "+7 900 555-66-77" },
   ];
 
   const ownerIds: string[] = [];
@@ -155,7 +155,6 @@ async function main() {
     await db.insert(users).values({
       id: userId,
       email: `owner${i + 1}@seed.local`,
-      username: def.username,
       name: def.name,
       phone: def.phone,
       isVerified: i < 2, // пара «проверенных» для демо значка

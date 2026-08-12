@@ -14,7 +14,6 @@ export async function getOwnerRequests(userId: string) {
       request: bookingRequests,
       listingTitle: listings.title,
       customerName: users.name,
-      customerUsername: users.username,
     })
     .from(bookingRequests)
     .innerJoin(listings, eq(listings.id, bookingRequests.listingId))

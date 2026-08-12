@@ -44,7 +44,7 @@ export default async function HomePage() {
   }));
 
   const user = session?.user;
-  const placeHref = !user ? "/login" : user.username ? "/cabinet/listings/new" : "/welcome";
+  const placeHref = user ? "/cabinet/listings/new" : "/login";
 
   // Анониму баннер «Разместить» открывает вход модалкой, а не уводит на /login.
   const authProps = authPanelProps();
