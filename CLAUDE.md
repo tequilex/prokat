@@ -85,7 +85,8 @@ booking_requests; listing 1—N availability; city/category 1—N listings.
 - **`src/app/`** — роуты: `(public)/`, `(app)/` (`cabinet`, `(me)`, `admin`), `(auth)/`, `api/`.
 - **`theme/`** — `tokens.css` (цвета/радиусы), `content.ts` (тексты), `seo.ts`.
 - **`tests/`** — Vitest, зеркалит структуру `src`.
-- **`docs/superpowers/`** — спек (`specs/`) и пофазные планы (`plans/`) редизайна модели: история и обоснование архитектурных решений.
+- **`docs/superpowers/`** — спеки (`specs/`) и пофазные планы (`plans/`): история и обоснование архитектурных решений.
+- **`docs/BACKLOG.md`** — осознанно отложенное, с причиной и ценой вопроса. Заметки про конкретный код живут комментарием `TODO` рядом с ним.
 
 ## Ключевые флоу
 
