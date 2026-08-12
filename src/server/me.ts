@@ -17,6 +17,7 @@ export async function getUserProfile(userId: string) {
 
 export interface CabinetIdentity {
   name: string | null;
+  email: string;
   image: string | null;
   isVerified: boolean;
   activeListings: number;
@@ -32,6 +33,9 @@ export async function getCabinetIdentity(userId: string): Promise<CabinetIdentit
     db
       .select({
         name: users.name,
+        // Почта видна только владельцу кабинета: подсказка, под каким аккаунтом
+        // он сидит. Публично адрес нигде не показывается.
+        email: users.email,
         image: users.image,
         isVerified: users.isVerified,
       })

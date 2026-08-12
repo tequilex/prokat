@@ -12,6 +12,7 @@ const groups = [
 
 const identity = {
   name: "Марина",
+  email: "marina@ya.ru",
   image: null,
   isVerified: true,
   activeListings: 3,
@@ -33,6 +34,7 @@ describe("AccountShell", () => {
   it("puts the person and their counts above the navigation", () => {
     render(<AccountShell groups={groups} identity={identity}>x</AccountShell>);
     expect(screen.getByText("Марина")).toBeInTheDocument();
+    expect(screen.getByText("marina@ya.ru")).toBeInTheDocument();
     expect(screen.getByText("3 объявления")).toBeInTheDocument();
     expect(screen.getByText("12 аренд")).toBeInTheDocument();
     expect(screen.getByText("Проверенный продавец")).toBeInTheDocument();

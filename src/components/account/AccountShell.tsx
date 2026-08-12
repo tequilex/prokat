@@ -29,6 +29,7 @@ export type { AccountNavGroup, AccountNavItem } from "@/components/account/accou
 
 export interface AccountIdentity {
   name: string | null;
+  email: string;
   image: string | null;
   isVerified: boolean;
   activeListings: number;
@@ -56,6 +57,7 @@ function IdentityCard({ me }: { me: AccountIdentity }) {
         <Avatar src={me.image} name={me.name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="truncate font-display font-bold">{me.name ?? "Без имени"}</div>
+          <div className="truncate text-sm text-muted-foreground">{me.email}</div>
         </div>
         <Link
           href={"/profile" as never}
