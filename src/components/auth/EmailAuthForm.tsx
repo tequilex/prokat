@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,17 @@ export function EmailAuthForm({
   if (sentTo) {
     return (
       <div className="flex flex-col gap-4 text-sm">
+        {/* Возврат к форме с сохранёнными значениями: письмо могло уйти на
+          * адрес с опечаткой, и человеку нужно это поправить, а не гадать. */}
+        <button
+          type="button"
+          onClick={() => { setSentTo(null); setResent(false); }}
+          className="-ml-1 inline-flex w-fit items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {mode === "forgot" ? "Другой адрес" : "Изменить адрес"}
+        </button>
+
         <p className="text-foreground">
           {mode === "forgot"
             ? <>Если почта <span className="font-medium">{sentTo}</span> зарегистрирована, мы отправили на неё ссылку для смены пароля.</>

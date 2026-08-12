@@ -188,3 +188,24 @@ describe("EmailAuthForm: поле имени", () => {
     }));
   });
 });
+
+describe("EmailAuthForm: возврат с экрана «письмо отправлено»", () => {
+  it("возвращает к форме регистрации с сохранённым адресом", async () => {
+    actions.register.mockResolvedValue({ ok: true, data: { sentTo: "a@ya.ru" } });
+    render(<EmailAuthForm canRegister />);
+
+    click("Регистрация");
+    fill("Почта", "a@ya.ru");
+    fill("Имя", "Марина");
+    fill("Пароль", "normalnyi-parol");
+    fill("Повторите пароль", "normalnyi-parol");
+    click("Зарегистрироваться");
+
+    await screen.findByText(/Письмо отправлено на/);
+    click("Изменить адрес");
+
+    // Поля на месте и заполнены — опечатку можно поправить, а не вводить заново.
+    expect((screen.getByLabelText("Почта") as HTMLInputElement).value).toBe("a@ya.ru");
+    expect((screen.getByLabelText("Имя") as HTMLInputElement).value).toBe("Марина");
+  });
+});
