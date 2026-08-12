@@ -207,3 +207,39 @@ describe("registerWithPassword: имя", () => {
     expect(fake.users[0].name).toBe("Марина");
   });
 });
+
+describe("registerWithPassword: адрес возврата", () => {
+  it("кладёт адрес возврата в ссылку письма", async () => {
+    const fake = fakeAuthStore();
+    const { deps: d, sent } = deps(fake.store);
+
+    await registerWithPassword(
+      { ...d, callbackUrl: "/kazan/bicycles/trek-01j" },
+      { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" },
+    );
+
+    expect(sent[0].text).toContain("next=%2Fkazan%2Fbicycles%2Ftrek-01j");
+  });
+
+  it("не тащит в письмо подделанный адрес", async () => {
+    const fake = fakeAuthStore();
+    const { deps: d, sent } = deps(fake.store);
+
+    await registerWithPassword(
+      { ...d, callbackUrl: "/\\evil.com" },
+      { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" },
+    );
+
+    expect(sent[0].text).not.toContain("evil.com");
+    expect(sent[0].text).not.toContain("next=");
+  });
+
+  it("без адреса возврата параметра в ссылке нет", async () => {
+    const fake = fakeAuthStore();
+    const { deps: d, sent } = deps(fake.store);
+
+    await registerWithPassword(d, { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" });
+
+    expect(sent[0].text).not.toContain("next=");
+  });
+});

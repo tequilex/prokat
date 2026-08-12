@@ -66,7 +66,7 @@ describe("EmailAuthForm: вход", () => {
 
     await screen.findByRole("button", { name: "Отправить письмо ещё раз" });
     click("Отправить письмо ещё раз");
-    await waitFor(() => expect(actions.resendVerificationEmail).toHaveBeenCalledWith("a@ya.ru"));
+    await waitFor(() => expect(actions.resendVerificationEmail).toHaveBeenCalledWith("a@ya.ru", "/"));
   });
 
   it("does not offer resending on a plain wrong password", async () => {
@@ -184,7 +184,7 @@ describe("EmailAuthForm: поле имени", () => {
     click("Зарегистрироваться");
 
     await waitFor(() => expect(actions.register).toHaveBeenCalledWith({
-      email: "a@ya.ru", password: "normalnyi-parol", name: "Марина",
+      email: "a@ya.ru", password: "normalnyi-parol", name: "Марина", callbackUrl: "/",
     }));
   });
 });

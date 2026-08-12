@@ -59,7 +59,7 @@ export function EmailAuthForm({
     startTransition(async () => {
       if (mode === "register") {
         if (password !== password2) { setError("Пароли не совпадают"); return; }
-        const res = await register({ email, password, name });
+        const res = await register({ email, password, name, callbackUrl });
         if (res.ok) setSentTo(res.data.sentTo);
         else setError(res.error);
         return;
@@ -83,7 +83,7 @@ export function EmailAuthForm({
 
   const resend = () => {
     startTransition(async () => {
-      await resendVerificationEmail(email);
+      await resendVerificationEmail(email, callbackUrl);
       setResent(true);
     });
   };

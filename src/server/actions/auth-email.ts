@@ -24,7 +24,7 @@ export type ActionResult<T = void> =
   // формулировки молча сломала бы поведение.
   | { ok: false; error: string; code?: string };
 
-function flowDeps(): FlowDeps {
+function flowDeps(callbackUrl?: string): FlowDeps {
   const env = getEnv();
   return {
     store: drizzleAuthStore(),
@@ -32,6 +32,7 @@ function flowDeps(): FlowDeps {
     baseUrl: env.NEXTAUTH_URL,
     transportAvailable: mailTransportAvailable(),
     blockedExtra: env.BLOCKED_EMAIL_DOMAINS,
+    callbackUrl,
   };
 }
 
@@ -54,12 +55,12 @@ const MESSAGES: Record<string, string> = {
 };
 
 export async function register(
-  input: { email: string; password: string; name: string },
+  input: { email: string; password: string; name: string; callbackUrl?: string },
 ): Promise<ActionResult<{ sentTo: string }>> {
   const limit = checkLimit(await ip(), "register");
   if (!limit.ok) return { ok: false, error: MESSAGES.rate_limited };
 
-  const res = await registerWithPassword(flowDeps(), input);
+  const res = await registerWithPassword(flowDeps(input.callbackUrl), input);
   if (res.ok) return { ok: true, data: { sentTo: res.sentTo } };
 
   if (res.error === "blocked_domain") {
@@ -84,14 +85,14 @@ export async function login(
   return { ok: true, data: { redirectTo: safeCallback(input.callbackUrl) } };
 }
 
-export async function resendVerificationEmail(rawEmail: string): Promise<ActionResult> {
+export async function resendVerificationEmail(rawEmail: string, callbackUrl?: string): Promise<ActionResult> {
   const email = normalizeEmail(rawEmail);
   const byEmail = checkLimit(email, "resend");
   const byIp = checkLimit(await ip(), "mail_ip");
   // Ответ одинаковый даже при отказе лимитера: иначе форма выдаёт, есть ли аккаунт.
   if (!byEmail.ok || !byIp.ok) return { ok: true, data: undefined };
 
-  await resendVerification(flowDeps(), email);
+  await resendVerification(flowDeps(callbackUrl), email);
   return { ok: true, data: undefined };
 }
 

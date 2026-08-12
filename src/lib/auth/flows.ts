@@ -1,6 +1,7 @@
 import { emailDomain, isBlockedDomain, normalizeEmail } from "@/lib/auth/email";
 import { consumeToken, hashToken, issueToken } from "@/lib/auth/email-tokens";
 import { checkPasswordRules, fakeVerify, hashPassword, verifyPassword } from "@/lib/auth/password";
+import { safeCallback } from "@/lib/auth/session";
 import type { AuthStore } from "@/lib/auth/store";
 import type { Mail } from "@/lib/mail/mailer";
 import { resetEmail, verifyEmail, verifyEmailAgain } from "@/lib/mail/templates";
@@ -18,6 +19,10 @@ export type FlowDeps = {
   // вызов действия в обход UI завёл бы аккаунт, который невозможно подтвердить.
   transportAvailable: boolean;
   blockedExtra?: readonly string[];
+  // Куда вернуть человека после перехода по ссылке из письма. Едет параметром
+  // в самой ссылке — хранить в БД нечего. Проверяется safeCallback: ссылку
+  // может собрать кто угодно.
+  callbackUrl?: string;
   now?: Date;
 };
 
@@ -31,8 +36,12 @@ export type RegisterResult =
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function verifyLink(baseUrl: string, token: string): string {
-  return `${baseUrl.replace(/\/$/, "")}/api/auth/email/verify?token=${encodeURIComponent(token)}`;
+function verifyLink(baseUrl: string, token: string, next?: string): string {
+  const link = `${baseUrl.replace(/\/$/, "")}/api/auth/email/verify?token=${encodeURIComponent(token)}`;
+  const safe = safeCallback(next);
+  // "/" не добавляем: это и есть поведение по умолчанию, лишний параметр в
+  // письме только мешает читать ссылку.
+  return safe === "/" ? link : `${link}&next=${encodeURIComponent(safe)}`;
 }
 
 function resetLink(baseUrl: string, token: string): string {
@@ -80,7 +89,7 @@ export async function registerWithPassword(
 
   const token = await issueToken(deps.store, userId, "verify", deps.now);
   try {
-    await deps.sendMail(verifyEmail(email, verifyLink(deps.baseUrl, token)));
+    await deps.sendMail(verifyEmail(email, verifyLink(deps.baseUrl, token, deps.callbackUrl)));
   } catch {
     return { ok: false, error: "mail_failed" };
   }
@@ -98,7 +107,7 @@ export async function resendVerification(deps: FlowDeps, rawEmail: string): Prom
 
   const token = await issueToken(deps.store, user.id, "verify", deps.now);
   try {
-    await deps.sendMail(verifyEmailAgain(email, verifyLink(deps.baseUrl, token)));
+    await deps.sendMail(verifyEmailAgain(email, verifyLink(deps.baseUrl, token, deps.callbackUrl)));
   } catch {
     return { ok: true };
   }
