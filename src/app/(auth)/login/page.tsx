@@ -22,10 +22,9 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; from?: string }>;
 }) {
   const session = await auth();
-  if (session?.user) {
-    if (session.user.bannedAt) redirect("/");
-    redirect(session.user.username ? "/" : "/welcome");
-  }
+  // Забаненного тоже уводим на главную — про блокировку ему скажет /banned,
+  // куда его отправит гард на первом же закрытом разделе.
+  if (session?.user) redirect("/");
 
   const config = buildEdgeConfig();
   const nextAuthProviders = (config.providers ?? []).flatMap((p) => {

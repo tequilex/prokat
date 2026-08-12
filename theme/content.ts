@@ -47,13 +47,6 @@ export const content = {
     loginSubtitle: "Почта с паролем или вход через сервис",
     noProviders: "OAuth-провайдеры не настроены. Заполните CLIENT_ID/SECRET в .env.",
     signOut: "Выйти",
-    chooseUsername: "Выбери ник",
-    welcomeTitle: "Придумайте username",
-    welcomeHint: "3–20 символов: латиница, цифры, _ и -. Это часть адреса вашего профиля.",
-    welcomeSubmit: "Сохранить",
-    errorFormat: "Неправильный формат username",
-    errorReserved: "Этот username зарезервирован",
-    errorTaken: "Этот username уже занят",
     backToHome: "На главную",
     mail: {
       brand: "prokat",
@@ -124,7 +117,7 @@ export const content = {
       whoWeAreBody: `Независимый проект — сервис аренды вещей между людьми. По вопросам обработки персональных данных пишите на ${SITE_CONTACT_EMAIL}.`,
       whatWeCollect: "Какие данные собираем",
       whatWeCollectBody:
-        "Email и публичный профиль (имя, никнейм, аватар) при входе через OAuth-провайдеры (Yandex, VK). Данные, которые вы указываете в заявках на бронь (телефон, комментарий). Технические данные через Яндекс.Метрика — IP, User-Agent, путь, реферер, длительность сессии (без webvisor).",
+        "Email и публичный профиль (имя, аватар) при входе через OAuth-провайдеры (Yandex, VK). Данные, которые вы указываете в заявках на бронь (телефон, комментарий). Технические данные через Яндекс.Метрика — IP, User-Agent, путь, реферер, длительность сессии (без webvisor).",
       cookies: "Cookies",
       cookiesBody:
         "Используем cookies для авторизации (next-auth) и Яндекс.Метрика (anonymous-ID, рекламные cookies не ставим).",
