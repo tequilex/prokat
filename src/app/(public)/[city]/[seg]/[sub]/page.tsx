@@ -168,7 +168,7 @@ async function ListingPage({
   const { city, category, listing, seller } = r;
   const photos = listingPhotos(listing);
   const sellerName = seller.name ?? "Продавец";
-  const sellerHref = seller.username ? `/u/${seller.username}` : `/u/${seller.id}`;
+  const sellerHref = `/u/${seller.id}`;
 
   const session = await auth();
   const isAuthed = Boolean(session?.user);

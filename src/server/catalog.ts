@@ -89,7 +89,6 @@ export async function getRecentListings(cityId: string, limit = 12): Promise<Lis
     .select({
       listing: listings,
       ownerName: users.name,
-      ownerUsername: users.username,
       ownerImage: users.image,
       categorySlug: categories.slug,
     })
@@ -127,7 +126,7 @@ export async function getListingsForCategories(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, ownerImage: users.image, categorySlug: categories.slug })
+    db.select({ listing: listings, ownerName: users.name, ownerImage: users.image, categorySlug: categories.slug })
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
       .innerJoin(categories, eq(categories.id, listings.categoryId))
@@ -172,7 +171,7 @@ export async function searchListings(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerUsername: users.username, ownerImage: users.image, categorySlug: categories.slug })
+    db.select({ listing: listings, ownerName: users.name, ownerImage: users.image, categorySlug: categories.slug })
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
       .innerJoin(categories, eq(categories.id, listings.categoryId))
@@ -218,7 +217,7 @@ export async function getCategoryStats(cityId: string, categoryIds: string[]): P
   return rows[0];
 }
 
-// Активные товары продавца — для профиля /u/{username}.
+// Активные товары продавца — для профиля /u/{id}.
 export async function getActiveListingsByOwner(userId: string): Promise<Listing[]> {
   return getDb().select().from(listings)
     .where(and(eq(listings.ownerUserId, userId), eq(listings.status, "active")))
@@ -236,7 +235,6 @@ export async function getActiveListingById(id: string): Promise<Listing | null> 
 export interface Seller {
   id: string;
   name: string | null;
-  username: string | null;
   image: string | null;
   bio: string | null;
   isVerified: boolean;
@@ -244,22 +242,13 @@ export interface Seller {
   phone: string | null;
 }
 
-// Публичные поля продавца — для страницы товара и профиля /u/{username}.
+// Публичные поля продавца — для страницы товара и профиля /u/{id}.
 export async function getSellerById(userId: string): Promise<Seller | null> {
   const rows = await getDb().select({
-    id: users.id, name: users.name, username: users.username,
+    id: users.id, name: users.name,
     image: users.image, bio: users.bio, isVerified: users.isVerified,
     createdAt: users.createdAt, phone: users.phone,
   }).from(users).where(eq(users.id, userId)).limit(1);
-  return rows[0] ?? null;
-}
-
-export async function getSellerByUsername(username: string): Promise<Seller | null> {
-  const rows = await getDb().select({
-    id: users.id, name: users.name, username: users.username,
-    image: users.image, bio: users.bio, isVerified: users.isVerified,
-    createdAt: users.createdAt, phone: users.phone,
-  }).from(users).where(eq(users.username, username)).limit(1);
   return rows[0] ?? null;
 }
 
@@ -269,13 +258,12 @@ export interface OwnerCardListing extends ListingWithOwner {
   citySlug: string;
 }
 
-// Активные товары продавца в форме карточки — для профиля /u/{username}.
+// Активные товары продавца в форме карточки — для профиля /u/{id}.
 export async function getActiveListingCardsByOwner(userId: string): Promise<OwnerCardListing[]> {
   return getDb()
     .select({
       listing: listings,
       ownerName: users.name,
-      ownerUsername: users.username,
       ownerImage: users.image,
       categorySlug: categories.slug,
       citySlug: cities.slug,

@@ -1,12 +1,13 @@
 // Публичный профиль продавца: аватар, имя, «на сайте с», значок «Проверен»,
-// bio и сетка активных объявлений. Резолв по username.
+// bio и сетка активных объявлений. Резолв по id: ника в системе нет, а имя
+// в адрес не выносим — это частное лицо, а не магазин.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { User, BadgeCheck } from "lucide-react";
 import { seo } from "@theme/seo";
 import {
-  getSellerByUsername, getActiveListingCardsByOwner, getAvailabilityRows,
+  getSellerById, getActiveListingCardsByOwner, getAvailabilityRows,
 } from "@/server/catalog";
 import { buildAvailabilityByListing } from "@/lib/catalog/availability";
 import { todayStr, addDaysStr } from "@/lib/catalog/dates";
@@ -16,27 +17,28 @@ import { siteConfig } from "@/lib/site-config";
 
 export const dynamic = "force-dynamic";
 
-interface Props { params: Promise<{ username: string }> }
+interface Props { params: Promise<{ id: string }> }
 
 function memberSince(date: Date): string {
   return new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(date);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { username } = await params;
-  const seller = await getSellerByUsername(username);
+  const { id } = await params;
+  const seller = await getSellerById(id);
   if (!seller) return {};
-  const name = seller.name ?? `@${username}`;
+  // Имя может отсутствовать: у OAuth-профиля без имени и у старых записей.
+  const name = seller.name ?? "Продавец";
   return {
     title: seo.titleTemplate(`${name} — объявления`),
     description: `Объявления пользователя ${name}: аренда вещей с бронью онлайн.`,
-    alternates: { canonical: `${siteConfig.url}/u/${username}` },
+    alternates: { canonical: `${siteConfig.url}/u/${id}` },
   };
 }
 
 export default async function SellerProfilePage({ params }: Props) {
-  const { username } = await params;
-  const seller = await getSellerByUsername(username);
+  const { id } = await params;
+  const seller = await getSellerById(id);
   if (!seller) notFound();
 
   const items = await getActiveListingCardsByOwner(seller.id);
@@ -44,7 +46,7 @@ export default async function SellerProfilePage({ params }: Props) {
   const availRows = await getAvailabilityRows(items.map((i) => i.listing.id), from, addDaysStr(from, 6));
   const availByListing = buildAvailabilityByListing(availRows);
 
-  const displayName = seller.name ?? `@${username}`;
+  const displayName = seller.name ?? "Продавец";
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
@@ -69,7 +71,7 @@ export default async function SellerProfilePage({ params }: Props) {
             )}
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            @{username} · на сайте с {memberSince(seller.createdAt)}
+            на сайте с {memberSince(seller.createdAt)}
           </p>
           {seller.bio && <p className="mt-2 max-w-2xl text-sm leading-body">{seller.bio}</p>}
         </div>

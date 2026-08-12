@@ -31,19 +31,3 @@ export async function pingIndexNow(urls: string[]): Promise<void> {
     console.warn("[indexnow] ping failed", e);
   }
 }
-
-export function postUrlsForIndexNow(args: {
-  siteUrl: string;
-  postSlug: string;
-  authorUsername: string | null;
-  tagSlugs: string[];
-}): string[] {
-  const base = args.siteUrl.replace(/\/$/, "");
-  const urls = [
-    `${base}/p/${args.postSlug}`,
-    `${base}/`,
-    ...args.tagSlugs.map((s) => `${base}/t/${s}`),
-  ];
-  if (args.authorUsername) urls.push(`${base}/u/${args.authorUsername}`);
-  return urls;
-}

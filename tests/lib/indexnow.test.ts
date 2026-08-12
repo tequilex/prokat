@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { pingIndexNow, postUrlsForIndexNow } from "@/lib/indexnow";
+import { pingIndexNow } from "@/lib/indexnow";
 import { _resetEnvCacheForTests } from "@/lib/env";
 
 const env = process.env as Record<string, string | undefined>;
@@ -86,20 +86,3 @@ describe("pingIndexNow", () => {
   });
 });
 
-describe("postUrlsForIndexNow", () => {
-  it("включает post URL, главную, теги, и автора если есть username", () => {
-    const urls = postUrlsForIndexNow({
-      siteUrl: "https://example.ru/",
-      postSlug: "hello",
-      authorUsername: "alice",
-      tagSlugs: ["js", "rust"],
-    });
-    expect(urls).toEqual([
-      "https://example.ru/p/hello",
-      "https://example.ru/",
-      "https://example.ru/t/js",
-      "https://example.ru/t/rust",
-      "https://example.ru/u/alice",
-    ]);
-  });
-});
