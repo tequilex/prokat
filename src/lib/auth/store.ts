@@ -13,6 +13,9 @@ export type TokenPurpose = "verify" | "reset";
 export type AuthUser = {
   id: string;
   email: string;
+  // Как человека видят другие: подпись у аватара, блок продавца, заявка.
+  // Nullable: у старых записей и у OAuth-профиля без имени его может не быть.
+  name: string | null;
   passwordHash: string | null;
   emailVerified: Date | null;
   bannedAt: Date | null;
@@ -46,8 +49,10 @@ export type CreateWithAccountInput = {
 export interface AuthStore {
   findUserByEmail(email: string): Promise<AuthUser | null>;
   findUserById(id: string): Promise<AuthUser | null>;
-  createUser(email: string, passwordHash: string): Promise<AuthUser>;
-  setPassword(userId: string, passwordHash: string): Promise<void>;
+  createUser(email: string, passwordHash: string, name: string): Promise<AuthUser>;
+  // Имя опционально: сброс пароля вызывает метод с двумя аргументами и имени
+  // не касается, а перезапись брошенной регистрации — с тремя.
+  setPassword(userId: string, passwordHash: string, name?: string): Promise<void>;
   markEmailVerified(userId: string): Promise<void>;
 
   findUserIdByAccount(provider: string, providerAccountId: string): Promise<string | null>;
@@ -74,6 +79,7 @@ export function drizzleAuthStore(): AuthStore {
       const rows = await db.select({
         id: users.id,
         email: users.email,
+        name: users.name,
         passwordHash: users.passwordHash,
         emailVerified: users.emailVerified,
         bannedAt: users.bannedAt,
@@ -88,6 +94,7 @@ export function drizzleAuthStore(): AuthStore {
       return {
         id: row.id,
         email: row.email,
+        name: row.name,
         passwordHash: row.passwordHash,
         emailVerified: row.emailVerified,
         bannedAt: row.bannedAt,
@@ -99,6 +106,7 @@ export function drizzleAuthStore(): AuthStore {
       const rows = await getDb().select({
         id: users.id,
         email: users.email,
+        name: users.name,
         passwordHash: users.passwordHash,
         emailVerified: users.emailVerified,
         bannedAt: users.bannedAt,
@@ -113,6 +121,7 @@ export function drizzleAuthStore(): AuthStore {
       return {
         id: row.id,
         email: row.email,
+        name: row.name,
         passwordHash: row.passwordHash,
         emailVerified: row.emailVerified,
         bannedAt: row.bannedAt,
@@ -120,14 +129,16 @@ export function drizzleAuthStore(): AuthStore {
       };
     },
 
-    async createUser(email, passwordHash) {
+    async createUser(email, passwordHash, name) {
       const id = newId();
-      await getDb().insert(users).values({ id, email, passwordHash });
-      return { id, email, passwordHash, emailVerified: null, bannedAt: null, hasOAuthAccounts: false };
+      await getDb().insert(users).values({ id, email, passwordHash, name });
+      return { id, email, name, passwordHash, emailVerified: null, bannedAt: null, hasOAuthAccounts: false };
     },
 
-    async setPassword(userId, passwordHash) {
-      await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
+    async setPassword(userId, passwordHash, name) {
+      await getDb().update(users)
+        .set(name === undefined ? { passwordHash } : { passwordHash, name })
+        .where(eq(users.id, userId));
     },
 
     async markEmailVerified(userId) {

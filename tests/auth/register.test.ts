@@ -23,7 +23,7 @@ describe("registerWithPassword", () => {
     const fake = fakeAuthStore();
     const { deps: d, sent } = deps(fake.store);
 
-    const res = await registerWithPassword(d, { email: " A@Ya.ru ", password: "normalnyi-parol" });
+    const res = await registerWithPassword(d, { email: " A@Ya.ru ", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toEqual({ ok: true, sentTo: "a@ya.ru" });
     expect(fake.users).toHaveLength(1);
@@ -39,7 +39,7 @@ describe("registerWithPassword", () => {
   it("rejects a blocked domain", async () => {
     const fake = fakeAuthStore();
     const { deps: d, sent } = deps(fake.store);
-    const res = await registerWithPassword(d, { email: "a@gmail.com", password: "normalnyi-parol" });
+    const res = await registerWithPassword(d, { email: "a@gmail.com", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toMatchObject({ ok: false, error: "blocked_domain", domain: "gmail.com" });
     expect(fake.users).toHaveLength(0);
@@ -63,7 +63,7 @@ describe("registerWithPassword", () => {
     const fake = fakeAuthStore([{ email: "a@ya.ru", hasOAuthAccounts: true }]);
     const { deps: d, sent } = deps(fake.store);
 
-    const res = await registerWithPassword(d, { email: "a@ya.ru", password: "normalnyi-parol" });
+    const res = await registerWithPassword(d, { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toMatchObject({ ok: false, error: "oauth_account_exists" });
     expect(fake.users[0].passwordHash).toBeNull();
@@ -72,7 +72,7 @@ describe("registerWithPassword", () => {
 
   it("refuses when the email is already verified", async () => {
     const fake = fakeAuthStore([{ email: "a@ya.ru", passwordHash: "old", emailVerified: new Date() }]);
-    const res = await registerWithPassword(deps(fake.store).deps, { email: "a@ya.ru", password: "normalnyi-parol" });
+    const res = await registerWithPassword(deps(fake.store).deps, { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toMatchObject({ ok: false, error: "already_registered" });
     expect(fake.users[0].passwordHash).toBe("old");
@@ -82,7 +82,7 @@ describe("registerWithPassword", () => {
     const fake = fakeAuthStore([{ email: "a@ya.ru", passwordHash: "old" }]);
     const { deps: d, sent } = deps(fake.store);
 
-    const res = await registerWithPassword(d, { email: "a@ya.ru", password: "novyi-parol-123" });
+    const res = await registerWithPassword(d, { email: "a@ya.ru", name: "Марина", password: "novyi-parol-123" });
 
     expect(res).toEqual({ ok: true, sentTo: "a@ya.ru" });
     expect(fake.users).toHaveLength(1);
@@ -95,7 +95,7 @@ describe("registerWithPassword", () => {
     const fake = fakeAuthStore([{ email: "owner1@seed.local" }]);
     const { deps: d } = deps(fake.store);
 
-    const res = await registerWithPassword(d, { email: "owner1@seed.local", password: "normalnyi-parol" });
+    const res = await registerWithPassword(d, { email: "owner1@seed.local", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toEqual({ ok: true, sentTo: "owner1@seed.local" });
     expect(fake.users).toHaveLength(1);
@@ -106,7 +106,7 @@ describe("registerWithPassword", () => {
     const fake = fakeAuthStore();
     const { deps: d } = deps(fake.store, { transportAvailable: false });
 
-    const res = await registerWithPassword(d, { email: "a@ya.ru", password: "normalnyi-parol" });
+    const res = await registerWithPassword(d, { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toMatchObject({ ok: false, error: "mail_unavailable" });
     expect(fake.users).toHaveLength(0);
@@ -122,7 +122,7 @@ describe("registerWithPassword", () => {
       transportAvailable: true,
     };
 
-    const res = await registerWithPassword(d, { email: "a@ya.ru", password: "normalnyi-parol" });
+    const res = await registerWithPassword(d, { email: "a@ya.ru", name: "Марина", password: "normalnyi-parol" });
 
     expect(res).toMatchObject({ ok: false, error: "mail_failed" });
     // Аккаунт остаётся — его можно дожать кнопкой «отправить ещё раз».
@@ -165,5 +165,45 @@ describe("resendVerification", () => {
     expect(await resendVerification(d, "verified@ya.ru")).toEqual({ ok: true });
     expect(await resendVerification(d, "oauth@ya.ru")).toEqual({ ok: true });
     expect(sent).toHaveLength(0);
+  });
+});
+
+describe("registerWithPassword: имя", () => {
+  it("сохраняет имя, введённое при регистрации", async () => {
+    const fake = fakeAuthStore();
+    const { deps: d } = deps(fake.store);
+
+    await registerWithPassword(d, { email: "a@ya.ru", password: "normalnyi-parol", name: "  Марина  " });
+
+    expect(fake.users[0].name).toBe("Марина");
+  });
+
+  it("отклоняет пустое имя и никого не создаёт", async () => {
+    const fake = fakeAuthStore();
+    const res = await registerWithPassword(deps(fake.store).deps, {
+      email: "a@ya.ru", password: "normalnyi-parol", name: "   ",
+    });
+
+    expect(res).toMatchObject({ ok: false, error: "invalid_name" });
+    expect(fake.users).toHaveLength(0);
+  });
+
+  it("отклоняет имя длиннее 100 символов", async () => {
+    const fake = fakeAuthStore();
+    const res = await registerWithPassword(deps(fake.store).deps, {
+      email: "a@ya.ru", password: "normalnyi-parol", name: "я".repeat(101),
+    });
+    expect(res).toMatchObject({ ok: false, error: "invalid_name" });
+  });
+
+  it("пишет имя и при перезаписи брошенной регистрации", async () => {
+    // Ветка setPassword: без этого повторная регистрация оставит человека без имени.
+    const fake = fakeAuthStore([{ email: "a@ya.ru", passwordHash: "old" }]);
+
+    await registerWithPassword(deps(fake.store).deps, {
+      email: "a@ya.ru", password: "novyi-parol-1", name: "Марина",
+    });
+
+    expect(fake.users[0].name).toBe("Марина");
   });
 });

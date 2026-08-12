@@ -17,6 +17,7 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []): FakeStore {
   const users: AuthUser[] = seed.map((u, i) => ({
     id: u.id ?? `u${i + 1}`,
     email: u.email ?? `u${i + 1}@ya.ru`,
+    name: u.name ?? null,
     passwordHash: u.passwordHash ?? null,
     emailVerified: u.emailVerified ?? null,
     bannedAt: u.bannedAt ?? null,
@@ -39,17 +40,19 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []): FakeStore {
     async findUserById(id) {
       return users.find((u) => u.id === id) ?? null;
     },
-    async createUser(email, passwordHash) {
+    async createUser(email, passwordHash, name) {
       const user: AuthUser = {
-        id: `u${nextId++}`, email, passwordHash,
+        id: `u${nextId++}`, email, passwordHash, name,
         emailVerified: null, bannedAt: null, hasOAuthAccounts: false,
       };
       users.push(user);
       return user;
     },
-    async setPassword(userId, passwordHash) {
+    async setPassword(userId, passwordHash, name) {
       const u = users.find((x) => x.id === userId);
-      if (u) u.passwordHash = passwordHash;
+      if (!u) return;
+      u.passwordHash = passwordHash;
+      if (name !== undefined) u.name = name;
     },
     async markEmailVerified(userId) {
       const u = users.find((x) => x.id === userId);
@@ -62,7 +65,7 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []): FakeStore {
     async createUserWithAccount(input) {
       if (users.some((u) => u.email === input.email)) return { ok: false, reason: "email_taken" };
       const user: AuthUser = {
-        id: `u${nextId++}`, email: input.email, passwordHash: null,
+        id: `u${nextId++}`, email: input.email, name: input.name, passwordHash: null,
         emailVerified: null, bannedAt: null, hasOAuthAccounts: true,
       };
       users.push(user);

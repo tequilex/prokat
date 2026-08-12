@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -n '/Обратный слэш/,/^  }/p' src/lib/auth/session.ts | cat -v | head -14)",
+      "Bash(python3 -)",
+      "Bash(pnpm vitest *)",
+      "Bash(pnpm exec *)"
+    ],
+    "additionalDirectories": [
+      "/Users/tequilex/Desktop/prokat/src/lib/auth"
+    ]
+  }
+}

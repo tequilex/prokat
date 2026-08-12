@@ -21,11 +21,13 @@ export type FlowDeps = {
   now?: Date;
 };
 
+export const NAME_MAX_LENGTH = 100;
+
 export type RegisterResult =
   | { ok: true; sentTo: string }
   | { ok: false; error: "blocked_domain"; domain: string | null }
   | { ok: false; error: "weak_password"; message: string }
-  | { ok: false; error: "invalid_email" | "oauth_account_exists" | "already_registered" | "mail_unavailable" | "mail_failed" };
+  | { ok: false; error: "invalid_email" | "invalid_name" | "oauth_account_exists" | "already_registered" | "mail_unavailable" | "mail_failed" };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,7 +40,7 @@ function resetLink(baseUrl: string, token: string): string {
 }
 
 export async function registerWithPassword(
-  deps: FlowDeps, input: { email: string; password: string },
+  deps: FlowDeps, input: { email: string; password: string; name: string },
 ): Promise<RegisterResult> {
   if (!deps.transportAvailable) return { ok: false, error: "mail_unavailable" };
 
@@ -50,6 +52,11 @@ export async function registerWithPassword(
 
   const rulesError = checkPasswordRules(input.password, email);
   if (rulesError) return { ok: false, error: "weak_password", message: rulesError };
+
+  // Имя проверяем после почты и пароля, чтобы порядок сообщений в форме
+  // совпадал с порядком полей.
+  const name = input.name.trim();
+  if (name.length < 1 || name.length > NAME_MAX_LENGTH) return { ok: false, error: "invalid_name" };
 
   const existing = await deps.store.findUserByEmail(email);
 
@@ -65,10 +72,10 @@ export async function registerWithPassword(
     // Брошенная регистрация или аккаунт вообще без способов входа (seed,
     // dev-логин, сирота от прерванного OAuth). Присвоение безопасно: доступ
     // получит только тот, кто откроет письмо.
-    await deps.store.setPassword(existing.id, passwordHash);
+    await deps.store.setPassword(existing.id, passwordHash, name);
     userId = existing.id;
   } else {
-    userId = (await deps.store.createUser(email, passwordHash)).id;
+    userId = (await deps.store.createUser(email, passwordHash, name)).id;
   }
 
   const token = await issueToken(deps.store, userId, "verify", deps.now);

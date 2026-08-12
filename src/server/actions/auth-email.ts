@@ -43,6 +43,7 @@ const MESSAGES: Record<string, string> = {
   mail_unavailable: "Регистрация по почте сейчас недоступна — войдите через Яндекс или VK",
   mail_failed: "Не удалось отправить письмо, попробуйте позже",
   invalid_email: "Проверьте адрес почты",
+  invalid_name: "Укажите имя — его увидят те, с кем вы договариваетесь",
   oauth_account_exists: "Эта почта уже привязана ко входу через Яндекс или VK — войдите этим способом",
   already_registered: "Эта почта уже зарегистрирована — войдите или восстановите пароль",
   rate_limited: "Слишком много попыток, попробуйте позже",
@@ -52,7 +53,9 @@ const MESSAGES: Record<string, string> = {
   invalid_token: "Ссылка недействительна или устарела — запросите новую",
 };
 
-export async function register(input: { email: string; password: string }): Promise<ActionResult<{ sentTo: string }>> {
+export async function register(
+  input: { email: string; password: string; name: string },
+): Promise<ActionResult<{ sentTo: string }>> {
   const limit = checkLimit(await ip(), "register");
   if (!limit.ok) return { ok: false, error: MESSAGES.rate_limited };
 

@@ -24,6 +24,7 @@ export function EmailAuthForm({
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export function EmailAuthForm({
     startTransition(async () => {
       if (mode === "register") {
         if (password !== password2) { setError("Пароли не совпадают"); return; }
-        const res = await register({ email, password });
+        const res = await register({ email, password, name });
         if (res.ok) setSentTo(res.data.sentTo);
         else setError(res.error);
         return;
@@ -120,6 +121,20 @@ export function EmailAuthForm({
         />
       </label>
       {domainError && <p className="text-sm text-destructive">{domainError}</p>}
+
+      {mode === "register" && (
+        <label className="flex flex-col gap-1 text-sm">
+          Имя
+          {/* Имя видят те, с кем человек договаривается: владелец в заявке и
+            * покупатели на витрине. У входа через Яндекс и VK оно приходит от
+            * провайдера, здесь спрашиваем сами. */}
+          <input
+            type="text" required maxLength={100} autoComplete="name" className={INPUT}
+            placeholder="Как вас зовут"
+            value={name} onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+      )}
 
       {mode !== "forgot" && (
         <label className="flex flex-col gap-1 text-sm">

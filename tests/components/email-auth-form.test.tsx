@@ -94,6 +94,7 @@ describe("EmailAuthForm: регистрация", () => {
 
     click("Регистрация");
     fill("Почта", "a@ya.ru");
+    fill("Имя", "Марина");
     fill("Пароль", "normalnyi-parol");
     fill("Повторите пароль", "drugoi-parol");
     click("Зарегистрироваться");
@@ -129,6 +130,7 @@ describe("EmailAuthForm: регистрация", () => {
 
     click("Регистрация");
     fill("Почта", "a@ya.ru");
+    fill("Имя", "Марина");
     fill("Пароль", "normalnyi-parol");
     fill("Повторите пароль", "normalnyi-parol");
     click("Зарегистрироваться");
@@ -158,5 +160,31 @@ describe("EmailAuthForm: без почтового транспорта", () => 
     expect(screen.getByRole("button", { name: "Войти" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Регистрация" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Забыли пароль?" })).toBeNull();
+  });
+});
+
+describe("EmailAuthForm: поле имени", () => {
+  it("спрашивает имя только при регистрации", () => {
+    render(<EmailAuthForm canRegister />);
+    expect(screen.queryByLabelText("Имя")).toBeNull();
+
+    click("Регистрация");
+    expect(screen.getByLabelText("Имя")).toBeInTheDocument();
+  });
+
+  it("передаёт имя на сервер", async () => {
+    actions.register.mockResolvedValue({ ok: true, data: { sentTo: "a@ya.ru" } });
+    render(<EmailAuthForm canRegister />);
+
+    click("Регистрация");
+    fill("Почта", "a@ya.ru");
+    fill("Имя", "Марина");
+    fill("Пароль", "normalnyi-parol");
+    fill("Повторите пароль", "normalnyi-parol");
+    click("Зарегистрироваться");
+
+    await waitFor(() => expect(actions.register).toHaveBeenCalledWith({
+      email: "a@ya.ru", password: "normalnyi-parol", name: "Марина",
+    }));
   });
 });
