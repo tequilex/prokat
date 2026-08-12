@@ -14,12 +14,13 @@ import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import {
-  availability, bookingRequests, events, listings,
+  availability, bookingRequests, events, listings, users,
 } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slugify";
 import { listingFormSchema } from "@/lib/owner/validation";
+import { parseSellerName } from "@/lib/owner/seller-name";
 import {
   unavailableDates, eachDate, type AvailabilityMap,
 } from "@/lib/catalog/availability";
@@ -45,8 +46,18 @@ export async function createListing(input: unknown): Promise<ActionResult<{ list
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
   const form = parsed.data;
 
+  // Имя продавца приезжает тем же вызовом отдельным ключом: listingFormSchema
+  // не strict, лишний ключ она отбрасывает, поэтому достаём его из сырого ввода.
+  const sellerName = parseSellerName(input);
+  if (!sellerName.ok) return { ok: false, error: sellerName.error };
+
   const slug = slugify(form.title);
   if (!slug) return { ok: false, error: "Название должно содержать буквы или цифры" };
+
+  // Пустое поле не затирает имя: значит человек его просто не трогал.
+  if (sellerName.name) {
+    await getDb().update(users).set({ name: sellerName.name }).where(eq(users.id, owner.userId));
+  }
 
   const id = newId();
   // Без премодерации: товар сразу active. Уникальность URL даёт id в хвосте пути.

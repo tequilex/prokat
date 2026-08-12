@@ -18,6 +18,8 @@ export default async function NewListingPage() {
     <main>
       <ListingForm
         mode="create"
+        // Имя берём из сессии: лишнего запроса в БД не нужно.
+        sellerName={session.user.name ?? ""}
         cities={cities.map((c) => ({ id: c.id, name: c.name }))}
         categories={leafCategories(cats)}
         initial={{

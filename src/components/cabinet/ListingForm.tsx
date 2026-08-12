@@ -30,7 +30,7 @@ const INPUT = "h-11 rounded-md border border-border bg-background px-3 text-fore
 const MAX_PHOTOS = 10;
 
 export function ListingForm({
-  mode, listingId, cities, categories, initial,
+  mode, listingId, cities, categories, initial, sellerName: initialSellerName = "",
 }: {
   mode: "create" | "edit";
   listingId?: string;
@@ -38,8 +38,12 @@ export function ListingForm({
   // Подкатегории (или корневые без детей) — позиция вешается на лист дерева.
   categories: Array<{ id: string; name: string }>;
   initial: ListingFormValues;
+  // Текущее имя владельца: показываем при первой публикации, чтобы он увидел,
+  // как его назовут покупатели, и мог заменить прямо здесь.
+  sellerName?: string;
 }) {
   const [v, setV] = useState(initial);
+  const [sellerName, setSellerName] = useState(initialSellerName);
   const [error, setError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -90,7 +94,9 @@ export function ListingForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const input = { ...v, description: v.description };
+      // sellerName едет лишним ключом: listingFormSchema его отбросит, а
+      // экшен достанет из сырого ввода и обновит users.name.
+      const input = mode === "create" ? { ...v, sellerName } : { ...v };
       const r = mode === "create"
         ? await createListing(input)
         : await updateListing(listingId!, input);
@@ -106,6 +112,17 @@ export function ListingForm({
         done={blocksDone}
         total={4}
       />
+
+      {mode === "create" && (
+        <FormBlock title="Как вас увидят покупатели" hint="имя рядом с объявлением">
+          <label className="flex flex-col gap-1 text-sm">
+            Имя
+            <input maxLength={100} value={sellerName}
+              placeholder="Например, ПрокатМастер"
+              onChange={(e) => setSellerName(e.target.value)} className={INPUT} />
+          </label>
+        </FormBlock>
+      )}
 
       <FormBlock title="Что сдаёте" hint="название видят в поиске">
         <label className="flex flex-col gap-1 text-sm">
