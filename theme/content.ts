@@ -1,9 +1,12 @@
 const SITE_CONTACT_EMAIL = "test@mail.ru";
+// Имя сервиса подставляется и в интерфейс, и в письма: расходиться им нельзя,
+// иначе человек получает письмо от сервиса, на который не регистрировался.
+const SITE_NAME = "inrenta";
 
 export const content = {
   site: {
-    name: "inrenta",
-    shortName: "inrenta",
+    name: SITE_NAME,
+    shortName: SITE_NAME,
     tagline: "Арендуй что угодно рядом — или сдавай своё",
     description:
       "Аренда вещей между людьми. Любой размещает свои вещи и бронирует чужие — сервис сводит людей и ведёт заявки на бронь.",
@@ -49,14 +52,14 @@ export const content = {
     signOut: "Выйти",
     backToHome: "На главную",
     mail: {
-      brand: "prokat",
-      verifySubject: "Подтвердите почту — prokat",
-      verifyIntro: "Вы зарегистрировались на prokat. Чтобы завершить регистрацию, откройте ссылку:",
-      verifyAgainSubject: "Ссылка для подтверждения почты — prokat",
+      brand: SITE_NAME,
+      verifySubject: `Подтвердите почту — ${SITE_NAME}`,
+      verifyIntro: `Вы зарегистрировались на ${SITE_NAME}. Чтобы завершить регистрацию, откройте ссылку:`,
+      verifyAgainSubject: `Ссылка для подтверждения почты — ${SITE_NAME}`,
       verifyAgainIntro: "Вы запросили новое письмо для подтверждения почты. Ссылка:",
       verifyTtl: "Ссылка действительна 24 часа.",
-      resetSubject: "Смена пароля — prokat",
-      resetIntro: "Вы запросили смену пароля на prokat. Чтобы задать новый, откройте ссылку:",
+      resetSubject: `Смена пароля — ${SITE_NAME}`,
+      resetIntro: `Вы запросили смену пароля на ${SITE_NAME}. Чтобы задать новый, откройте ссылку:`,
       resetTtl: "Ссылка действительна 1 час.",
       ignore: "Если это были не вы — просто проигнорируйте письмо.",
     },
@@ -128,7 +131,7 @@ export const content = {
     contact: `По вопросам обработки данных пишите: ${SITE_CONTACT_EMAIL}`,
     updatedAt: "Обновлено: 2026-07-15",
   },
-  copyright: `© ${new Date().getFullYear()} inrenta`,
+  copyright: `© ${new Date().getFullYear()} ${SITE_NAME}`,
 } as const;
 
 export type ContentSchema = typeof content;
