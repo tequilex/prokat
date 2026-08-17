@@ -200,6 +200,8 @@ openssl rand -hex 16                             # INDEXNOW_KEY
 Шаблон рабочего прод `.env` (все переменные обязательны, кроме помеченных):
 
 ```bash
+# Здесь NODE_ENV нужен: его читает контейнер. В локальном .env его,
+# наоборот, быть не должно — там next выставляет его сам.
 NODE_ENV=production
 
 DOMAIN=example.ru
@@ -210,13 +212,24 @@ NEXTAUTH_SECRET=<openssl rand -base64 32>
 AUTH_TRUST_HOST=true
 
 DB_PASSWORD=<пароль>
-# Хост db — имя сервиса в docker-compose, не localhost!
+# Хост db — имя сервиса в docker-compose, не localhost. Приложению эту строку
+# всё равно подставляет compose (блок environment сильнее env_file), но её читают
+# миграции и psql с хоста, поэтому держим верной.
 DATABASE_URL=postgres://app:<пароль>@db:5432/app
 
 YANDEX_CLIENT_ID=...
 YANDEX_CLIENT_SECRET=...
 VK_CLIENT_ID=...
 VK_CLIENT_SECRET=...
+
+# Почта: все пять или ни одной. Пароль приложения из id.yandex.ru, не пароль
+# от аккаунта. SMTP_FROM обязан совпадать с SMTP_USER.
+SMTP_HOST=smtp.yandex.ru
+SMTP_PORT=465
+SMTP_USER=official@example.ru
+SMTP_PASSWORD=...
+SMTP_FROM=official@example.ru
+BLOCKED_EMAIL_DOMAINS=          # опционально, дополняет встроенный стоп-лист
 
 STORAGE_ENDPOINT=https://s3.twcstorage.ru
 STORAGE_BUCKET=<bucket-uuid>
