@@ -76,5 +76,15 @@ export async function sendMail(mail: Mail): Promise<void> {
     throw new Error(`daily mail cap reached, retry in ${quota.retryAfterSec}s`);
   }
   const tx = await transport();
-  await tx.send(mail);
+  try {
+    await tx.send(mail);
+  } catch (e) {
+    // Выше по стеку ошибка превращается в «Не удалось отправить письмо» без
+    // подробностей (и правильно — их незачем показывать снаружи), поэтому
+    // причина пишется в лог здесь. Тело письма НЕ логируем: в нём одноразовая
+    // ссылка, а логи хранятся дольше, чем живёт токен.
+    const reason = e instanceof Error ? e.message : String(e);
+    console.error(`[mail] send failed to=${mail.to} subject=${mail.subject}: ${reason}`);
+    throw e;
+  }
 }
