@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { field } from "@/components/ui/field";
 import { adminCreateCategory } from "@/server/actions/admin";
 
-const INPUT = "h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground";
+const INPUT = `${field} h-10 rounded-md px-3 text-sm`;
 
 export function CategoryForm({ roots }: { roots: Array<{ id: string; name: string }> }) {
   const [name, setName] = useState("");

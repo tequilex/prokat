@@ -3,6 +3,7 @@
 import { useState, useId } from "react";
 import { Modal, ModalClose, ModalContent, ModalDescription, ModalTitle, ModalTrigger } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
+import { field } from "@/components/ui/field";
 
 type Props = {
   trigger: React.ReactNode;
@@ -47,7 +48,7 @@ export function ConfirmDialog({
                 id={inputId}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className={`${field} w-full rounded-md px-3 py-2 text-sm`}
               />
             </div>
           )}

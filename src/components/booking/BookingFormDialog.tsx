@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { createBookingRequest } from "@/server/actions/booking";
 import type { BookingSelection } from "@/lib/booking/params";
 import { rentalDaysCount } from "@/lib/booking/params";
+import { field } from "@/components/ui/field";
 import { formatDayMonth } from "@/lib/catalog/dates";
 import { formatPrice } from "@/lib/catalog/format";
 
@@ -100,7 +101,7 @@ export function BookingFormDialog({
                     type="tel" required value={phone} autoComplete="tel"
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+7 900 000-00-00"
-                    className="h-11 rounded-md border border-border bg-background px-3 text-foreground"
+                    className={`${field} h-11 rounded-md px-3`}
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
@@ -109,7 +110,7 @@ export function BookingFormDialog({
                     value={comment} maxLength={500} rows={3}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Например: нужен к 9 утра"
-                    className="rounded-md border border-border bg-background px-3 py-2 text-foreground"
+                    className={`${field} rounded-md px-3 py-2`}
                   />
                 </label>
                 {/* Honeypot: скрыто от людей, боты заполняют */}

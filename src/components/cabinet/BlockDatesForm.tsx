@@ -6,9 +6,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { field } from "@/components/ui/field";
 import { setBlockedDates } from "@/server/actions/owner";
 
-const INPUT = "h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground";
+const INPUT = `${field} h-10 rounded-md px-2 text-sm`;
 
 export function BlockDatesForm({
   listingId, quantity, today, maxDate,

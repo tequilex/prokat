@@ -58,7 +58,10 @@ export const ModalContent = React.forwardRef<
         contentRef.current?.focus();
       }}
       className={cn(
-        "fixed z-50 border border-border bg-card shadow-lg duration-200",
+        // outline-none именно на :focus, а не на :focus-visible — фокус сюда
+        // ставится программно (см. onOpenAutoFocus), и браузер рисует своё
+        // системное кольцо вокруг всего листа: на iOS оно голубое.
+        "fixed z-50 border border-border bg-card shadow-lg duration-200 focus:outline-none",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
         // Мобайл: лист снизу во всю ширину, с запасом под системную полосу

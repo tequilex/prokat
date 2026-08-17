@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FiltersSheet } from "@/components/catalog/FiltersSheet";
+import { field } from "@/components/ui/field";
 import type { Category } from "@/server/catalog";
 
 export interface FilterState {
@@ -36,13 +37,13 @@ function FormInner({
           <input
             type="number" name="price_min" min={0} placeholder="от"
             defaultValue={state.priceMin ?? ""}
-            className="h-9 w-full min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
+            className={`${field} h-9 w-full min-w-0 flex-1 rounded-lg px-3 text-sm`}
           />
           <span className="text-muted-foreground">—</span>
           <input
             type="number" name="price_max" min={0} placeholder="до"
             defaultValue={state.priceMax ?? ""}
-            className="h-9 w-full min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
+            className={`${field} h-9 w-full min-w-0 flex-1 rounded-lg px-3 text-sm`}
           />
         </div>
       </fieldset>
@@ -51,7 +52,7 @@ function FormInner({
         Сортировка
         <select
           name="sort" defaultValue={state.sort ?? "new"}
-          className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+          className={`${field} h-9 w-full rounded-lg px-2 text-sm`}
         >
           <option value="new">Сначала новые</option>
           <option value="price_asc">Дешевле</option>

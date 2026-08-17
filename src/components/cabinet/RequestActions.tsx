@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   completeRequest, confirmRequest, declineRequest, noShowRequest,
 } from "@/server/actions/owner";
+import { field } from "@/components/ui/field";
 import type { BookingStatus } from "@/lib/catalog/booking-status";
 
 function humanError(code: string): string {
@@ -52,7 +53,7 @@ export function RequestActions({ requestId, status }: { requestId: string; statu
             value={comment} maxLength={500} rows={2}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Клиент увидит этот комментарий — например, предложите другие даты"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+            className={`${field} rounded-md px-3 py-2 text-sm`}
           />
         )}
         {error && <p className="text-sm text-destructive" role="alert">{error}</p>}

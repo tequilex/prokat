@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FormBlock } from "@/components/cabinet/FormBlock";
 import { StepProgress } from "@/components/cabinet/StepProgress";
 import { PhotoDrop, type Photo } from "@/components/cabinet/PhotoDrop";
+import { field } from "@/components/ui/field";
 import { createListing, updateListing } from "@/server/actions/owner";
 
 export interface ListingFormValues {
@@ -26,7 +27,7 @@ export interface ListingFormValues {
   photos: Photo[];
 }
 
-const INPUT = "h-11 rounded-md border border-border bg-background px-3 text-foreground";
+const INPUT = `${field} h-11 rounded-md px-3`;
 const MAX_PHOTOS = 10;
 
 export function ListingForm({
@@ -145,7 +146,7 @@ export function ListingForm({
           Описание
           <textarea maxLength={3000} rows={4} value={v.description}
             onChange={(e) => set({ description: e.target.value })}
-            className="rounded-md border border-border bg-background px-3 py-2 text-foreground" />
+            className={`${field} rounded-md px-3 py-2`} />
         </label>
       </FormBlock>
 

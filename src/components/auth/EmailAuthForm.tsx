@@ -5,11 +5,12 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
+import { field } from "@/components/ui/field";
 import {
   checkEmailDomain, login, register, requestReset, resendVerificationEmail,
 } from "@/server/actions/auth-email";
 
-const INPUT = "h-11 w-full rounded-pill border border-border bg-background px-5 text-foreground";
+const INPUT = `${field} h-11 w-full rounded-pill px-5`;
 
 type Mode = "login" | "register" | "forgot";
 

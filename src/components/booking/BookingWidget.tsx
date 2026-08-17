@@ -19,6 +19,7 @@ import {
   buildBookingQuery, rentalDaysCount, type BookingSelection,
 } from "@/lib/booking/params";
 import { unavailableDates, type DayLoad } from "@/lib/catalog/availability";
+import { field } from "@/components/ui/field";
 import { formatDayMonth } from "@/lib/catalog/dates";
 import { formatPrice } from "@/lib/catalog/format";
 
@@ -178,7 +179,7 @@ export function BookingWidget(props: BookingWidgetProps) {
             <select
               value={sel.qty}
               onChange={(e) => setQty(Number(e.target.value))}
-              className="h-10 w-20 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              className={`${field} h-10 w-20 rounded-md px-2 text-sm`}
             >
               {Array.from({ length: props.quantity }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>{n}</option>

@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { field } from "@/components/ui/field";
 import { updateProfile } from "@/server/actions/profile";
 
-const INPUT = "h-11 rounded-md border border-border bg-background px-3 text-foreground";
+const INPUT = `${field} h-11 rounded-md px-3`;
 
 export function ProfileForm({
   initialName, initialPhone, initialBio,
@@ -51,7 +52,7 @@ export function ProfileForm({
         <textarea maxLength={500} rows={3} value={bio}
           onChange={(e) => { setBio(e.target.value); setSaved(false); }}
           placeholder="Пара слов для покупателей — видно в вашем профиле"
-          className="rounded-md border border-border bg-background px-3 py-2 text-foreground" />
+          className={`${field} rounded-md px-3 py-2`} />
       </label>
 
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
