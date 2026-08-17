@@ -4,7 +4,15 @@
 // Ключ — произвольная строка: для доменных действий это userId, для входа и
 // писем — почта, IP или их пара.
 
-export type LimitKind = "comment" | "post" | "booking" | "login" | "register" | "resend" | "reset" | "mail_ip";
+export type LimitKind =
+  | "comment" | "post" | "booking" | "login" | "register" | "resend" | "reset" | "mail_ip" | "mail_daily";
+
+// Потолок отправки на весь сервис за сутки. Яндекс даёт 300 писем в сутки по
+// SMTP и режет раньше, если письма однотипные, — упереться хочется в свой
+// счётчик, а не в блокировку ящика, из которой сервис сам не выберется.
+export const MAIL_DAILY_CAP = 250;
+// Общий ключ: лимит один на всех, отправитель значения не имеет.
+export const MAIL_DAILY_KEY = "service";
 export type LimitResult =
   | { ok: true }
   | { ok: false; retryAfterSec: number; reason: "gap" | "window" };
@@ -24,6 +32,9 @@ const RULES: Record<LimitKind, Rule> = {
   // Второй контур для всего, что шлёт письма: лимит по почте не мешает бомбить
   // разные ящики, а смена IP снимала бы лимит по почте.
   mail_ip:  { windowMs: 60 * 60 * 1000, maxInWindow: 10, gapMs: 0 },
+  // Третий контур, общий: и почта, и IP считаются по своему ключу, поэтому
+  // рассылка с десятка адресов проходит оба и выедает суточную квоту провайдера.
+  mail_daily: { windowMs: 24 * 60 * 60 * 1000, maxInWindow: MAIL_DAILY_CAP, gapMs: 0 },
 };
 
 const MAX_KEYS = 10_000;

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { checkLimit, _resetForTests } from "@/lib/rate-limit";
+import { checkLimit, MAIL_DAILY_CAP, MAIL_DAILY_KEY, _resetForTests } from "@/lib/rate-limit";
 
 beforeEach(() => { _resetForTests(); });
 
@@ -42,6 +42,22 @@ describe("rate limit: письма", () => {
   it("allows ten mail requests per ip", () => {
     for (let i = 0; i < 10; i++) expect(checkLimit("1.2.3.4", "mail_ip")).toEqual({ ok: true });
     expect(checkLimit("1.2.3.4", "mail_ip").ok).toBe(false);
+  });
+
+  it("caps the whole service per day on a single shared key", () => {
+    // Лимиты по почте и по IP считаются раздельно, поэтому бомбёжка с разных
+    // адресов их обходит и выедает суточную квоту SMTP-ящика. Общим этот лимит
+    // делает ключ: все отправители приходят с MAIL_DAILY_KEY (см. sendMail).
+    for (let i = 0; i < MAIL_DAILY_CAP; i++) {
+      expect(checkLimit(MAIL_DAILY_KEY, "mail_daily")).toEqual({ ok: true });
+    }
+    const over = checkLimit(MAIL_DAILY_KEY, "mail_daily");
+    expect(over.ok).toBe(false);
+    if (!over.ok) expect(over.reason).toBe("window");
+  });
+
+  it("keeps the daily cap under the 300 letters Yandex allows over smtp", () => {
+    expect(MAIL_DAILY_CAP).toBeLessThan(300);
   });
 });
 

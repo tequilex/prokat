@@ -1,4 +1,5 @@
 import { getEnv } from "@/lib/env";
+import { checkLimit, MAIL_DAILY_KEY } from "@/lib/rate-limit";
 
 export type Mail = { to: string; subject: string; text: string };
 
@@ -40,6 +41,12 @@ async function smtpTransport(): Promise<Transport> {
     // 465 — implicit TLS, 587 — STARTTLS.
     secure: env.SMTP_PORT === 465,
     auth: { user: env.SMTP_USER!, pass: env.SMTP_PASSWORD! },
+    // Письмо уходит синхронно внутри Server Action, поэтому дефолты nodemailer
+    // (минуты на подключение) означают форму, висящую до таймаута браузера.
+    // Лучше быстро отдать «не удалось отправить» — письмо дожимается кнопкой.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
   return {
     async send(mail) {
@@ -59,7 +66,15 @@ async function transport(): Promise<Transport> {
 // Ошибка отправки поднимается наверх: Server Action превращает её в понятное
 // «Не удалось отправить письмо», а аккаунт остаётся неподтверждённым и его
 // можно дожать кнопкой «Отправить ещё раз».
+//
+// Суточная квота списывается ДО отправки: неудачное письмо всё равно съедает
+// попытку у провайдера, и считать надо так же. Счётчик живёт в памяти процесса
+// и обнуляется рестартом — см. TODO в src/lib/rate-limit.ts.
 export async function sendMail(mail: Mail): Promise<void> {
+  const quota = checkLimit(MAIL_DAILY_KEY, "mail_daily");
+  if (!quota.ok) {
+    throw new Error(`daily mail cap reached, retry in ${quota.retryAfterSec}s`);
+  }
   const tx = await transport();
   await tx.send(mail);
 }
