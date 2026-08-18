@@ -5,7 +5,8 @@
 // писем — почта, IP или их пара.
 
 export type LimitKind =
-  | "comment" | "post" | "booking" | "login" | "register" | "resend" | "reset" | "mail_ip" | "mail_daily";
+  | "comment" | "post" | "booking" | "login" | "register" | "resend" | "reset"
+  | "mail_ip" | "mail_daily" | "password_change";
 
 // Потолок отправки на весь сервис за сутки. Яндекс даёт 300 писем в сутки по
 // SMTP и режет раньше, если письма однотипные, — упереться хочется в свой
@@ -35,6 +36,8 @@ const RULES: Record<LimitKind, Rule> = {
   // Третий контур, общий: и почта, и IP считаются по своему ключу, поэтому
   // рассылка с десятка адресов проходит оба и выедает суточную квоту провайдера.
   mail_daily: { windowMs: 24 * 60 * 60 * 1000, maxInWindow: MAIL_DAILY_CAP, gapMs: 0 },
+  // Ключ — userId. Без лимита поле «текущий пароль» — оракул для перебора.
+  password_change: { windowMs: 15 * 60 * 1000, maxInWindow: 5, gapMs: 0 },
 };
 
 const MAX_KEYS = 10_000;

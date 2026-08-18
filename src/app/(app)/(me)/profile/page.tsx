@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getUserProfile } from "@/server/me";
 import { ProfileForm } from "@/components/me/ProfileForm";
+import { ChangePasswordForm } from "@/components/me/ChangePasswordForm";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Профиль", robots: { index: false } };
@@ -40,9 +41,22 @@ export default async function ProfilePage() {
         )}
       </div>
 
+      {/* Только аккаунтам с паролем: OAuth-юзерам менять нечего, а задать пароль
+        * им можно лишь через подтверждение почты — см. docs/BACKLOG.md. */}
+      {user.passwordHash !== null && (
+        <div className="surface p-5 sm:p-6">
+          <h2 className="mb-3 text-lg font-semibold">Безопасность</h2>
+          <ChangePasswordForm />
+        </div>
+      )}
+
       <div className="surface p-5 sm:p-6">
         <h2 className="mb-3 text-lg font-semibold">Способы входа</h2>
-        {providers.length === 0 ? (
+        {providers.length === 0 && user.passwordHash !== null ? (
+          <p className="text-sm text-muted-foreground">
+            Вход по почте с паролем.
+          </p>
+        ) : providers.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Нет привязанных OAuth-аккаунтов (dev-вход).
           </p>

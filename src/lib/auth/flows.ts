@@ -4,7 +4,7 @@ import { checkPasswordRules, fakeVerify, hashPassword, verifyPassword } from "@/
 import { safeCallback } from "@/lib/auth/session";
 import type { AuthStore } from "@/lib/auth/store";
 import type { Mail } from "@/lib/mail/mailer";
-import { resetEmail, verifyEmail, verifyEmailAgain } from "@/lib/mail/templates";
+import { passwordChangedEmail, resetEmail, verifyEmail, verifyEmailAgain } from "@/lib/mail/templates";
 
 // Чистая логика всех флоу входа по почте: зависимости приходят аргументом,
 // поэтому сценарии тестируются без Postgres, SMTP и Next-окружения.
@@ -216,6 +216,45 @@ export async function resetPassword(
 
   const session = await store.issueSession(consumed.userId);
   return { ok: true, userId: consumed.userId, ...session };
+}
+
+export type ChangePasswordResult =
+  | { ok: true; sessionToken: string; expires: Date }
+  | { ok: false; error: "invalid_current" | "no_password" }
+  | { ok: false; error: "weak_password"; message: string };
+
+// Смена пароля из кабинета. Текущий пароль обязателен: живая сессия — не
+// доказательство владения (открытый ноут, увод cookie), без неё чужой пароль
+// менялся бы в два клика.
+export async function changePassword(
+  deps: FlowDeps, input: { userId: string; currentPassword: string; newPassword: string },
+): Promise<ChangePasswordResult> {
+  const user = await deps.store.findUserById(input.userId);
+  // Аккаунтам без пароля (OAuth) флоу недоступен: задать им пароль можно будет
+  // только через подтверждение почты — их адрес никем не проверялся.
+  if (!user || !user.passwordHash) return { ok: false, error: "no_password" };
+
+  if (!await verifyPassword(user.passwordHash, input.currentPassword)) {
+    return { ok: false, error: "invalid_current" };
+  }
+
+  const rulesError = checkPasswordRules(input.newPassword, user.email);
+  if (rulesError) return { ok: false, error: "weak_password", message: rulesError };
+
+  await deps.store.setPassword(user.id, await hashPassword(input.newPassword));
+  // Как при сбросе: чужие руки с живой cookie теряют доступ немедленно.
+  // Текущая сессия переезжает на свежий токен — кладёт его вызывающий экшен.
+  await deps.store.dropAllSessions(user.id);
+  const session = await deps.store.issueSession(user.id);
+
+  // Письмо — единственный способ, которым настоящий владелец узнает о чужой
+  // смене пароля. Но смена уже состоялась: отказ почты её не отменяет.
+  try {
+    await deps.sendMail(passwordChangedEmail(user.email, `${deps.baseUrl.replace(/\/$/, "")}/login`));
+  } catch {
+    // Осознанно глотаем: см. выше.
+  }
+  return { ok: true, ...session };
 }
 
 export { resetEmail, resetLink };

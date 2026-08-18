@@ -7,7 +7,8 @@
 import { cookies, headers } from "next/headers";
 import { emailDomain, isBlockedDomain, normalizeEmail } from "@/lib/auth/email";
 import {
-  loginWithPassword, registerWithPassword, requestPasswordReset, resendVerification, resetPassword,
+  changePassword, loginWithPassword, registerWithPassword, requestPasswordReset,
+  resendVerification, resetPassword,
   type FlowDeps,
 } from "@/lib/auth/flows";
 import { safeCallback, sessionCookieName, sessionCookieOptions } from "@/lib/auth/session";
@@ -52,6 +53,8 @@ const MESSAGES: Record<string, string> = {
   use_oauth: "У этой почты вход через Яндекс или VK",
   email_not_verified: "Почта не подтверждена — отправьте письмо ещё раз",
   invalid_token: "Ссылка недействительна или устарела — запросите новую",
+  invalid_current: "Неверный текущий пароль",
+  no_password: "У аккаунта нет пароля — вы входите через Яндекс или VK",
 };
 
 export async function register(
@@ -119,6 +122,32 @@ export async function submitNewPassword(
   const jar = await cookies();
   jar.set(sessionCookieName(), res.sessionToken, sessionCookieOptions(res.expires));
   return { ok: true, data: { redirectTo: "/" } };
+}
+
+export async function changeAccountPassword(
+  input: { currentPassword: string; newPassword: string },
+): Promise<ActionResult> {
+  // Импорт внутри экшена: гард тянет next-auth → next/server, а этот модуль
+  // импортируют клиентские формы, которые гоняются в jsdom-тестах.
+  const { requireAuthState } = await import("@/lib/auth/guard");
+  const session = await requireAuthState();
+  if (!session) return { ok: false, error: "Войдите, чтобы сменить пароль" };
+
+  // Ключ — userId: лимит должен пережить смену IP, иначе поле «текущий пароль»
+  // работает оракулом для перебора.
+  const limit = checkLimit(session.user.id, "password_change");
+  if (!limit.ok) return { ok: false, error: MESSAGES.rate_limited };
+
+  const res = await changePassword(flowDeps(), { userId: session.user.id, ...input });
+  if (!res.ok) {
+    if (res.error === "weak_password") return { ok: false, error: res.message };
+    return { ok: false, error: MESSAGES[res.error] ?? MESSAGES.invalid_current };
+  }
+
+  // Флоу закрыл все сессии, включая текущую, — переезжаем на свежий токен.
+  const jar = await cookies();
+  jar.set(sessionCookieName(), res.sessionToken, sessionCookieOptions(res.expires));
+  return { ok: true, data: undefined };
 }
 
 // Дёргается формой на blur: список доменов остаётся на сервере и в браузерный
