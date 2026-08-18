@@ -209,3 +209,15 @@ describe("EmailAuthForm: возврат с экрана «письмо отпр�
     expect((screen.getByLabelText("Имя") as HTMLInputElement).value).toBe("Марина");
   });
 });
+
+describe("EmailAuthForm: глазок пароля", () => {
+  it("прячет показанный пароль при смене режима", () => {
+    render(<EmailAuthForm canRegister />);
+    fill("Пароль", "sekretnyi-parol");
+    click("Показать пароль");
+    expect(screen.getByLabelText("Пароль")).toHaveAttribute("type", "text");
+
+    click("Регистрация");
+    expect(screen.getByLabelText("Пароль")).toHaveAttribute("type", "password");
+  });
+});

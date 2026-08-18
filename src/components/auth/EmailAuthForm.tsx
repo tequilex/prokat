@@ -156,7 +156,11 @@ export function EmailAuthForm({
       {mode !== "forgot" && (
         <label className="flex flex-col gap-1 text-sm">
           Пароль
+          {/* key: вход и регистрация делят одну позицию в дереве, и без ключа
+            * включённый глазок переезжал бы между режимами вместе с полем.
+            * Показ пароля — действие в моменте, при смене режима прячем. */}
           <PasswordInput
+            key={mode}
             required minLength={8} className={INPUT}
             placeholder={mode === "register" ? "Не короче 8 символов" : "Ваш пароль"}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
