@@ -34,7 +34,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
            * RSC грузит новую страницу. Цвет — токен --color-primary. */}
           <NextTopLoader color="#34C759" height={3} showSpinner={false} />
           <Header />
-          <div className="flex-1">{children}</div>
+          {/* Минимальная высота = экран минус шапка (пилюля h-12 + py-3).
+            * Без неё на пустых страницах футер поднимается к середине экрана:
+            * прилипание к низу работает, но сам подвал высокий и занимает
+            * половину телефона. Так он всегда начинается за линией сгиба.
+            * svh, а не vh: на мобиле vh считается по развёрнутому окну без
+            * адресной строки, и футер выглядывал бы снизу. */}
+          <div className="flex-1 min-h-[calc(100svh-4.5rem)]">{children}</div>
           {/* Отступ под парящий таб-бар: на десктопе --tabbar-h равна нулю. */}
           <div className="pb-[var(--tabbar-h)]">
             <Footer />

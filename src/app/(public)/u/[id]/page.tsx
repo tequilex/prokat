@@ -2,6 +2,7 @@
 // bio и сетка активных объявлений. Резолв по id: ника в системе нет, а имя
 // в адрес не выносим — это частное лицо, а не магазин.
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { User, BadgeCheck } from "lucide-react";
@@ -79,8 +80,9 @@ export default async function SellerProfilePage({ params }: Props) {
 
       <section aria-labelledby="seller-listings" className="mt-8">
         <h2 id="seller-listings" className="mb-3 text-lg font-semibold">Объявления</h2>
+        {/* Блок ниже профиля, поэтому ниже обычного: шапку продавца видно и так. */}
         {items.length === 0 ? (
-          <p className="py-8 text-muted-foreground">У продавца пока нет активных объявлений.</p>
+          <EmptyState className="min-h-[25svh]">У продавца пока нет активных объявлений.</EmptyState>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {items.map((item) => (

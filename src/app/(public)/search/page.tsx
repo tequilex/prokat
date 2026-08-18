@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getActiveCities, getCityBySlug } from "@/server/catalog";
 import { parseQuery, type CategorySearchParams } from "@/lib/catalog/filters";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
@@ -31,7 +32,7 @@ export default async function SearchPage({
       {city ? (
         <SearchResults city={city} q={q} searchParams={sp} />
       ) : (
-        <p className="py-12 text-center text-muted-foreground">Города пока не заведены.</p>
+        <EmptyState>Города пока не заведены.</EmptyState>
       )}
     </main>
   );

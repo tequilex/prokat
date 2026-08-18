@@ -2,6 +2,7 @@
 // редиректит анонимов на /login, страница перепроверяет сессию сама).
 
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
@@ -28,9 +29,7 @@ export default async function RequestsPage() {
   return (
     <section aria-label="Мои заявки">
       {rows.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Пока нет заявок. Найдите нужную вещь в каталоге и выберите даты.
-        </p>
+        <EmptyState>Пока нет заявок. Найдите нужную вещь в каталоге и выберите даты.</EmptyState>
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map(({ request, listingTitle, listingSlug, listingId, categorySlug, citySlug, ownerName, ownerPhone }) => {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -42,9 +43,7 @@ export default async function CabinetListingsPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Разместите первое объявление — оно появится в каталоге.
-        </p>
+        <EmptyState>Разместите первое объявление — оно появится в каталоге.</EmptyState>
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((l) => {

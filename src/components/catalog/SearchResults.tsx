@@ -2,6 +2,7 @@
 // пагинация), но источник — searchListings по городу. Server component.
 
 import Link from "next/link";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   getAvailabilityRows, searchListings, DEFAULT_PAGE_SIZE, type City,
 } from "@/server/catalog";
@@ -57,13 +58,9 @@ export async function SearchResults({
 
       <div className="flex-1">
         {q === "" ? (
-          <p className="py-12 text-center text-muted-foreground">
-            Введите запрос в строке поиска, чтобы найти вещи в аренду.
-          </p>
+          <EmptyState>Введите запрос в строке поиска, чтобы найти вещи в аренду.</EmptyState>
         ) : items.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">
-            Ничего не найдено по запросу «{q}».
-          </p>
+          <EmptyState>Ничего не найдено по запросу «{q}».</EmptyState>
         ) : (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

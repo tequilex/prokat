@@ -2,6 +2,7 @@
 // чипы подкатегорий, фильтры, сетка карточек, пагинация. Server component.
 
 import Link from "next/link";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   getAvailabilityRows, getCategoryStats, getListingsForCategories,
   DEFAULT_PAGE_SIZE,
@@ -86,9 +87,7 @@ export async function CategoryListing({
 
         <div className="flex-1">
           {items.length === 0 ? (
-            <p className="py-12 text-center text-muted-foreground">
-              По этим условиям позиций не нашлось.
-            </p>
+            <EmptyState>По этим условиям позиций не нашлось.</EmptyState>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((item) => (

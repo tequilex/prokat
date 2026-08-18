@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getOwnerRequests } from "@/server/owner";
@@ -19,9 +20,7 @@ export default async function CabinetRequestsPage() {
   return (
     <section aria-label="Заявки на бронь">
       {rows.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Заявок пока нет. Они появятся здесь, когда клиенты выберут даты у ваших позиций.
-        </p>
+        <EmptyState>Заявок пока нет. Они появятся здесь, когда клиенты выберут даты у ваших позиций.</EmptyState>
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map(({ request, listingTitle, customerName }) => {

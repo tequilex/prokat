@@ -2,6 +2,7 @@
 // 6 недель (booked + blocked) и форма ручного закрытия дат.
 
 import type { Metadata } from "next";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
@@ -26,7 +27,7 @@ export default async function CabinetCalendarPage({
 
   const items = (await getOwnerListings(session.user.id)).filter((l) => l.status !== "archived");
   if (items.length === 0) {
-    return <p className="py-12 text-center text-muted-foreground">Сначала добавьте позиции.</p>;
+    return <EmptyState>Сначала добавьте позиции.</EmptyState>;
   }
 
   const { listing: listingParam } = await searchParams;
