@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LoginTrigger } from "@/components/auth/LoginTrigger";
-import { Search, ClipboardList, Plus, User } from "lucide-react";
+import { LayoutGrid, ClipboardList, Plus, User } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
@@ -16,10 +16,14 @@ import { cn } from "@/lib/utils";
  * это знак. Прочие иконки нейтральные, чтобы бренд не спорил с навигацией. */
 export function TabBar({
   placeHref,
+  catalogHref,
   user,
   authProps,
 }: {
   placeHref: string;
+  // Витрина города по умолчанию (/kazan): вкладка «Каталог» ведёт туда, а не на
+  // пустой /search — поиск и так всегда в шапке.
+  catalogHref: string;
   user: { name: string | null; image: string | null } | null;
   // Флаги входа: анониму «Сдать» открывает модалку, а не уводит на /login —
   // так же, как кнопка в десктопном хедере.
@@ -57,9 +61,12 @@ export function TabBar({
       className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
     >
       <div className="glass mx-auto flex max-w-[420px] items-center justify-between gap-2 rounded-[22px] px-4 py-1.5">
-        <Link href={"/search" as never} className={itemClass(isOn("/search"))}>
-          <Search className="h-[22px] w-[22px]" aria-hidden="true" />
-          Поиск
+        <Link
+          href={catalogHref as never}
+          className={itemClass(catalogHref !== "/" && isOn(catalogHref))}
+        >
+          <LayoutGrid className="h-[22px] w-[22px]" aria-hidden="true" />
+          Каталог
         </Link>
 
         {tab("/cabinet/listings", itemClass(myItems), (
