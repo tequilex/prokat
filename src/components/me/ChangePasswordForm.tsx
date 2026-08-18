@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { field } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { changeAccountPassword } from "@/server/actions/auth-email";
 
 const INPUT = `${field} h-11 rounded-md px-3`;
@@ -52,18 +53,18 @@ export function ChangePasswordForm() {
     <form onSubmit={submit} className="flex max-w-sm flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
         Текущий пароль
-        <input type="password" required autoComplete="current-password" className={INPUT}
+        <PasswordInput required autoComplete="current-password" className={INPUT}
           value={current} onChange={(e) => setCurrent(e.target.value)} />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Новый пароль
-        <input type="password" required minLength={8} autoComplete="new-password" className={INPUT}
+        <PasswordInput required minLength={8} autoComplete="new-password" className={INPUT}
           placeholder="Не короче 8 символов"
           value={next} onChange={(e) => setNext(e.target.value)} />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Повторите новый пароль
-        <input type="password" required minLength={8} autoComplete="new-password" className={INPUT}
+        <PasswordInput required minLength={8} autoComplete="new-password" className={INPUT}
           placeholder="Тот же пароль ещё раз"
           value={next2} onChange={(e) => setNext2(e.target.value)} />
       </label>

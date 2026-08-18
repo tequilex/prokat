@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import { field } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
   checkEmailDomain, login, register, requestReset, resendVerificationEmail,
 } from "@/server/actions/auth-email";
@@ -155,8 +156,8 @@ export function EmailAuthForm({
       {mode !== "forgot" && (
         <label className="flex flex-col gap-1 text-sm">
           Пароль
-          <input
-            type="password" required minLength={8} className={INPUT}
+          <PasswordInput
+            required minLength={8} className={INPUT}
             placeholder={mode === "register" ? "Не короче 8 символов" : "Ваш пароль"}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
             value={password} onChange={(e) => setPassword(e.target.value)}
@@ -167,7 +168,7 @@ export function EmailAuthForm({
       {mode === "register" && (
         <label className="flex flex-col gap-1 text-sm">
           Повторите пароль
-          <input type="password" required minLength={8} autoComplete="new-password" className={INPUT}
+          <PasswordInput required minLength={8} autoComplete="new-password" className={INPUT}
             placeholder="Тот же пароль ещё раз"
             value={password2} onChange={(e) => setPassword2(e.target.value)} />
         </label>
