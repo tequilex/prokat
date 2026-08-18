@@ -11,14 +11,13 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
   return (
     <form
       role="search"
-      className={`glass flex h-12 w-full items-center gap-2 rounded-pill px-4 ${className}`}
+      className={`glass flex h-12 w-full items-center gap-2 rounded-pill pl-4 pr-1.5 ${className}`}
       onSubmit={(e) => {
         e.preventDefault();
         const query = q.trim();
         router.push(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
       }}
     >
-      <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       <input
         type="search"
         aria-label={content.nav.search}
@@ -27,6 +26,15 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
         onChange={(e) => setQ(e.target.value)}
         className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
       />
+      {/* Единственная лупа — и есть кнопка: как «Найти» в герое, зелёная справа.
+        * Декоративной слева больше нет, чтобы не было двух луп в одной пилюле. */}
+      <button
+        type="submit"
+        aria-label={content.nav.search}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform active:scale-[0.94]"
+      >
+        <Search className="h-4 w-4" aria-hidden="true" />
+      </button>
     </form>
   );
 }
