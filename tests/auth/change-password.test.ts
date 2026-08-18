@@ -30,22 +30,40 @@ describe("changePassword", () => {
     const res = await changePassword(d, {
       userId: "u1", currentPassword: "staryi-parol", newPassword: "novyi-parol-1",
     });
-    expect(res.ok).toBe(true);
+    expect(res).toEqual({ ok: true });
     expect(await verifyPassword(fake.users[0].passwordHash!, "novyi-parol-1")).toBe(true);
   });
 
-  it("закрывает остальные сессии и выдаёт новую", async () => {
+  it("закрывает остальные сессии, текущая живёт", async () => {
+    // Текущую нельзя трогать: Next перерисовывает страницу после экшена ещё со
+    // старой кукой, и убитая текущая сессия выглядит как разлогин на месте.
     const fake = fakeAuthStore([await passwordUser(), { email: "b@ya.ru" }]);
-    await fake.store.issueSession("u1"); // «сессия в кафе»
-    await fake.store.issueSession("u2"); // чужая — должна выжить
+    const mine = await fake.store.issueSession("u1");    // текущая
+    await fake.store.issueSession("u1");                 // «сессия в кафе»
+    const alien = await fake.store.issueSession("u2");   // чужая — не трогаем
+    const { deps: d } = deps(fake.store);
+
+    const res = await changePassword(d, {
+      userId: "u1", currentPassword: "staryi-parol", newPassword: "novyi-parol-1",
+      keepSessionToken: mine.sessionToken,
+    });
+    expect(res).toEqual({ ok: true });
+    expect(fake.sessions.map((s) => s.token).sort()).toEqual(
+      [mine.sessionToken, alien.sessionToken].sort(),
+    );
+  });
+
+  it("без токена текущей сессии закрывает все", async () => {
+    // Кука обязана быть у залогиненного; если её вдруг нет — безопаснее убить всё.
+    const fake = fakeAuthStore([await passwordUser()]);
+    await fake.store.issueSession("u1");
     const { deps: d } = deps(fake.store);
 
     const res = await changePassword(d, {
       userId: "u1", currentPassword: "staryi-parol", newPassword: "novyi-parol-1",
     });
-    if (!res.ok) throw new Error("expected ok");
-    expect(fake.sessions.map((s) => s.userId)).toEqual(["u2", "u1"]);
-    expect(fake.sessions.find((s) => s.userId === "u1")?.token).toBe(res.sessionToken);
+    expect(res).toEqual({ ok: true });
+    expect(fake.sessions).toHaveLength(0);
   });
 
   it("шлёт письмо-уведомление на почту аккаунта", async () => {
@@ -102,7 +120,7 @@ describe("changePassword", () => {
     const res = await changePassword(d, {
       userId: "u1", currentPassword: "staryi-parol", newPassword: "novyi-parol-1",
     });
-    expect(res.ok).toBe(true);
+    expect(res).toEqual({ ok: true });
     expect(await verifyPassword(fake.users[0].passwordHash!, "novyi-parol-1")).toBe(true);
   });
 });

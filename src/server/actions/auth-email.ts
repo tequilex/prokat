@@ -138,15 +138,15 @@ export async function changeAccountPassword(
   const limit = checkLimit(session.user.id, "password_change");
   if (!limit.ok) return { ok: false, error: MESSAGES.rate_limited };
 
-  const res = await changePassword(flowDeps(), { userId: session.user.id, ...input });
+  // Токен текущей сессии — чтобы флоу оставил её жить и закрыл только остальные.
+  const jar = await cookies();
+  const keepSessionToken = jar.get(sessionCookieName())?.value;
+
+  const res = await changePassword(flowDeps(), { userId: session.user.id, keepSessionToken, ...input });
   if (!res.ok) {
     if (res.error === "weak_password") return { ok: false, error: res.message };
     return { ok: false, error: MESSAGES[res.error] ?? MESSAGES.invalid_current };
   }
-
-  // Флоу закрыл все сессии, включая текущую, — переезжаем на свежий токен.
-  const jar = await cookies();
-  jar.set(sessionCookieName(), res.sessionToken, sessionCookieOptions(res.expires));
   return { ok: true, data: undefined };
 }
 

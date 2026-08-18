@@ -219,7 +219,7 @@ export async function resetPassword(
 }
 
 export type ChangePasswordResult =
-  | { ok: true; sessionToken: string; expires: Date }
+  | { ok: true }
   | { ok: false; error: "invalid_current" | "no_password" }
   | { ok: false; error: "weak_password"; message: string };
 
@@ -227,7 +227,8 @@ export type ChangePasswordResult =
 // доказательство владения (открытый ноут, увод cookie), без неё чужой пароль
 // менялся бы в два клика.
 export async function changePassword(
-  deps: FlowDeps, input: { userId: string; currentPassword: string; newPassword: string },
+  deps: FlowDeps,
+  input: { userId: string; currentPassword: string; newPassword: string; keepSessionToken?: string },
 ): Promise<ChangePasswordResult> {
   const user = await deps.store.findUserById(input.userId);
   // Аккаунтам без пароля (OAuth) флоу недоступен: задать им пароль можно будет
@@ -242,10 +243,15 @@ export async function changePassword(
   if (rulesError) return { ok: false, error: "weak_password", message: rulesError };
 
   await deps.store.setPassword(user.id, await hashPassword(input.newPassword));
-  // Как при сбросе: чужие руки с живой cookie теряют доступ немедленно.
-  // Текущая сессия переезжает на свежий токен — кладёт его вызывающий экшен.
-  await deps.store.dropAllSessions(user.id);
-  const session = await deps.store.issueSession(user.id);
+  // Чужие руки с живой cookie теряют доступ, а сессия, из которой меняли,
+  // живёт: перевыпуск её токена выглядел бы разлогином — Next перерисовывает
+  // страницу после экшена ещё со старой кукой. Полный сброс остаётся за
+  // resetPassword: там «текущей» сессии нет по определению.
+  if (input.keepSessionToken) {
+    await deps.store.dropOtherSessions(user.id, input.keepSessionToken);
+  } else {
+    await deps.store.dropAllSessions(user.id);
+  }
 
   // Письмо — единственный способ, которым настоящий владелец узнает о чужой
   // смене пароля. Но смена уже состоялась: отказ почты её не отменяет.
@@ -254,7 +260,7 @@ export async function changePassword(
   } catch {
     // Осознанно глотаем: см. выше.
   }
-  return { ok: true, ...session };
+  return { ok: true };
 }
 
 export { resetEmail, resetLink };

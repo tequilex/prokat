@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { sessions } from "@db/schema";
 import { getEnv } from "@/lib/env";
@@ -59,4 +59,12 @@ export async function issueSession(userId: string): Promise<{ sessionToken: stri
 // Сброс пароля обязан выкидывать все живые сессии: он же реакция на угон.
 export async function dropAllSessions(userId: string): Promise<void> {
   await getDb().delete(sessions).where(eq(sessions.userId, userId));
+}
+
+// Смена пароля из кабинета: чужие руки с кукой теряют доступ, а сессия, из
+// которой меняли, живёт — иначе перерисовка страницы после экшена (она идёт
+// ещё со старой кукой) выглядит как разлогин на месте.
+export async function dropOtherSessions(userId: string, keepToken: string): Promise<void> {
+  await getDb().delete(sessions)
+    .where(and(eq(sessions.userId, userId), ne(sessions.sessionToken, keepToken)));
 }

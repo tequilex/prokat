@@ -2,7 +2,7 @@ import { and, eq, lt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { accounts, emailTokens, users } from "@db/schema";
 import { newId } from "@/lib/auth/id";
-import { dropAllSessions, issueSession } from "@/lib/auth/session";
+import { dropAllSessions, dropOtherSessions, issueSession } from "@/lib/auth/session";
 
 // Порт данных для всех флоу входа по почте. Логика пишется поверх него, а не
 // поверх drizzle, чтобы сценарные тесты гонялись на реализации в памяти без
@@ -70,6 +70,8 @@ export interface AuthStore {
 
   issueSession(userId: string): Promise<{ sessionToken: string; expires: Date }>;
   dropAllSessions(userId: string): Promise<void>;
+  // Для смены пароля из кабинета: текущая сессия остаётся жить, гибнут остальные.
+  dropOtherSessions(userId: string, keepToken: string): Promise<void>;
 }
 
 export function drizzleAuthStore(): AuthStore {
@@ -208,5 +210,6 @@ export function drizzleAuthStore(): AuthStore {
 
     issueSession,
     dropAllSessions,
+    dropOtherSessions,
   };
 }

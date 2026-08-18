@@ -106,6 +106,11 @@ export function fakeAuthStore(seed: Partial<AuthUser>[] = []): FakeStore {
         if (sessions[i].userId === userId) sessions.splice(i, 1);
       }
     },
+    async dropOtherSessions(userId, keepToken) {
+      for (let i = sessions.length - 1; i >= 0; i--) {
+        if (sessions[i].userId === userId && sessions[i].token !== keepToken) sessions.splice(i, 1);
+      }
+    },
   };
 
   return { store, users, tokens, sessions, accounts, failNextAccountInsert: () => { failAccountInsert = true; } };
