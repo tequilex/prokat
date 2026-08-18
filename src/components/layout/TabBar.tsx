@@ -46,7 +46,9 @@ export function TabBar({
 
   const myItems = isOn("/cabinet/listings");
   const requests = isOn("/requests");
-  const profile = isOn("/profile");
+  // Весь кабинет, кроме «Моих вещей» (у них своя вкладка), плюс профиль:
+  // он живёт на отдельном /profile, но открывается из кабинета и часть его.
+  const cabinet = (isOn("/cabinet") && !myItems) || isOn("/profile");
 
   return (
     <nav
@@ -91,14 +93,17 @@ export function TabBar({
           </>
         ))}
 
-        {tab("/profile", itemClass(profile), (
+        {/* Ведёт в сводку кабинета, а не в настройки профиля: человеку нужны
+          * его заявки и вещи, а редактирование имени — редкий случай, он
+          * доступен из кабинета. */}
+        {tab("/cabinet", itemClass(cabinet), (
           <>
             {user ? (
               <Avatar src={user.image} name={user.name} size={22} />
             ) : (
               <User className="h-[22px] w-[22px]" aria-hidden="true" />
             )}
-            Профиль
+            Кабинет
           </>
         ))}
       </div>
