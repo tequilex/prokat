@@ -45,7 +45,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={pending}>Сохранить пароль</Button>
+      <Button type="submit" pending={pending}>Сохранить пароль</Button>
       <p className="text-xs text-muted-foreground">
         После смены пароля все другие сессии будут закрыты.
       </p>

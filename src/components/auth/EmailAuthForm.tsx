@@ -35,6 +35,9 @@ export function EmailAuthForm({
   const [resent, setResent] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [pending, startTransition] = useTransition();
+  // Отдельный транзишен: «Отправить письмо ещё раз» соседствует с основной
+  // кнопкой, и с общим флагом лоадер горел бы на обеих сразу.
+  const [resendPending, startResend] = useTransition();
 
   const switchTo = (next: Mode) => {
     setMode(next);
@@ -84,7 +87,7 @@ export function EmailAuthForm({
   };
 
   const resend = () => {
-    startTransition(async () => {
+    startResend(async () => {
       await resendVerificationEmail(email, callbackUrl);
       setResent(true);
     });
@@ -110,7 +113,7 @@ export function EmailAuthForm({
             : <>Письмо отправлено на <span className="font-medium">{sentTo}</span>. Откройте ссылку из него, чтобы завершить регистрацию.</>}
         </p>
         {mode === "register" && (
-          <Button type="button" variant="outline" disabled={pending || resent} onClick={resend}>
+          <Button type="button" variant="outline" pending={resendPending} disabled={resent} onClick={resend}>
             {resent ? "Письмо отправлено ещё раз" : "Отправить письмо ещё раз"}
           </Button>
         )}
@@ -172,12 +175,12 @@ export function EmailAuthForm({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {needsVerification && (
-        <Button type="button" variant="outline" disabled={pending || resent} onClick={resend}>
+        <Button type="button" variant="outline" pending={resendPending} disabled={resent} onClick={resend}>
           {resent ? "Письмо отправлено" : "Отправить письмо ещё раз"}
         </Button>
       )}
 
-      <Button type="submit" disabled={pending || Boolean(domainError)}>
+      <Button type="submit" pending={pending} disabled={Boolean(domainError)}>
         {mode === "login" ? "Войти" : mode === "register" ? "Зарегистрироваться" : "Отправить ссылку"}
       </Button>
 

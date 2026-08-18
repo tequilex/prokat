@@ -70,7 +70,7 @@ export function ChangePasswordForm() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={pending} className="w-fit">Сменить пароль</Button>
+      <Button type="submit" pending={pending} className="w-fit">Сменить пароль</Button>
       <p className="text-xs text-muted-foreground">
         После смены все другие сессии будут закрыты.
       </p>
