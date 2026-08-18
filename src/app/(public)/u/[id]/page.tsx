@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { User, BadgeCheck } from "lucide-react";
-import { seo } from "@theme/seo";
 import {
   getSellerById, getActiveListingCardsByOwner, getAvailabilityRows,
 } from "@/server/catalog";
@@ -31,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Имя может отсутствовать: у OAuth-профиля без имени и у старых записей.
   const name = seller.name ?? "Продавец";
   return {
-    title: seo.titleTemplate(`${name} — объявления`),
+    title: `${name} — объявления`,
     description: `Объявления пользователя ${name}: аренда вещей с бронью онлайн.`,
     alternates: { canonical: `${siteConfig.url}/u/${id}` },
   };

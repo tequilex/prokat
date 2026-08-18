@@ -3,7 +3,6 @@
 // живёт на третьем сегменте (/{city}/{cat}/{slug}-{id}) — см. [sub]/page.tsx.
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { seo } from "@theme/seo";
 import {
   getAllCategories, getCategoryBySlug, getCityBySlug, getListingCountsByCategory,
   type Category, type City,
@@ -35,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!r) return {};
   const cat = r.category;
   return {
-    title: seo.titleTemplate(`Аренда: ${cat.name.toLowerCase()} в ${r.city.name}`),
+    title: `Аренда: ${cat.name.toLowerCase()} в ${r.city.name}`,
     description: `${cat.name} напрокат в ${r.city.name}: каталог товаров с ценами, залогами и календарём занятости.`,
     alternates: { canonical: `${siteConfig.url}/${r.city.slug}/${seg}` },
   };

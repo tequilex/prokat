@@ -2,7 +2,6 @@
 // корневым категориям чипами.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { seo } from "@theme/seo";
 import {
   getAllCategories, getCityBySlug, getListingCountsByCategory, rollupToRoots,
 } from "@/server/catalog";
@@ -22,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const city = await getCityBySlug(citySlug);
   if (!city) return {};
   return {
-    title: seo.titleTemplate(`Аренда вещей в ${city.name}`),
+    title: `Аренда вещей в ${city.name}`,
     description: `Всё для аренды в ${city.name}: инструмент, техника, спорт, одежда и другое. Каталог с ценами и заявкой на бронь онлайн.`,
     alternates: { canonical: `${siteConfig.url}/${city.slug}` },
   };

@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { CircleCheck } from "lucide-react";
-import { seo } from "@theme/seo";
 import {
   getAllCategories, getAvailabilityRows, getCategoryById, getCategoryBySlug,
   getCityBySlug, getActiveListingById, getListingCountsByCategory, getSellerById,
@@ -79,7 +78,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!r) return {};
   if (r.kind === "subcategory") {
     return {
-      title: seo.titleTemplate(`Аренда: ${r.sub.name.toLowerCase()} в ${r.city.name}`),
+      title: `Аренда: ${r.sub.name.toLowerCase()} в ${r.city.name}`,
       description: `${r.sub.name} напрокат в ${r.city.name}: цены, залоги, календарь занятости.`,
       alternates: { canonical: `${siteConfig.url}/${r.city.slug}/${seg}/${sub}` },
     };
@@ -87,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const priceBit = r.listing.priceDay !== null ? ` от ${formatPrice(r.listing.priceDay)}/сутки` : "";
   const canonical = listingPath(r.city.slug, r.category.slug, r.listing.slug, r.listing.id);
   return {
-    title: seo.titleTemplate(`${r.listing.title} — аренда в ${r.city.name}${priceBit}`),
+    title: `${r.listing.title} — аренда в ${r.city.name}${priceBit}`,
     description: r.listing.description ?? `${r.listing.title} напрокат в ${r.city.name}.`,
     alternates: { canonical: `${siteConfig.url}${canonical}` },
   };
