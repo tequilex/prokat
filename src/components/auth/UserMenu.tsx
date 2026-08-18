@@ -60,7 +60,7 @@ export function UserMenu({ email, name, image, isAdmin = false }: Props) {
         <Link
           href={"/cabinet" as never}
           aria-label="Кабинет"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full focus:[outline:none] focus:ring-2 focus:ring-ring"
           onMouseEnter={openNow}
           onMouseLeave={closeSoon}
           // Radix открывает меню по pointerdown — гасим, иначе клик по аватару

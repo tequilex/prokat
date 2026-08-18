@@ -38,7 +38,7 @@ export const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors focus:bg-muted focus:text-foreground",
+      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm [outline:none] transition-colors focus:bg-muted focus:text-foreground",
       // Иконка под курсором становится охряной: по закону цвета она обозначает
       // предмет, к которому ведёт пункт, а не действие.
       // Селектор целиком: focus:[&_svg] Tailwind разложил бы в svg:focus, то есть

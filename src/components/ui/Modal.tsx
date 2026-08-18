@@ -58,10 +58,13 @@ export const ModalContent = React.forwardRef<
         contentRef.current?.focus();
       }}
       className={cn(
-        // outline-none именно на :focus, а не на :focus-visible — фокус сюда
-        // ставится программно (см. onOpenAutoFocus), и браузер рисует своё
-        // системное кольцо вокруг всего листа: на iOS оно голубое.
-        "fixed z-50 border border-border bg-card shadow-lg duration-200 focus:outline-none",
+        // Гасим системное кольцо: фокус сюда ставится программно (см.
+        // onOpenAutoFocus), и браузер обводит весь лист — на iOS голубым.
+        // Именно :focus, а не :focus-visible — фокус не от клавиатуры.
+        // И именно [outline:none]: утилита outline-none разворачивается в
+        // «outline: 2px solid transparent» с отступом, и эта прозрачная полоса
+        // проступает по краю, пока лист анимируется.
+        "fixed z-50 border border-border bg-card shadow-lg duration-200 focus:[outline:none]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
         // Мобайл: лист снизу во всю ширину, с запасом под системную полосу

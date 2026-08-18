@@ -9,5 +9,5 @@
 // ModalContent прокручивается, а значит и обрезает по обеим осям.
 export const field =
   "border border-border bg-background text-foreground " +
-  "focus-visible:outline-none focus-visible:border-ring " +
+  "focus-visible:[outline:none] focus-visible:border-ring " +
   "focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset";

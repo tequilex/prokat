@@ -20,7 +20,7 @@ const VK_BUTTONS: CustomButton[] = [
   { kind: "custom", label: "Одноклассники",    href: "/api/oauth/vk/start?provider=ok_ru",   Icon: SiOdnoklassniki, bg: "#EE8208", fg: "#FFFFFF" },
 ];
 
-const ROW_CLASS = "flex w-full items-center justify-between rounded-xl px-5 py-3 text-base font-medium shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+const ROW_CLASS = "flex w-full items-center justify-between rounded-xl px-5 py-3 text-base font-medium shadow-sm transition-opacity hover:opacity-90 focus-visible:[outline:none] focus-visible:ring-2 focus-visible:ring-offset-2";
 
 export function ProviderButtons({
   nextAuthProviders,
