@@ -34,6 +34,13 @@ export function formatDayMonth(dateStr: string): string {
   return `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]}`;
 }
 
+/* «августа 2026» — для оборотов вида «на сайте с …». Родительный падеж:
+ * Intl без числа дня даёт именительный («август 2026»), и получается
+ * «с август». */
+export function formatMonthYearGen(date: Date): string {
+  return `${MONTHS_GEN[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 /* Сколько осталось до срока, словами: «2 ч 40 мин», «6 ч», «завтра».
  * Возвращает null, когда срок уже прошёл — вызывающий решает, что показать. */
 export function formatTimeLeft(until: Date, now: Date = new Date()): string | null {

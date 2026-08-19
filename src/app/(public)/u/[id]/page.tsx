@@ -10,7 +10,7 @@ import {
   getSellerById, getSellerStats, getActiveListingCardsByOwner, getAvailabilityRows,
 } from "@/server/catalog";
 import { buildAvailabilityByListing } from "@/lib/catalog/availability";
-import { todayStr, addDaysStr } from "@/lib/catalog/dates";
+import { todayStr, addDaysStr, formatMonthYearGen } from "@/lib/catalog/dates";
 import { Avatar } from "@/components/ui/Avatar";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { ListingCard } from "@/components/catalog/ListingCard";
@@ -21,10 +21,6 @@ import { siteConfig } from "@/lib/site-config";
 export const dynamic = "force-dynamic";
 
 interface Props { params: Promise<{ id: string }> }
-
-function memberSince(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(date);
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -57,7 +53,7 @@ export default async function SellerProfilePage({ params }: Props) {
   // просто выпадают: без города и без аренд строка остаётся честной.
   const byline = [
     stats.cityName,
-    `на сайте с ${memberSince(seller.createdAt)}`,
+    `на сайте с ${formatMonthYearGen(seller.createdAt)}`,
     stats.deals > 0 ? `${stats.deals} ${ruPlural(stats.deals, "аренда", "аренды", "аренд")}` : null,
   ].filter(Boolean).join(" · ");
 

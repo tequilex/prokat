@@ -2,10 +2,7 @@ import Link from "next/link";
 import { BadgeCheck, MapPin, CalendarClock } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/button";
-
-function memberSince(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(date);
-}
+import { formatMonthYearGen } from "@/lib/catalog/dates";
 
 // Блок продавца под фото: слева — инфо (аватар, имя-ссылка, проверен, локация,
 // на сайте с), справа — карта-заглушка (интеграции карт пока нет).
@@ -46,7 +43,7 @@ export function OwnerCard({
           </li>
           <li className="flex items-center gap-3 text-foreground">
             <CalendarClock className="h-5 w-5 shrink-0" aria-hidden="true" />
-            На сайте с {memberSince(createdAt)}
+            На сайте с {formatMonthYearGen(createdAt)}
           </li>
         </ul>
 
