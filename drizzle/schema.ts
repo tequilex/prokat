@@ -15,6 +15,9 @@ export const users = pgTable("users", {
   phone: varchar("phone", { length: 20 }),
   phoneVerifiedAt: timestamp("phone_verified_at"),
   image: text("image"),
+  // Обложка профиля: широкая фотография над шапкой кабинета и над публичной
+  // страницей продавца. Грузит сам владелец, рекомендуемая пропорция 4:1.
+  coverUrl: text("cover_url"),
   bio: text("bio"),
   // argon2id. NULL у OAuth-юзеров: пароль есть только у тех, кто регистрировался почтой.
   passwordHash: text("password_hash"),

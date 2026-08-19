@@ -3,10 +3,10 @@
 // Профиль покупателя: имя и телефон. Телефон предзаполняет форму заявки.
 
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { users } from "@db/schema";
+import { uploads, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { normalizePhone } from "@/lib/booking/validation";
 
@@ -40,5 +40,33 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
     .where(eq(users.id, session.user.id));
 
   revalidatePath("/profile");
+  return { ok: true, data: undefined };
+}
+
+/* Обложка профиля. Адрес не принимаем на веру: он должен указывать на файл,
+ * который этот же человек загрузил через /api/upload — иначе в поле можно
+ * положить что угодно, вплоть до чужой картинки с трекером. null — снять. */
+export async function updateCover(url: string | null): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "auth_required" };
+  const userId = session.user.id;
+  if (session.user.bannedAt) return { ok: false, error: "auth_required" };
+
+  if (url !== null) {
+    const rows = await getDb()
+      .select({ id: uploads.id })
+      .from(uploads)
+      .where(and(eq(uploads.publicUrl, url), eq(uploads.userId, userId)))
+      .limit(1);
+    if (rows.length === 0) return { ok: false, error: "unknown_image" };
+  }
+
+  await getDb().update(users).set({ coverUrl: url }).where(eq(users.id, userId));
+
+  // Обложка видна в трёх местах сразу: шапка кабинета, экран настроек и
+  // публичная витрина.
+  revalidatePath("/cabinet");
+  revalidatePath("/profile");
+  revalidatePath(`/u/${userId}`);
   return { ok: true, data: undefined };
 }

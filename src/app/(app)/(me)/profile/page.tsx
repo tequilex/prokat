@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getUserProfile } from "@/server/me";
 import { ProfileForm } from "@/components/me/ProfileForm";
+import { ProfileCoverField } from "@/components/me/ProfileCoverField";
 import { ChangePasswordForm } from "@/components/me/ChangePasswordForm";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,10 @@ export default async function ProfilePage() {
           {user.email}
         </p>
         <ProfileForm initialName={user.name ?? ""} initialPhone={user.phone ?? ""} initialBio={user.bio ?? ""} />
+        <div className="mt-5">
+          <h3 className="mb-2 text-sm font-medium">Обложка профиля</h3>
+          <ProfileCoverField coverUrl={user.coverUrl} />
+        </div>
         {(
           <p className="mt-3 text-sm">
             <a href={`/u/${user.id}`} className="text-accent hover:underline underline-offset-2">
