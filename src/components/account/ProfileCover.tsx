@@ -23,16 +23,20 @@ export function ProfileCover({
   return (
     <div className={cn("relative w-full overflow-hidden bg-muted", className)}>
       {src && (
-        <Image
-          src={src}
-          alt=""
-          fill
-          sizes="100vw"
-          priority={priority}
-          className="object-cover"
-        />
+        <>
+          <Image
+            src={src}
+            alt=""
+            fill
+            sizes="100vw"
+            priority={priority}
+            className="object-cover"
+          />
+          {/* Затемнение — только на фотографии: пустую плашку оно превращало
+            * бы в неотличимый от фона градиент. */}
+          <span aria-hidden="true" className="cover-scrim absolute inset-0" />
+        </>
       )}
-      <span aria-hidden="true" className="cover-scrim absolute inset-0" />
       {children}
     </div>
   );

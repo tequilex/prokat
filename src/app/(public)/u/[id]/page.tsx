@@ -67,10 +67,16 @@ export default async function SellerProfilePage({ params }: Props) {
         * затемнение держит их читаемыми на любой фотографии. */}
       <ProfileCover src={seller.coverUrl} className="-mt-[var(--header-h)] h-40 md:h-80" priority>
         <div className="absolute inset-x-0 top-[calc(var(--header-h)+4px)] px-4">
-          {/* Крошки лежат на фотографии — их цвета всегда светлые, независимо
-            * от темы: утилиты Breadcrumbs читают токены, здесь они локально
-            * переопределены. */}
-          <div className="mx-auto w-full max-w-[1200px] [--color-foreground:#F5F5F7] [--color-muted-fg:rgba(245,245,247,0.72)]">
+          {/* На фотографии крошки всегда светлые, независимо от темы: утилиты
+            * Breadcrumbs читают токены, здесь они локально переопределены. На
+            * пустой плашке остаются цвета темы. */}
+          <div
+            className={`mx-auto w-full max-w-[1200px] ${
+              seller.coverUrl
+                ? "[--color-foreground:#F5F5F7] [--color-muted-fg:rgba(245,245,247,0.72)]"
+                : ""
+            }`}
+          >
             <Breadcrumbs items={[{ label: "Главная", href: "/" }, { label: displayName }]} />
           </div>
         </div>
