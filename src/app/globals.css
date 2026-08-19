@@ -128,9 +128,16 @@
 
   /* На фотографии тонкий тёмный кант пилюль хедера пропадает — на обложке
    * подсвечиваем его сильнее. Тем же приёмом (:has на body) связаны полоса
-   * брони и таб-бар ниже. */
-  .dark body:has([data-cover-hero]) header .glass {
+   * брони и таб-бар ниже. Значение атрибута говорит, где обложка видна:
+   * «all» — на всех экранах, «md» — только с планшета (мобильные подразделы
+   * кабинета обложку прячут, и бустить кант там не над чем). */
+  .dark body:has([data-cover-hero="all"]) header .glass {
     --glass-border: rgba(255, 255, 255, 0.14);
+  }
+  @media (min-width: 768px) {
+    .dark body:has([data-cover-hero="md"]) header .glass {
+      --glass-border: rgba(255, 255, 255, 0.14);
+    }
   }
 
   /* Фон героя главной. Картинка-плейсхолдер public/hero.webp — замени файлом
@@ -359,4 +366,3 @@
   from { transform: translateX(calc(-1 * var(--fly))); opacity: 0; }
   to   { transform: none; opacity: 1; }
 }
-

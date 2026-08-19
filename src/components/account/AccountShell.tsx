@@ -70,7 +70,10 @@ export function AccountShell({
   const isHub = identity != null && pathname === "/cabinet";
 
   return (
-    <div data-cover-hero={identity ? "" : undefined}>
+    // Значение атрибута — где обложка реально видна: на хабе всегда («all»),
+    // в подразделах только с md («md»). CSS в globals.css включает светлый
+    // кант хедера соответственно, чтобы он не буствался над пустым фоном.
+    <div data-cover-hero={identity ? (isHub ? "all" : "md") : undefined}>
       {/* Обложка на всю ширину, уезжает под стеклянный хедер (он sticky и
         * остаётся сверху) — тем же приёмом, что герой главной. На мобайле
         * показывается только на хабе — в подразделах ей делать нечего.

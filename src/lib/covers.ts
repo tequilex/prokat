@@ -32,7 +32,16 @@ export function isCoverPreset(url: string): boolean {
   return COVER_PRESETS.some((p) => p.url === url);
 }
 
-/** Что показывать: выбранное или дефолтный пресет. */
+/** Своя загрузка, а не пресет: пресеты живут под /covers/, загрузки — в S3. */
+export function isOwnCoverUrl(url: string | null): url is string {
+  return url !== null && !url.startsWith("/covers/");
+}
+
+/* Что показывать: выбранное или дефолтный пресет. Адрес под /covers/, которого
+ * больше нет в списке, — осиротевший пресет (список менялся после того, как
+ * человек выбрал): тихо падаем на дефолт, а не показываем битую картинку. */
 export function resolveCoverUrl(coverUrl: string | null): string {
-  return coverUrl ?? DEFAULT_COVER.url;
+  if (coverUrl === null) return DEFAULT_COVER.url;
+  if (coverUrl.startsWith("/covers/") && !isCoverPreset(coverUrl)) return DEFAULT_COVER.url;
+  return coverUrl;
 }

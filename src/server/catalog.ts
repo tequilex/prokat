@@ -240,6 +240,8 @@ export interface Seller {
   isVerified: boolean;
   createdAt: Date;
   phone: string | null;
+  /** Витрина забаненного продавца закрыта — страница отдаёт 404. */
+  bannedAt: Date | null;
 }
 
 // Публичные поля продавца — для страницы товара и профиля /u/{id}.
@@ -249,6 +251,7 @@ export async function getSellerById(userId: string): Promise<Seller | null> {
     image: users.image, coverUrl: users.coverUrl, bio: users.bio,
     isVerified: users.isVerified,
     createdAt: users.createdAt, phone: users.phone,
+    bannedAt: users.bannedAt,
   }).from(users).where(eq(users.id, userId)).limit(1);
   return rows[0] ?? null;
 }

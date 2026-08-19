@@ -54,6 +54,9 @@ export async function updateCover(url: string | null): Promise<ActionResult> {
   const userId = session.user.id;
   if (session.user.bannedAt) return { ok: false, error: "auth_required" };
 
+  // Server action вызывается по сети с любым payload'ом — тип не гарантирован.
+  if (url !== null && typeof url !== "string") return { ok: false, error: "unknown_image" };
+
   if (url !== null && !isCoverPreset(url)) {
     const rows = await getDb()
       .select({ id: uploads.id })
@@ -65,10 +68,11 @@ export async function updateCover(url: string | null): Promise<ActionResult> {
 
   await getDb().update(users).set({ coverUrl: url }).where(eq(users.id, userId));
 
-  // Обложка видна в трёх местах сразу: шапка кабинета, экран настроек и
-  // публичная витрина.
-  revalidatePath("/cabinet");
-  revalidatePath("/profile");
+  // Обложка живёт в layout'ах личной зоны (виден на всех подстраницах) и на
+  // публичной витрине.
+  revalidatePath("/cabinet", "layout");
+  revalidatePath("/profile", "layout");
+  revalidatePath("/requests", "layout");
   revalidatePath(`/u/${userId}`);
   return { ok: true, data: undefined };
 }

@@ -52,6 +52,14 @@ describe("updateCover", () => {
     expect(updateSet).toHaveBeenCalledWith({ coverUrl: "/covers/steklo.svg" });
   });
 
+  it("rejects a non-string payload instead of throwing", async () => {
+    authMock.mockResolvedValue(me);
+    const res = await updateCover(42 as unknown as string);
+    expect(res).toEqual({ ok: false, error: "unknown_image" });
+    expect(db.select).not.toHaveBeenCalled();
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
   it("rejects a url that is not the user's own upload", async () => {
     authMock.mockResolvedValue(me);
     selectLimit.mockResolvedValueOnce([]);

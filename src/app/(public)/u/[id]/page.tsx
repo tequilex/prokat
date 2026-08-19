@@ -25,7 +25,7 @@ interface Props { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const seller = await getSellerById(id);
-  if (!seller) return {};
+  if (!seller || seller.bannedAt) return {};
   // Имя может отсутствовать: у OAuth-профиля без имени и у старых записей.
   const name = seller.name ?? "Продавец";
   return {
@@ -38,7 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SellerProfilePage({ params }: Props) {
   const { id } = await params;
   const seller = await getSellerById(id);
-  if (!seller) notFound();
+  // Витрина забаненного закрыта: он загружает обложку и bio сам, и после бана
+  // они не должны оставаться на публичном адресе.
+  if (!seller || seller.bannedAt) notFound();
 
   const [stats, items] = await Promise.all([
     getSellerStats(seller.id),
@@ -58,7 +60,7 @@ export default async function SellerProfilePage({ params }: Props) {
   ].filter(Boolean).join(" · ");
 
   return (
-    <main data-cover-hero>
+    <main data-cover-hero="all">
       {/* Обложка уезжает под стеклянный хедер; крошки лежат на фото под ним,
         * затемнение держит их читаемыми на любой фотографии. */}
       <ProfileCover src={seller.coverUrl} className="-mt-[var(--header-h)] h-40 md:h-80" priority>

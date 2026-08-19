@@ -23,6 +23,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const session = await auth();
   if (!session?.user?.id) return errJson(401, "unauthorized");
+  // Забаненный с живой сессией не должен заливать файлы в хранилище: интерфейсы
+  // ему и так закрыты, но ручка доступна по сети напрямую.
+  if (session.user.bannedAt) return errJson(403, "banned");
 
   const cl = Number(req.headers.get("content-length") ?? 0);
   if (cl > MAX_BYTES) return errJson(413, "too_large");

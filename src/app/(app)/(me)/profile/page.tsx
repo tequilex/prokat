@@ -44,13 +44,11 @@ export default async function ProfilePage() {
           <h3 className="mb-2 text-sm font-medium">Обложка профиля</h3>
           <ProfileCoverField me={identity} pendingCount={newCount} />
         </div>
-        {(
-          <p className="mt-3 text-sm">
-            <a href={`/u/${user.id}`} className="text-accent hover:underline underline-offset-2">
-              Открыть мой публичный профиль →
-            </a>
-          </p>
-        )}
+        <p className="mt-3 text-sm">
+          <a href={`/u/${user.id}`} className="text-accent hover:underline underline-offset-2">
+            Открыть мой публичный профиль →
+          </a>
+        </p>
       </div>
 
       {/* Только аккаунтам с паролем: OAuth-юзерам менять нечего, а задать пароль

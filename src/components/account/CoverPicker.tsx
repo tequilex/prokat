@@ -9,7 +9,7 @@ import { Modal, ModalContent, ModalTitle, ModalTrigger } from "@/components/ui/M
 import { ProfileCover } from "@/components/account/ProfileCover";
 import { AccountHero } from "@/components/account/AccountHero";
 import { CabinetHubHeader } from "@/components/account/CabinetHub";
-import { COVER_PRESETS, DEFAULT_COVER, isCoverPreset } from "@/lib/covers";
+import { COVER_PRESETS, DEFAULT_COVER, isOwnCoverUrl, resolveCoverUrl } from "@/lib/covers";
 import { updateCover } from "@/server/actions/profile";
 import { cn } from "@/lib/utils";
 import { ACCOUNT_COVER_HEIGHT, type AccountIdentity } from "@/components/account/identity";
@@ -43,12 +43,11 @@ export function CoverChoiceGrid({
   const [uploading, setUploading] = useState(false);
   const [saving, startSaving] = useTransition();
 
-  const savedUrl = current ?? DEFAULT_COVER.url;
+  // resolveCoverUrl прячет осиротевшие пресеты (список менялся после выбора).
+  const savedUrl = resolveCoverUrl(current);
   const [candidate, setCandidate] = useState(savedUrl);
   // Своя фотография: уже сохранённая или только что загруженная в кандидаты.
-  const [ownUrl, setOwnUrl] = useState(
-    current !== null && !isCoverPreset(current) ? current : null,
-  );
+  const [ownUrl, setOwnUrl] = useState(isOwnCoverUrl(current) ? current : null);
 
   const busy = uploading || saving;
   const dirty = candidate !== savedUrl;
