@@ -26,6 +26,18 @@ describe("buildAccountNav", () => {
     expect(items.filter((i) => i.badge).length).toBe(1);
   });
 
+  it("writes hub hints in humane Russian and omits them at zero", () => {
+    const items = buildAccountNav({
+      newRequestsCount: 0, activeListings: 3, upcomingBookings: 2, pendingMine: 1,
+    }).flatMap((g) => g.items);
+    expect(items.find((i) => i.href === "/cabinet/listings")!.hint).toBe("3");
+    expect(items.find((i) => i.href === "/cabinet/calendar")!.hint).toBe("2 брони");
+    expect(items.find((i) => i.href === "/requests")!.hint).toBe("1 ждёт");
+
+    const bare = buildAccountNav({ newRequestsCount: 0 }).flatMap((g) => g.items);
+    expect(bare.every((i) => i.hint === undefined)).toBe(true);
+  });
+
   it("drops provider settings and stats tabs", () => {
     const items = buildAccountNav({ newRequestsCount: 0 }).flatMap((g) => g.items);
     expect(items.some((i) => i.href === "/cabinet/settings")).toBe(false);

@@ -1,8 +1,10 @@
 // Read-слой личного кабинета покупателя.
 
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
+import { todayStr } from "@/lib/catalog/dates";
 import { accounts, bookingRequests, listings, users } from "@db/schema";
+import type { AccountIdentity } from "@/components/account/identity";
 
 export async function getUserProfile(userId: string) {
   const db = getDb();
@@ -15,21 +17,17 @@ export async function getUserProfile(userId: string) {
   return { user, providers: accountRows.map((a) => a.provider) };
 }
 
-export interface CabinetIdentity {
-  name: string | null;
-  email: string;
-  image: string | null;
-  isVerified: boolean;
-  activeListings: number;
-  deals: number;
-}
+// Форма ответа описана рядом с потребителями шапки кабинета.
+export type { AccountIdentity as CabinetIdentity } from "@/components/account/identity";
 
 /* Шапка кабинета: кто я и как у меня идут дела. Рейтинга и отзывов в модели
  * нет, поэтому считаем то, что есть на самом деле — сколько вещей выставлено
- * и сколько аренд доведено до конца, по обе стороны сделки. */
-export async function getCabinetIdentity(userId: string): Promise<CabinetIdentity | null> {
+ * и сколько аренд доведено до конца, по обе стороны сделки. Два последних
+ * счётчика подписывают строки мобильного хаба: «2 брони», «1 ждёт». */
+export async function getCabinetIdentity(userId: string): Promise<AccountIdentity | null> {
   const db = getDb();
-  const [userRows, listingRows, dealRows] = await Promise.all([
+  const today = todayStr();
+  const [userRows, listingRows, dealRows, bookingRows, pendingRows] = await Promise.all([
     db
       .select({
         name: users.name,
@@ -37,6 +35,7 @@ export async function getCabinetIdentity(userId: string): Promise<CabinetIdentit
         // он сидит. Публично адрес нигде не показывается.
         email: users.email,
         image: users.image,
+        coverUrl: users.coverUrl,
         isVerified: users.isVerified,
       })
       .from(users)
@@ -57,6 +56,22 @@ export async function getCabinetIdentity(userId: string): Promise<CabinetIdentit
         // Аренда состоялась: вещь вернули или не вернули, но событие было.
         inArray(bookingRequests.status, ["completed", "no_show"]),
       )),
+    db
+      .select({ cnt: sql<number>`count(*)::int` })
+      .from(bookingRequests)
+      .where(and(
+        eq(bookingRequests.ownerUserId, userId),
+        eq(bookingRequests.status, "confirmed"),
+        // Бронь «впереди», пока не прошёл последний её день: границы включены.
+        gte(bookingRequests.dateTo, today),
+      )),
+    db
+      .select({ cnt: sql<number>`count(*)::int` })
+      .from(bookingRequests)
+      .where(and(
+        eq(bookingRequests.customerUserId, userId),
+        eq(bookingRequests.status, "new"),
+      )),
   ]);
 
   const user = userRows[0];
@@ -66,5 +81,7 @@ export async function getCabinetIdentity(userId: string): Promise<CabinetIdentit
     ...user,
     activeListings: listingRows[0]?.cnt ?? 0,
     deals: dealRows[0]?.cnt ?? 0,
+    upcomingBookings: bookingRows[0]?.cnt ?? 0,
+    pendingMine: pendingRows[0]?.cnt ?? 0,
   };
 }

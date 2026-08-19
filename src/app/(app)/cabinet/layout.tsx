@@ -20,7 +20,12 @@ export default async function CabinetLayout({ children }: { children: React.Reac
 
   return (
     <AccountShell
-      groups={buildAccountNav({ newRequestsCount: newCount })}
+      groups={buildAccountNav({
+        newRequestsCount: newCount,
+        activeListings: identity?.activeListings,
+        upcomingBookings: identity?.upcomingBookings,
+        pendingMine: identity?.pendingMine,
+      })}
       identity={identity}
     >
       {children}

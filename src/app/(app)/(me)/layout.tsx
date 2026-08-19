@@ -19,7 +19,12 @@ export default async function MeLayout({ children }: { children: React.ReactNode
 
   return (
     <AccountShell
-      groups={buildAccountNav({ newRequestsCount: newCount })}
+      groups={buildAccountNav({
+        newRequestsCount: newCount,
+        activeListings: identity?.activeListings,
+        upcomingBookings: identity?.upcomingBookings,
+        pendingMine: identity?.pendingMine,
+      })}
       identity={identity}
     >
       {children}
