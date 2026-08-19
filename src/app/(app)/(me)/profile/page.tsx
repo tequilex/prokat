@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
-import { getUserProfile } from "@/server/me";
+import { getUserProfile, getCabinetIdentity } from "@/server/me";
+import { countNewRequests } from "@/server/owner";
 import { ProfileForm } from "@/components/me/ProfileForm";
 import { ProfileCoverField } from "@/components/me/ProfileCoverField";
 import { ChangePasswordForm } from "@/components/me/ChangePasswordForm";
@@ -21,8 +22,14 @@ export default async function ProfilePage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/profile");
 
-  const profile = await getUserProfile(session.user.id);
-  if (!profile) redirect("/login");
+  // identity и счётчик нужны миниатюре шапки в выборе обложки — превью
+  // показывает страницу такой, какой её увидят.
+  const [profile, identity, newCount] = await Promise.all([
+    getUserProfile(session.user.id),
+    getCabinetIdentity(session.user.id),
+    countNewRequests(session.user.id),
+  ]);
+  if (!profile || !identity) redirect("/login");
   const { user, providers } = profile;
 
   return (
@@ -35,7 +42,7 @@ export default async function ProfilePage() {
         <ProfileForm initialName={user.name ?? ""} initialPhone={user.phone ?? ""} initialBio={user.bio ?? ""} />
         <div className="mt-5">
           <h3 className="mb-2 text-sm font-medium">Обложка профиля</h3>
-          <ProfileCoverField coverUrl={user.coverUrl} />
+          <ProfileCoverField me={identity} pendingCount={newCount} />
         </div>
         {(
           <p className="mt-3 text-sm">

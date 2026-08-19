@@ -2,10 +2,10 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
 // Путь задаётся из теста: хаб и кнопка «назад» зависят от того, где стоишь.
-const nav = vi.hoisted(() => ({ pathname: "/requests" }));
+const nav = vi.hoisted(() => ({ pathname: "/requests", back: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({
   usePathname: () => nav.pathname,
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), back: nav.back, push: nav.push }),
 }));
 
 // Кнопка смены обложки тянет server action, а тот — весь стек auth: под jsdom
@@ -55,10 +55,13 @@ describe("AccountShell", () => {
     expect(screen.getByText("Проверенный продавец")).toBeInTheDocument();
   });
 
-  it("renders no cover image until the person uploads one", () => {
+  it("falls back to the default preset cover until the person picks one", () => {
     nav.pathname = "/requests";
-    render(<AccountShell groups={groups} identity={identity}>x</AccountShell>);
-    expect(document.querySelector("img")).toBeNull();
+    const { container } = render(
+      <AccountShell groups={groups} identity={identity}>x</AccountShell>,
+    );
+    const cover = container.querySelector("img[src='/covers/mix.svg']");
+    expect(cover).not.toBeNull();
   });
 
   it("shows the mobile hub only on the cabinet summary", () => {
@@ -73,13 +76,13 @@ describe("AccountShell", () => {
     );
     // Хаб дублирует навигацию строками: «Мои заявки» есть в сайдбаре и в хабе.
     expect(screen.getAllByRole("link", { name: /Мои заявки/ })).toHaveLength(2);
-    expect(screen.queryByRole("link", { name: "В кабинет" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Назад" })).toBeNull();
   });
 
-  it("offers a way back to the hub from a subsection", () => {
+  it("offers a history-back button in a subsection", () => {
     nav.pathname = "/requests";
     render(<AccountShell groups={groups} identity={identity}>x</AccountShell>);
-    expect(screen.getByRole("link", { name: "В кабинет" })).toHaveAttribute("href", "/cabinet");
+    expect(screen.getByRole("button", { name: "Назад" })).toBeInTheDocument();
   });
 
   it("offers a way out in the sidebar and in the hub", () => {
@@ -99,6 +102,6 @@ describe("AccountShell", () => {
     nav.pathname = "/requests";
     render(<AccountShell groups={groups}>x</AccountShell>);
     expect(screen.queryByText("Проверенный продавец")).toBeNull();
-    expect(screen.queryByRole("link", { name: "В кабинет" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Назад" })).toBeNull();
   });
 });

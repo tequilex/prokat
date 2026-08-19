@@ -8,18 +8,18 @@
 // остаётся старая раскладка: лента разделов на мобайле, сайдбар на десктопе.
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronLeft, ClipboardList, Bell, Package, CalendarDays, User, LogOut, Zap,
 } from "lucide-react";
 import { Brackets } from "@/components/brand/Brackets";
 import { useSignOut } from "@/components/auth/useSignOut";
 import { ProfileCover } from "@/components/account/ProfileCover";
-import { CoverUploadButton } from "@/components/account/CoverUploadButton";
+import { CoverPickerButton } from "@/components/account/CoverPicker";
 import { AccountHero } from "@/components/account/AccountHero";
 import { CabinetHub } from "@/components/account/CabinetHub";
 import type { AccountNavGroup, AccountNavIcon } from "@/components/account/accountNav";
-import type { AccountIdentity } from "@/components/account/identity";
+import { ACCOUNT_COVER_HEIGHT, type AccountIdentity } from "@/components/account/identity";
 
 const ICONS: Record<AccountNavIcon, typeof User> = {
   summary: Zap,
@@ -55,6 +55,7 @@ export function AccountShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname() ?? "";
+  const router = useRouter();
   const flat = groups.flatMap((g) => g.items);
   // Заголовок — это раздел, в котором стоишь. Отдельное слово «Кабинет» ничего
   // не добавляло: и так видно, где ты, по подсвеченному пункту сайдбара.
@@ -70,17 +71,20 @@ export function AccountShell({
 
   return (
     <div data-cover-hero={identity ? "" : undefined}>
-      {/* Обложка на всю ширину. На десктопе уезжает под стеклянный хедер
-        * (он sticky и остаётся сверху), на мобайле начинается под ним и
-        * показывается только на хабе — в подразделах ей делать нечего. */}
+      {/* Обложка на всю ширину, уезжает под стеклянный хедер (он sticky и
+        * остаётся сверху) — тем же приёмом, что герой главной. На мобайле
+        * показывается только на хабе — в подразделах ей делать нечего.
+        * z-10 кнопке: полоса героя наезжает на обложку отрицательным
+        * отступом и иначе перекрывала бы нижнюю половину кнопки. */}
       {identity && (
         <ProfileCover
           src={identity.coverUrl}
-          className={`h-40 md:-mt-[var(--header-h)] md:h-60 ${isHub ? "" : "max-md:hidden"}`}
+          className={`${ACCOUNT_COVER_HEIGHT} -mt-[var(--header-h)] ${isHub ? "" : "max-md:hidden"}`}
         >
-          <CoverUploadButton
-            hasCover={identity.coverUrl !== null}
-            className="absolute bottom-4 right-4 md:bottom-5 md:right-6"
+          <CoverPickerButton
+            me={identity}
+            pendingCount={pendingCount}
+            className="absolute bottom-4 right-4 z-10 md:bottom-5 md:right-6"
           />
         </ProfileCover>
       )}
@@ -176,16 +180,21 @@ export function AccountShell({
           <div className="min-w-0">
             {currentItem && (
               <h1 className={`mb-4 flex items-center gap-2.5 font-display text-2xl font-bold ${identity ? "max-md:mt-4" : ""} ${isHub ? "max-md:mt-6" : ""}`}>
-                {/* Ленты табов на мобайле больше нет — назад в хаб ведёт
-                  * кнопка у заголовка. На хабе и десктопе её не бывает. */}
+                {/* Ленты табов на мобайле больше нет — назад ведёт кнопка у
+                  * заголовка: обычно туда, откуда пришли, а без истории (по
+                  * прямой ссылке) — в кабинет. На хабе и десктопе её нет. */}
                 {identity && !isHub && (
-                  <Link
-                    href={"/cabinet" as never}
-                    aria-label="В кабинет"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.history.length > 1) router.back();
+                      else router.push("/cabinet" as never);
+                    }}
+                    aria-label="Назад"
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground md:hidden"
                   >
                     <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                  </Link>
+                  </button>
                 )}
                 {CurrentIcon && (
                   <CurrentIcon className="h-6 w-6 shrink-0 text-accent" aria-hidden="true" />

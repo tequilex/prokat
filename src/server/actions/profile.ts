@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { uploads, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { normalizePhone } from "@/lib/booking/validation";
+import { isCoverPreset } from "@/lib/covers";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -43,16 +44,17 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
   return { ok: true, data: undefined };
 }
 
-/* Обложка профиля. Адрес не принимаем на веру: он должен указывать на файл,
- * который этот же человек загрузил через /api/upload — иначе в поле можно
- * положить что угодно, вплоть до чужой картинки с трекером. null — снять. */
+/* Обложка профиля. Адрес не принимаем на веру: либо это стандартный пресет из
+ * белого списка, либо файл, который этот же человек загрузил через /api/upload
+ * — иначе в поле можно положить что угодно, вплоть до чужой картинки с
+ * трекером. null — вернуть дефолтный пресет. */
 export async function updateCover(url: string | null): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "auth_required" };
   const userId = session.user.id;
   if (session.user.bannedAt) return { ok: false, error: "auth_required" };
 
-  if (url !== null) {
+  if (url !== null && !isCoverPreset(url)) {
     const rows = await getDb()
       .select({ id: uploads.id })
       .from(uploads)

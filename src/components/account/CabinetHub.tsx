@@ -29,38 +29,7 @@ export function CabinetHub({
 
   return (
     <div className="flex flex-col gap-4 md:hidden">
-      {/* Аватар свисает с обложки; кольцо цвета холста отделяет его от фото. */}
-      <div className="relative -mt-8 flex items-end gap-3">
-        <Avatar
-          src={me.image}
-          name={me.name}
-          size={72}
-          className="shadow-[0_0_0_3px_var(--color-background)]"
-        />
-        <div className="min-w-0 flex-1 pb-1">
-          <div className="truncate font-display text-xl font-bold">
-            {me.name ?? "Без имени"}
-          </div>
-          {me.isVerified && (
-            <div className="mt-0.5 flex items-center gap-1.5 text-[13px] text-accent">
-              <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              Проверенный продавец
-            </div>
-          )}
-        </div>
-        <Link
-          href={"/profile" as never}
-          aria-label="Настройки профиля"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
-        >
-          <Settings className="h-[18px] w-[18px]" aria-hidden="true" />
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Tile value={me.activeListings} label={ruPlural(me.activeListings, "объявление", "объявления", "объявлений")} />
-        <Tile value={me.deals} label={ruPlural(me.deals, "аренда", "аренды", "аренд")} />
-      </div>
+      <CabinetHubHeader me={me} />
 
       {sections.map((group) => (
         <div key={group.title} className="flex flex-col gap-2">
@@ -109,6 +78,48 @@ export function CabinetHub({
         {signOut.pending ? "Выходим…" : "Выйти"}
       </button>
     </div>
+  );
+}
+
+/* Верх хаба: профиль с аватаром, свисающим с обложки, и две плитки с итогами.
+ * Отдельным компонентом, потому что его рендерит ещё и превью в выборе
+ * обложки (CoverPicker) — уменьшенной копией, тем же кодом. */
+export function CabinetHubHeader({ me }: { me: AccountIdentity }) {
+  return (
+    <>
+      {/* Аватар свисает с обложки; кольцо цвета холста отделяет его от фото. */}
+      <div className="relative -mt-8 flex items-end gap-3">
+        <Avatar
+          src={me.image}
+          name={me.name}
+          size={72}
+          className="shadow-[0_0_0_3px_var(--color-background)]"
+        />
+        <div className="min-w-0 flex-1 pb-1">
+          <div className="truncate font-display text-xl font-bold">
+            {me.name ?? "Без имени"}
+          </div>
+          {me.isVerified && (
+            <div className="mt-0.5 flex items-center gap-1.5 text-[13px] text-accent">
+              <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Проверенный продавец
+            </div>
+          )}
+        </div>
+        <Link
+          href={"/profile" as never}
+          aria-label="Настройки профиля"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+        >
+          <Settings className="h-[18px] w-[18px]" aria-hidden="true" />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Tile value={me.activeListings} label={ruPlural(me.activeListings, "объявление", "объявления", "объявлений")} />
+        <Tile value={me.deals} label={ruPlural(me.deals, "аренда", "аренды", "аренд")} />
+      </div>
+    </>
   );
 }
 

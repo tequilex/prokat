@@ -7,6 +7,7 @@ import { formatDayMonth, formatTimeLeft } from "@/lib/catalog/dates";
 import { listingPath } from "@/lib/catalog/listing-path";
 import { Stats } from "@/components/cabinet/StatTile";
 import { Button } from "@/components/ui/button";
+import { ScrollReset } from "@/components/account/ScrollReset";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function CabinetIndex() {
 
   return (
     <div className="flex flex-col gap-8">
+      <ScrollReset />
       <Stats
         items={[
           { value: stats.views7d, label: "просмотров за неделю" },
