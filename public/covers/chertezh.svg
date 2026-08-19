@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" width="1600" height="400">
+<defs><linearGradient id="ch-electronics-f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04160F" stop-opacity="0"></stop><stop offset="0.5" stop-color="#04160F" stop-opacity="0.38"></stop><stop offset="1" stop-color="#04160F" stop-opacity="0.95"></stop></linearGradient>
+<pattern id="ch-electronics-p" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0v40" fill="none" stroke="#34C759" stroke-opacity="0.1" stroke-width="1"></path></pattern></defs>
+<rect width="1600" height="400" fill="#062017"></rect><rect width="1600" height="400" fill="url(#ch-electronics-p)"></rect>
+<circle cx="322" cy="158" r="196" fill="none" stroke="#34C759" stroke-opacity="0.18" stroke-width="1.5"></circle>
+<circle cx="322" cy="158" r="228" fill="none" stroke="#34C759" stroke-opacity="0.1" stroke-width="1.5" stroke-dasharray="9 13"></circle>
+<g fill="none" stroke="#E0902A" stroke-width="1.0317241379310345" stroke-linejoin="round" stroke-linecap="round" transform="translate(322 158) scale(3.2955) translate(-50.00 -51.50)"><path fill-rule="evenodd" d="M20 18h60v48H20zm8 8v32h44V26z"></path><path d="M6 72h88l-7 13H13z"></path></g>
+<g fill="none" stroke="#E0902A" stroke-width="1.05" stroke-linejoin="round" stroke-linecap="round" transform="translate(620 118) rotate(-22) scale(2.8571) translate(-50.00 -49.00)"><path fill-rule="evenodd" d="M50 10a36 36 0 0 0-36 36v16h13V46a23 23 0 0 1 46 0v16h13V46A36 36 0 0 0 50 10z"></path><rect x="8" y="56" width="17" height="32" rx="8"></rect><rect x="75" y="56" width="17" height="32" rx="8"></rect></g>
+<g fill="none" stroke="#34C759" stroke-width="0.7135135135135136" stroke-linejoin="round" stroke-linecap="round" transform="translate(1000 150) scale(4.2045) translate(-50.00 -50.00)"><path fill-rule="evenodd" d="M34 16h32l7 11h13a8 8 0 0 1 8 8v41a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8V35a8 8 0 0 1 8-8h13zm16 21a19 19 0 1 0 0 38 19 19 0 0 0 0-38z"></path></g>
+<g fill="none" stroke="#E0902A" stroke-width="1.2133333333333334" stroke-linejoin="round" stroke-linecap="round" transform="translate(1288 122) rotate(14) scale(2.1429) translate(-50.00 -50.00)"><path fill-rule="evenodd" d="M32 8h36a8 8 0 0 1 8 8v68a8 8 0 0 1-8 8H32a8 8 0 0 1-8-8V16a8 8 0 0 1 8-8zm4 14v56h28V22z"></path></g>
+<g fill="none" stroke="#34C759" stroke-width="1.216" stroke-linejoin="round" stroke-linecap="round" opacity="0.8" transform="translate(1462 216) scale(1.9737) translate(-50.00 -50.00)"><path fill-rule="evenodd" d="M50 12a38 38 0 1 1 0 76 38 38 0 0 1 0-76zm0 17a21 21 0 1 0 0 42 21 21 0 0 0 0-42z"></path></g>
+<g stroke="#E0902A" stroke-opacity="0.75" stroke-width="1.6" fill="none"><path d="M815 58h370"></path><path d="M815 48v20M1185 48v20"></path><path d="M700 104v170M692 104h16M692 274h16"></path></g>
+<g fill="#34C759"><rect x="60" y="66" width="6" height="26"></rect><rect x="94" y="66" width="6" height="19"></rect><rect x="128" y="66" width="6" height="12"></rect></g>
+<path d="M551 300h18M560 291v18" stroke="#34C759" stroke-width="1.6" opacity="0.55" fill="none"></path><path d="M971 336h18M980 327v18" stroke="#E0902A" stroke-width="1.6" opacity="0.5" fill="none"></path><path d="M1291 300h18M1300 291v18" stroke="#34C759" stroke-width="1.6" opacity="0.55" fill="none"></path>
+<path d="M64 56H34v288h30" fill="none" stroke="#E0902A" stroke-width="3"></path>
+<path d="M1536 56h30v288h-30" fill="none" stroke="#E0902A" stroke-width="3"></path>
+<rect y="170" width="1600" height="230" fill="url(#ch-electronics-f)"></rect>
+</svg>

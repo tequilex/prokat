@@ -13,10 +13,12 @@ export interface CoverPreset {
   url: string;
 }
 
+// Картинки отобраны владельцем из вариантов Claude Design (исходные серии —
+// в /covers в корне репо, вне гита). Названия — по характеру рисунка.
 export const COVER_PRESETS: CoverPreset[] = [
-  { slug: "mix", label: "Всё вместе", url: "/covers/mix.svg" },
-  { slug: "tools", label: "Инструменты", url: "/covers/tools.svg" },
-  { slug: "clothes", label: "Одежда", url: "/covers/clothes.svg" },
+  { slug: "lenta", label: "Лента", url: "/covers/lenta.svg" },
+  { slug: "steklo", label: "Стекло", url: "/covers/steklo.svg" },
+  { slug: "chertezh", label: "Чертёж", url: "/covers/chertezh.svg" },
 ];
 
 export const DEFAULT_COVER = COVER_PRESETS[0]!;

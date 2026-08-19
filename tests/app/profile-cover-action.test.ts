@@ -46,10 +46,10 @@ describe("updateCover", () => {
 
   it("accepts a preset without touching uploads", async () => {
     authMock.mockResolvedValue(me);
-    const res = await updateCover("/covers/tools.svg");
+    const res = await updateCover("/covers/steklo.svg");
     expect(res).toEqual({ ok: true, data: undefined });
     expect(db.select).not.toHaveBeenCalled();
-    expect(updateSet).toHaveBeenCalledWith({ coverUrl: "/covers/tools.svg" });
+    expect(updateSet).toHaveBeenCalledWith({ coverUrl: "/covers/steklo.svg" });
   });
 
   it("rejects a url that is not the user's own upload", async () => {

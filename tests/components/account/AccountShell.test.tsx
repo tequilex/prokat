@@ -60,7 +60,7 @@ describe("AccountShell", () => {
     const { container } = render(
       <AccountShell groups={groups} identity={identity}>x</AccountShell>,
     );
-    const cover = container.querySelector("img[src='/covers/mix.svg']");
+    const cover = container.querySelector("img[src='/covers/lenta.svg']");
     expect(cover).not.toBeNull();
   });
 
