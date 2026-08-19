@@ -12,6 +12,7 @@ import { newId } from "../src/lib/id";
 import { slugify } from "../src/lib/slugify";
 import { addDaysStr, todayStr } from "../src/lib/catalog/dates";
 import { DEV_SEED_PASSWORD, devSeedPassword } from "../src/lib/auth/password";
+import { COVER_PRESETS } from "../src/lib/covers";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -159,6 +160,9 @@ async function main() {
       phone: def.phone,
       isVerified: i < 2, // пара «проверенных» для демо значка
       verifiedAt: i < 2 ? new Date() : null,
+      // Разные обложки по кругу — витрины сидов выглядят живыми, а не пятью
+      // копиями дефолта.
+      coverUrl: COVER_PRESETS[i % COVER_PRESETS.length]!.url,
     });
     ownerIds.push(userId);
   }
