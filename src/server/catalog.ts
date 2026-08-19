@@ -6,7 +6,7 @@ import {
 } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
-  availability, categories, cities, listings, users,
+  availability, bookingRequests, categories, cities, listings, users,
 } from "@db/schema";
 
 export type City = typeof cities.$inferSelect;
@@ -235,6 +235,7 @@ export interface Seller {
   id: string;
   name: string | null;
   image: string | null;
+  coverUrl: string | null;
   bio: string | null;
   isVerified: boolean;
   createdAt: Date;
@@ -245,10 +246,48 @@ export interface Seller {
 export async function getSellerById(userId: string): Promise<Seller | null> {
   const rows = await getDb().select({
     id: users.id, name: users.name,
-    image: users.image, bio: users.bio, isVerified: users.isVerified,
+    image: users.image, coverUrl: users.coverUrl, bio: users.bio,
+    isVerified: users.isVerified,
     createdAt: users.createdAt, phone: users.phone,
   }).from(users).where(eq(users.id, userId)).limit(1);
   return rows[0] ?? null;
+}
+
+export interface SellerStats {
+  /** Состоявшиеся аренды по обе стороны сделки. */
+  deals: number;
+  /** Город продавца — по его активным объявлениям, если он один. */
+  cityName: string | null;
+}
+
+/* Подпись под именем на витрине продавца. Города у пользователя в модели нет:
+ * он есть у вещей. Пока все вещи в одном городе, это и есть его город; если
+ * человек сдаёт в разных, сегмент честнее опустить, чем выбирать за него. */
+export async function getSellerStats(userId: string): Promise<SellerStats> {
+  const db = getDb();
+  const [dealRows, cityRows] = await Promise.all([
+    db
+      .select({ cnt: sql<number>`count(*)::int` })
+      .from(bookingRequests)
+      .where(and(
+        or(
+          eq(bookingRequests.ownerUserId, userId),
+          eq(bookingRequests.customerUserId, userId),
+        ),
+        inArray(bookingRequests.status, ["completed", "no_show"]),
+      )),
+    db
+      .selectDistinct({ name: cities.name })
+      .from(listings)
+      .innerJoin(cities, eq(cities.id, listings.cityId))
+      .where(and(eq(listings.ownerUserId, userId), eq(listings.status, "active")))
+      .limit(2),
+  ]);
+
+  return {
+    deals: dealRows[0]?.cnt ?? 0,
+    cityName: cityRows.length === 1 ? cityRows[0]!.name : null,
+  };
 }
 
 // Карточка товара с городом — товары продавца могут быть в разных городах,
