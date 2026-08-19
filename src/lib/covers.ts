@@ -8,17 +8,22 @@
 
 export interface CoverPreset {
   slug: string;
-  /** Подпись в выборе обложки. */
+  /** В выборе подписи не показываются — это aria-label плитки. */
   label: string;
   url: string;
 }
 
-// Картинки отобраны владельцем из вариантов Claude Design (исходные серии —
-// в /covers в корне репо, вне гита). Названия — по характеру рисунка.
+// Картинки отобраны владельцем: три — из серий Claude Design (исходники — в
+// /covers в корне репо, вне гита), остальные — из ранних макетных вариантов.
 export const COVER_PRESETS: CoverPreset[] = [
-  { slug: "lenta", label: "Лента", url: "/covers/lenta.svg" },
-  { slug: "steklo", label: "Стекло", url: "/covers/steklo.svg" },
+  { slug: "lenta", label: "Лента с вещами", url: "/covers/lenta.svg" },
+  { slug: "steklo", label: "Стеклянные плитки", url: "/covers/steklo.svg" },
   { slug: "chertezh", label: "Чертёж", url: "/covers/chertezh.svg" },
+  { slug: "camp", label: "Вечер в лагере", url: "/covers/camp.svg" },
+  { slug: "doodles", label: "Дудлы вещей", url: "/covers/doodles.svg" },
+  { slug: "houses", label: "Соседский квартал", url: "/covers/houses.svg" },
+  { slug: "stripes", label: "Плакатные полосы", url: "/covers/stripes.svg" },
+  { slug: "ribbons", label: "Ленты-волны", url: "/covers/ribbons.svg" },
 ];
 
 export const DEFAULT_COVER = COVER_PRESETS[0]!;

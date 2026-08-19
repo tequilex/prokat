@@ -255,6 +255,8 @@ function ScaledPreview({
   );
 }
 
+/* Плитка выбора без подписи: картинка говорит сама, название уходит только
+ * в aria-label — кнопке без текста без него нельзя. */
 function Tile({
   label, active, disabled, onClick, children,
 }: {
@@ -270,15 +272,13 @@ function Tile({
       disabled={disabled}
       onClick={onClick}
       aria-pressed={active}
+      aria-label={label}
       className={cn(
-        "group relative aspect-[3/1] overflow-hidden rounded-lg border text-left transition-shadow disabled:opacity-60",
+        "group relative aspect-[3/1] overflow-hidden rounded-lg border transition-shadow disabled:opacity-60",
         active ? "border-transparent ring-2 ring-primary" : "border-border hover:ring-1 hover:ring-border",
       )}
     >
       {children}
-      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-1.5 pt-4 text-xs font-medium text-white">
-        {label}
-      </span>
       {active && (
         <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Check className="h-3 w-3" aria-hidden="true" />

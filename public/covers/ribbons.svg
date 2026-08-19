@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="400" viewBox="0 0 1600 400">
+  <!-- Пресет «Ленты»: атласные волны из изумруда в мяту с одной охряной. -->
+  <defs>
+    <linearGradient id="r1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1E9C63"/><stop offset="1" stop-color="#8FE3B0"/></linearGradient>
+    <linearGradient id="r2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#11693F"/><stop offset="1" stop-color="#2FBF71"/></linearGradient>
+    <linearGradient id="r3" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B96F14"/><stop offset="1" stop-color="#F5C97C"/></linearGradient>
+  </defs>
+  <rect width="1600" height="400" fill="#0C2016"/>
+  <path d="M-50 300 C 300 120 600 380 950 220 S 1450 60 1650 180 L1650 260 C 1450 140 1000 300 950 300 C 600 460 300 200 -50 380 Z" fill="url(#r2)" opacity=".9"/>
+  <path d="M-50 180 C 350 40 700 260 1050 140 S 1500 -20 1700 80 L1700 130 C 1500 30 1100 190 1050 190 C 700 310 350 90 -50 230 Z" fill="url(#r1)" opacity=".85"/>
+  <path d="M-50 400 C 400 260 800 420 1200 300 S 1550 220 1700 280 L1700 320 C 1550 260 1250 340 1200 340 C 800 460 400 300 -50 440 Z" fill="url(#r3)" opacity=".8"/>
+</svg>

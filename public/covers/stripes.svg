@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="400" viewBox="0 0 1600 400">
+  <!-- Пресет «Плакатные полосы»: диагональные поля зелёных оттенков с охряным клином. -->
+  <rect width="1600" height="400" fill="#155B3F"/>
+  <path d="M0 0 H700 L420 400 H0 Z" fill="#0F4530"/>
+  <path d="M700 0 H1120 L840 400 H420 Z" fill="#1E7A50"/>
+  <path d="M1120 0 H1600 V210 L1010 400 H840 Z" fill="#2FA96B"/>
+  <path d="M1600 210 V400 H1010 Z" fill="#F0A63C"/>
+  <path d="M1364 0 H1470 L1210 400 H1104 Z" fill="#8FE3B0" opacity=".35"/>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="400" viewBox="0 0 1600 400">
+  <!-- Пресет «Соседский квартал»: домики в сумерках, дуги обмена между крышами. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0C1A22"/><stop offset=".65" stop-color="#12271B"/><stop offset="1" stop-color="#16301F"/></linearGradient>
+  </defs>
+  <rect width="1600" height="400" fill="url(#sky)"/>
+  <g fill="#EAF2E2"><circle cx="220" cy="60" r="2"/><circle cx="480" cy="40" r="1.5"/><circle cx="760" cy="70" r="2"/><circle cx="1020" cy="36" r="1.5"/><circle cx="1300" cy="66" r="2"/><circle cx="1480" cy="120" r="1.4"/><circle cx="620" cy="110" r="1.3"/></g>
+  <circle cx="1430" cy="80" r="34" fill="#F2D8A4"/>
+  <g fill="none" stroke="#7FD79B" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round">
+    <path d="M300 250 Q 480 120 660 240" stroke-opacity=".55"/>
+    <path d="M700 235 Q 900 130 1105 245" stroke-opacity=".45"/>
+    <path d="M1140 245 Q 1290 160 1420 250" stroke-opacity=".5"/>
+  </g>
+  <circle cx="480" cy="153" r="7" fill="#E0902A"/>
+  <circle cx="900" cy="156" r="7" fill="#E0902A" opacity=".8"/>
+  <circle cx="1292" cy="180" r="6" fill="#E0902A" opacity=".8"/>
+  <g>
+    <g transform="translate(210 250)">
+      <rect x="0" y="40" width="130" height="90" fill="#1E3A28"/>
+      <path d="M-12 44 L65 -18 L142 44 Z" fill="#274B32"/>
+      <rect x="46" y="80" width="34" height="50" fill="#152A1C"/>
+      <rect x="16" y="62" width="28" height="26" fill="#F5C97C"/>
+    </g>
+    <g transform="translate(560 235)">
+      <rect x="0" y="55" width="160" height="110" fill="#22402C"/>
+      <path d="M-14 60 L80 -20 L174 60 Z" fill="#2C5338"/>
+      <rect x="24" y="84" width="30" height="30" fill="#F5C97C"/>
+      <rect x="104" y="84" width="30" height="30" fill="#F5C97C" opacity=".65"/>
+      <rect x="62" y="108" width="36" height="57" fill="#172E1E"/>
+    </g>
+    <g transform="translate(1000 250)">
+      <rect x="0" y="40" width="140" height="95" fill="#1E3A28"/>
+      <path d="M-12 44 L70 -22 L152 44 Z" fill="#274B32"/>
+      <rect x="20" y="64" width="28" height="26" fill="#F5C97C"/>
+      <rect x="88" y="90" width="32" height="45" fill="#152A1C"/>
+    </g>
+    <g transform="translate(1330 260)">
+      <rect x="0" y="34" width="120" height="80" fill="#22402C"/>
+      <path d="M-10 38 L60 -16 L130 38 Z" fill="#2C5338"/>
+      <rect x="70" y="56" width="26" height="24" fill="#F5C97C"/>
+    </g>
+  </g>
+  <path d="M0 372 C 400 352 1200 352 1600 372 V400 H0 Z" fill="#132A1B"/>
+  <g><circle cx="120" cy="300" r="40" fill="#1B3B26"/><rect x="114" y="300" width="12" height="52" fill="#27351F"/></g>
+  <g><circle cx="880" cy="300" r="34" fill="#1B3B26"/><rect x="875" y="300" width="10" height="48" fill="#27351F"/></g>
+  <g><circle cx="1560" cy="296" r="42" fill="#1B3B26"/><rect x="1554" y="296" width="12" height="56" fill="#27351F"/></g>
+</svg>
