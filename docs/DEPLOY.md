@@ -350,6 +350,46 @@ docker compose build app && docker compose up -d app
 docker compose up -d --force-recreate app
 ```
 
+### Сиды на проде
+
+Сиды в docker-образ не входят (entrypoint гоняет только миграции) — их
+запускают с сервера. Два подводных камня: `npm run db:seed` не годится,
+потому что скрипт читает `.env`, где адрес БД — `@db:5432` (хост docker-сети,
+с сервера не резолвится, снаружи порт проброшен на `127.0.0.1:5432`); и
+`NODE_ENV=production` обязателен, иначе сид раздаст владельцам dev-пароль
+и `emailVerified`.
+
+```bash
+cd /opt/prokat
+npm install --legacy-peer-deps   # npm строже pnpm к peer deps (nodemailer 9 vs @auth/core)
+
+NODE_ENV=production \
+DATABASE_URL="postgres://app:$(grep '^DB_PASSWORD=' .env | cut -d= -f2)@127.0.0.1:5432/app" \
+npx tsx scripts/seed.ts
+
+rm -rf node_modules              # диск маленький, после сида зависимости не нужны
+```
+
+Успех: `Seeded: 1 city, … 5 owners, 20 listings…` и **без** строки про
+dev-пароль. Сид идемпотентен: если город «Казань» уже есть — выйдет, ничего
+не тронув.
+
+### Полный сброс БД и пересев
+
+```bash
+cd /opt/prokat
+docker compose stop app
+docker compose exec db psql -U app -d app -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+docker compose exec db psql -U app -d app -c "DROP SCHEMA IF EXISTS drizzle CASCADE;"
+docker compose up -d app         # миграции применятся на старте; проверить логи!
+docker compose logs --tail 20 app   # ждём "Running migrations..." → "Starting Next.js..."
+```
+
+Затем сиды — блоком выше. Если сид падает с `relation "cities" does not
+exist` — app после сброса не поднялся и миграции не прогнались: смотреть
+`docker compose ps` и логи, либо накатить руками тем же способом, что сид
+(`npx tsx scripts/migrate.ts` с тем же `DATABASE_URL`).
+
 Если менялся `STORAGE_PUBLIC_BASE` — нужен ещё и rebuild (он запечён в билд).
 
 ### Логи
