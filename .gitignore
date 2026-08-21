@@ -23,12 +23,6 @@ dist/
 # brainstorm
 .superpowers/
 
-# design
-inrenta Design System/
-inrenta Design System (cabinet)/
-design_handoff_cabinet_cover/
-/covers/
-
 # data
 pg_data/
 caddy_data/

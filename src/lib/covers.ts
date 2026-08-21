@@ -13,8 +13,8 @@ export interface CoverPreset {
   url: string;
 }
 
-// Картинки отобраны владельцем: три — из серий Claude Design (исходники — в
-// /covers в корне репо, вне гита), остальные — из ранних макетных вариантов.
+// Картинки отобраны владельцем: три — из серий Claude Design, остальные — из
+// ранних макетных вариантов. Единственный экземпляр — файлы в public/covers/.
 export const COVER_PRESETS: CoverPreset[] = [
   { slug: "lenta", label: "Лента с вещами", url: "/covers/lenta.svg" },
   { slug: "steklo", label: "Стеклянные плитки", url: "/covers/steklo.svg" },
