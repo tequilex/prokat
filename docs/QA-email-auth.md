@@ -20,7 +20,7 @@ pnpm dev
 Без `SMTP_*` письма печатаются **в консоль dev-сервера** — ссылку подтверждения брать
 оттуда (строка вида `[mail] to=… subject=…`).
 
-Готовые аккаунты: `owner1@seed.local` … `owner5@seed.local`, пароль `prokat-dev-12345`.
+Готовые аккаунты: `owner1@seed.local` … `owner5@seed.local`, пароль `inrenta-dev-12345`.
 
 Полезное:
 

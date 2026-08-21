@@ -27,7 +27,7 @@ Timeweb привязывает ключ на этапе создания сер�
 
 ```bash
 # Если ключа ещё нет:
-ssh-keygen -t ed25519 -C "prokat-vps" -f ~/.ssh/id_ed25519
+ssh-keygen -t ed25519 -C "inrenta-vps" -f ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
 ```
 
@@ -187,8 +187,8 @@ Eyeballs: не прошли **все** адреса, детали лежат в 
 
 ```bash
 cd /opt
-git clone https://github.com/<you>/prokat.git prokat   # имя папки любое
-cd prokat
+git clone https://github.com/<you>/prokat.git inrenta   # репозиторий ещё зовётся prokat
+cd inrenta
 ```
 
 ### 7.1. Прод `.env`
@@ -312,7 +312,7 @@ dev-стека и сыпать "Failed to find Server Action"):
 > См. раздел «Чего сейчас нет» в [seo.md](seo.md).
 
 ```bash
-cd /opt/prokat
+cd /opt/inrenta
 echo "<INDEXNOW_KEY>" > "public/<INDEXNOW_KEY>.txt"
 docker compose up -d --build app
 curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
@@ -342,10 +342,43 @@ curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
 
 ## 9. Регулярные операции
 
-### Обновление кода
+### Разовый переезд с прежнего имени проекта
+
+Нужен только тем, у кого сервер поднимался до того, как в `docker-compose.yml`
+появилось `name: inrenta`. Раньше имя проекта бралось из имени каталога
+(`/opt/prokat`), поэтому тома звались `prokat_pg_data`, `prokat_caddy_data`,
+`prokat_caddy_config`. После смены имени compose создаст **новые пустые тома**:
+база и сертификаты Let's Encrypt останутся в старых.
+
+Порядок важен — контейнеры надо остановить, пока конфиг ещё старый, иначе
+compose перестанет их видеть и они останутся висеть:
 
 ```bash
 cd /opt/prokat
+docker compose down          # ещё под старым именем проекта
+git pull                     # приезжает name: inrenta
+
+cd /opt && mv prokat inrenta && cd inrenta
+docker compose up -d --build
+docker compose logs --tail 30 app     # "Running migrations..." → "Starting Next.js..."
+```
+
+База поднимется пустой: миграции применятся сами, данные нужно засеять заново
+(раздел «Сиды на проде»). Caddy заново запросит сертификаты — это нормально,
+но не повторяйте переезд по несколько раз в неделю: у Let's Encrypt есть лимит
+на повторный выпуск одинаковых сертификатов.
+
+Убедившись, что всё работает, старые тома можно удалить:
+
+```bash
+docker volume ls | grep prokat
+docker volume rm prokat_pg_data prokat_caddy_data prokat_caddy_config
+```
+
+### Обновление кода
+
+```bash
+cd /opt/inrenta
 git pull
 docker compose build app && docker compose up -d app
 ```
@@ -370,7 +403,7 @@ docker compose up -d --force-recreate app
 и `emailVerified`.
 
 ```bash
-cd /opt/prokat
+cd /opt/inrenta
 npm install --legacy-peer-deps   # npm строже pnpm к peer deps (nodemailer 9 vs @auth/core)
 
 NODE_ENV=production \
@@ -387,7 +420,7 @@ dev-пароль. Сид идемпотентен: если город «Каз�
 ### Полный сброс БД и пересев
 
 ```bash
-cd /opt/prokat
+cd /opt/inrenta
 docker compose stop app
 docker compose exec db psql -U app -d app -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 docker compose exec db psql -U app -d app -c "DROP SCHEMA IF EXISTS drizzle CASCADE;"

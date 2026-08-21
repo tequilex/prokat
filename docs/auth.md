@@ -216,7 +216,7 @@ Current limitations в [architecture.md](architecture.md).
 роут отвечает 404 — жёсткий kill-switch по `NODE_ENV`, без флагов и секретов.
 
 Вне production `pnpm db:seed` раздаёт демо-владельцам (`ownerN@seed.local`)
-пароль `prokat-dev-12345` и проставляет им `emailVerified`, чтобы вход по
+пароль `inrenta-dev-12345` и проставляет им `emailVerified`, чтобы вход по
 паролю можно было проверить без возни с письмами.
 
 Ручная проверка всех сценариев — [QA-email-auth.md](QA-email-auth.md).

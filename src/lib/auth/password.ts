@@ -14,7 +14,7 @@ export const MIN_LENGTH = 8;
 export const MAX_LENGTH = 200;
 
 // Пароль, который seed раздаёт тестовым владельцам вне прода.
-export const DEV_SEED_PASSWORD = "prokat-dev-12345";
+export const DEV_SEED_PASSWORD = "inrenta-dev-12345";
 
 export async function hashPassword(plain: string): Promise<string> {
   return hash(plain, OPTS);

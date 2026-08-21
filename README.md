@@ -53,7 +53,7 @@ pnpm dev                         # http://localhost:3000
 
 Быстрый вход в dev-режиме: `GET /api/dev/login`, для админа —
 `/api/dev/login?role=admin`. Тестовые владельцы из сида —
-`owner1@seed.local` … `owner5@seed.local` с паролем `prokat-dev-12345`.
+`owner1@seed.local` … `owner5@seed.local` с паролем `inrenta-dev-12345`.
 
 Без `STORAGE_*` загрузка изображений недоступна (`/api/upload` отвечает 503) —
 для локальной разработки это нормально. Без `SMTP_*` письма печатаются в
