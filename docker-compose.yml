@@ -60,7 +60,52 @@ services:
     entrypoint: ["sh", "/backup-entrypoint.sh"]
     depends_on: [db]
 
+  # --- Только для локальной разработки -------------------------------------
+  # Профиль `dev` не активируется сам: на проде `docker compose up -d` эти два
+  # сервиса не трогает вовсе. Локально — `pnpm dev:up` (см. package.json).
+  #
+  # MinIO подменяет собой оба бакета Timeweb, чтобы локально можно было
+  # проверить загрузку картинок и прогнать учения по бэкапу. Подробности и
+  # значения для .env — в docs/testing.md.
+
+  minio:
+    image: minio/minio:latest
+    profiles: ["dev"]
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "127.0.0.1:9000:9000"   # S3 API
+      - "127.0.0.1:9001:9001"   # веб-консоль, minioadmin / minioadmin
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Разовая инициализация бакетов: отрабатывает и завершается, повторный
+  # запуск идемпотентен.
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["dev"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/inrenta-media &&
+      mc mb --ignore-existing local/inrenta-backups &&
+      mc anonymous set download local/inrenta-media &&
+      echo '[init] buckets ready: inrenta-media (public read), inrenta-backups (private)'
+      "
+
 volumes:
   caddy_data:
   caddy_config:
   pg_data:
+  minio_data:

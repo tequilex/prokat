@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:up": "docker compose --profile dev up -d db minio minio-init",
+    "dev:down": "docker compose --profile dev down",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
