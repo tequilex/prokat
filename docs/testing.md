@@ -72,6 +72,67 @@
 4. Внешние сервисы (S3, SMTP, fetch) мокаются. Для почты есть
    `__setTransportForTests`, для S3 — `_resetR2ClientForTests`.
 
+## Локальное S3 (MinIO)
+
+Загрузка картинок и бэкапы завязаны на S3-совместимое хранилище, которого в
+обычном локальном окружении нет — поэтому по умолчанию `/api/upload` отвечает
+503, а бэкапы не проверить вовсе. Для таких проверок есть отдельный
+`docker-compose.minio.yml`, основной стек он не трогает:
+
+```bash
+docker compose -f docker-compose.minio.yml up -d
+```
+
+Поднимается MinIO с двумя бакетами, повторяющими прод: `inrenta-media` с
+публичным чтением (фото и обложки) и приватный `inrenta-backups` (дампы).
+Веб-консоль — `http://localhost:9001`, логин и пароль `minioadmin`.
+
+Дальше в `.env`:
+
+```bash
+STORAGE_ENDPOINT=http://localhost:9000
+STORAGE_BUCKET=inrenta-media
+STORAGE_ACCESS_KEY_ID=minioadmin
+STORAGE_SECRET_ACCESS_KEY=minioadmin
+STORAGE_PUBLIC_BASE=http://localhost:9000/inrenta-media
+
+BACKUP_S3_ENDPOINT=http://minio:9000
+BACKUP_S3_BUCKET=inrenta-backups
+BACKUP_S3_ACCESS_KEY_ID=minioadmin
+BACKUP_S3_SECRET_ACCESS_KEY=minioadmin
+```
+
+**Эндпоинты у них разные, и это не опечатка.** Приложение запускается на хосте
+(`pnpm dev`) и ходит в MinIO через проброшенный порт — `localhost:9000`. Скрипт
+бэкапа работает внутри контейнера, где `localhost` это он сам, поэтому ему нужно
+имя сервиса — `minio:9000`. MinIO для этого подключён к сети основного стека.
+
+После правки `.env` **перезапустить dev-сервер**: `next.config.ts` собирает
+список разрешённых хостов для `next/image` из `STORAGE_PUBLIC_BASE` на старте, и
+без перезапуска картинки получат 400 от оптимизатора.
+
+Проверка загрузки без браузера:
+
+```bash
+curl -s -c /tmp/c.txt -o /dev/null -L http://localhost:3000/api/dev/login
+curl -s -b /tmp/c.txt -F "image=@tests/fixtures/images/small.jpg" \
+  http://localhost:3000/api/upload
+```
+
+В ответе — публичный адрес файла; он должен открываться анонимно и отдавать
+`image/webp` независимо от исходного формата.
+
+Прогон бэкапа и восстановления — в [RECOVERY.md](RECOVERY.md); запускать
+`docker compose up -d backup` и дать контейнеру секунд десять: он ставит
+`aws-cli` при старте.
+
+Вернуть окружение к обычному состоянию — очистить обе группы переменных и
+погасить MinIO:
+
+```bash
+docker compose -f docker-compose.minio.yml down       # -v чтобы снести и данные
+```
+
 ## Ручные проверки
 
 Автотесты не видят реальную БД, cookie, редиректы, письма и вёрстку. Для входа

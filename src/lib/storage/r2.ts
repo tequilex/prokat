@@ -14,6 +14,12 @@ export function getR2Client(): S3Client {
   _client = new S3Client({
     region: "ru-central1",
     endpoint: env.STORAGE_ENDPOINT,
+    // Бакет в пути (`endpoint/bucket/key`), а не поддоменом (`bucket.endpoint/key`).
+    // По умолчанию SDK адресует поддоменом, и тогда стиль записи расходится с
+    // публичными ссылками: их buildPublicUrl уже собирает как
+    // `STORAGE_PUBLIC_BASE/key`, то есть path-style. С локальным S3 поддомен
+    // вдобавок не резолвится — имени `bucket.localhost` в DNS нет.
+    forcePathStyle: true,
     credentials: {
       accessKeyId: env.STORAGE_ACCESS_KEY_ID,
       secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
