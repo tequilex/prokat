@@ -7,7 +7,7 @@ describe("buildProductJsonLd()", () => {
     description: "Мощный перфоратор.",
     priceDay: 500,
     photoUrls: ["https://img.example/1.webp"],
-    url: "https://prokat.example/kazan/elektroinstrument/perforator-01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    url: "https://inrenta.example/kazan/elektroinstrument/perforator-01ARZ3NDEKTSV4RRFFQ69G5FAV",
     sellerName: "Артём",
     available: true,
   };
@@ -48,11 +48,11 @@ describe("buildBreadcrumbJsonLd()", () => {
         { name: "Казань", url: "/kazan" },
         { name: "Перфоратор" },
       ],
-      "https://prokat.example/",
+      "https://inrenta.example/",
     );
     expect(ld.itemListElement).toHaveLength(3);
     expect(ld.itemListElement[0].position).toBe(1);
-    expect(ld.itemListElement[1].item).toBe("https://prokat.example/kazan");
+    expect(ld.itemListElement[1].item).toBe("https://inrenta.example/kazan");
     expect(ld.itemListElement[2].item).toBeUndefined();
   });
 });

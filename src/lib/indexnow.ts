@@ -4,8 +4,8 @@ const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 const INDEXNOW_URLLIST_LIMIT = 10_000;
 
 // Fire-and-forget пинг IndexNow API.
-// В dev/test или без INDEXNOW_KEY — no-op. Ошибки fetch'а ловит, не пробрасывает —
-// чтобы провал внешнего сервиса не валил server action публикации поста.
+// В dev/test или без INDEXNOW_KEY — no-op. Ошибки fetch'а ловит, не пробрасывает,
+// чтобы провал внешнего сервиса не валил вызвавшее его действие.
 export async function pingIndexNow(urls: string[]): Promise<void> {
   if (process.env.NODE_ENV !== "production") return;
   const key = process.env.INDEXNOW_KEY;

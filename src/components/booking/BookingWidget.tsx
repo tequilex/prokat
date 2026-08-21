@@ -27,7 +27,7 @@ export interface BookingWidgetProps {
   listingId: string;
   listingTitle: string;
   initialPhone: string;         // из профиля; пусто до первой заявки
-  pathname: string;             // /kazan/prokatmaster/perforator
+  pathname: string;             // /kazan/elektroinstrument/perforator-bosch-{ULID}
   initial: BookingSelection;    // уже провалидировано сервером (parseBookingParams)
   today: string;
   maxDate: string;              // горизонт бронирования

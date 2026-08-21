@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // Маршруты, на которые анон не должен попадать вообще (префикс-match).
-// Кабинет владельца добавится следующим этапом.
 const PROTECTED_PREFIXES: string[] = ["/requests", "/profile", "/cabinet", "/admin"];
 
 // Auth.js v5 в production использует префикс `__Secure-`, в dev — голый.
@@ -22,7 +21,7 @@ function isProtected(pathname: string): boolean {
 // Edge middleware без обращения к БД. Делает два дела:
 // 1) Прокидывает x-pathname в RSC (для layout'ов, которым нужен текущий URL).
 // 2) Проверяет ПРИСУТСТВИЕ session-cookie на protected-роутах — это убирает
-//    вспышку UI при анонимном заходе на /drafts. Валидность cookie проверит
+//    вспышку UI при анонимном заходе в кабинет. Валидность cookie проверит
 //    page-level requireAuthState() (defence-in-depth для протухших сессий).
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;

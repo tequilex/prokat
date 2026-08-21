@@ -7,7 +7,7 @@ describe("OwnerCard", () => {
     render(
       <OwnerCard
         name="Артём"
-        href="/u/prokatmaster"
+        href="/u/01ARZ3NDEKTSV4RRFFQ69G5FAV"
         image={null}
         cityName="Казань"
         isVerified
@@ -15,7 +15,7 @@ describe("OwnerCard", () => {
         createdAt={new Date("2023-05-01")}
       />,
     );
-    expect(screen.getByRole("link", { name: /Артём/ })).toHaveAttribute("href", "/u/prokatmaster");
+    expect(screen.getByRole("link", { name: /Артём/ })).toHaveAttribute("href", "/u/01ARZ3NDEKTSV4RRFFQ69G5FAV");
     expect(screen.getByText(/Проверен/)).toBeInTheDocument();
   });
 

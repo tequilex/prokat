@@ -21,9 +21,9 @@ describe("robots()", () => {
     expect(rule.userAgent).toBe("*");
     expect(rule.allow).toBe("/");
     const disallow = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow!];
-    expect(disallow).toEqual(expect.arrayContaining([
-      "/admin", "/banned", "/auth/", "/api/", "/dev/",
-    ]));
+    // Служебные ручки закрывает общее правило /api/ — отдельных записей под
+    // /api/auth, /api/oauth и /api/dev быть не должно.
+    expect(disallow).toEqual(expect.arrayContaining(["/admin", "/banned", "/api/"]));
   });
 
   it("sitemap указывает на NEXTAUTH_URL/sitemap.xml", () => {

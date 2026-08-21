@@ -1,11 +1,11 @@
-// In-memory rate limiter — single-instance деплой (Hetzner V1).
-// TODO(phase-2): persistent backend (Redis/Postgres) при scale-out.
+// In-memory rate limiter — рассчитан на одноинстансный деплой.
+// TODO: persistent backend (Redis/Postgres) при scale-out.
 //
 // Ключ — произвольная строка: для доменных действий это userId, для входа и
 // писем — почта, IP или их пара.
 
 export type LimitKind =
-  | "comment" | "post" | "booking" | "login" | "register" | "resend" | "reset"
+  | "booking" | "login" | "register" | "resend" | "reset"
   | "mail_ip" | "mail_daily" | "password_change";
 
 // Потолок отправки на весь сервис за сутки. Яндекс даёт 300 писем в сутки по
@@ -21,9 +21,7 @@ export type LimitResult =
 interface Rule { windowMs: number; maxInWindow: number; gapMs: number; }
 
 const RULES: Record<LimitKind, Rule> = {
-  comment: { windowMs: 60 * 60 * 1000, maxInWindow: 20, gapMs: 10_000 },
-  post:    { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 30_000 },
-  // Антиспам заявок вместо СМС-верификации (по ТЗ): 5 заявок в час, пауза 30с.
+  // Антиспам заявок вместо СМС-верификации: 5 заявок в час, пауза 30с.
   booking: { windowMs: 60 * 60 * 1000, maxInWindow: 5,  gapMs: 30_000 },
   // Вход: паузы нет, работает счётчик попыток.
   login:    { windowMs: 15 * 60 * 1000, maxInWindow: 10, gapMs: 0 },

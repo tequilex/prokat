@@ -7,7 +7,7 @@ import { normalizeToWebp, MAX_SIDE } from "@/lib/images/normalize";
 const fix = (name: string) =>
   readFileSync(join(process.cwd(), "tests/fixtures/images", name));
 
-// TODO(plan-3+): добавить кейс с реальной фикстурой EXIF orientation=6
+// TODO: добавить кейс с реальной фикстурой EXIF orientation=6
 // — sharp().rotate() без аргументов читает EXIF и физически крутит пиксели
 // перед .webp() (EXIF после encode уже не сохраняется). Поэтому если поменять
 // порядок (.webp().rotate()) — тест должен сломаться. Сейчас покрыто

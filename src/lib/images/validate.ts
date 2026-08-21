@@ -1,6 +1,6 @@
 import { fileTypeFromBuffer } from "file-type";
 
-// TODO(plan-3+): добавить "image/heic"/"image/heif" если в проде поедут iPhone-юзеры,
+// TODO: добавить "image/heic"/"image/heif", если в проде поедут iPhone-юзеры,
 // которым автоконверсия Safari не помогла. Подключение через `heic-convert` — аддитивно.
 export const ACCEPTED_MIME = [
   "image/jpeg", "image/png", "image/webp", "image/gif",
