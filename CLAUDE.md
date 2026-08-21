@@ -1,120 +1,145 @@
-# prokat — C2C-маркетплейс аренды вещей
+# inrenta — C2C-маркетплейс аренды вещей
 
-Веб-сервис «арендуй что угодно рядом» в духе Авито, но для аренды. Любой пользователь
-одновременно и **арендатор** («я арендую»), и **продавец** («я сдаю»): размещает свои
-вещи и бронирует чужие. Платежей внутри нет — оплата и залог остаются между людьми;
-сервис сводит их и ведёт заявки на бронь.
+Веб-сервис «арендуй что угодно рядом» в духе Авито, но для аренды. Любой
+пользователь одновременно и **арендатор**, и **продавец**: размещает свои вещи и
+бронирует чужие. Платежей внутри нет — сервис сводит людей и ведёт заявки на
+бронь, оплата и залог остаются между ними.
 
-Это самостоятельный проект. Общение и UI — на русском; идентификаторы кода и
-commit-сообщения — на английском.
+Проект называется **inrenta**. Имя `prokat` в путях (каталог репозитория,
+`/opt/prokat` на сервере, dev-пароль сида) — заглушка с самого начала работы,
+переименование отложено: см. [docs/BACKLOG.md](docs/BACKLOG.md). В новом коде и
+текстах использовать только `inrenta`.
+
+Общение и UI — на русском; идентификаторы кода и commit-сообщения — на английском.
 
 ## Стек
 
-- **Fullstack:** Next.js 15 (App Router, Server Components, Server Actions), React 19, TypeScript. SSR на всех публичных страницах.
-- **БД:** PostgreSQL 16 (docker-compose) + Drizzle ORM. Схема — единственный источник в `drizzle/schema.ts`.
-- **Auth:** Auth.js v5 (`@auth/drizzle-adapter`) — Яндекс ID (штатный провайдер), VK ID (собственный OAuth 2.1 + PKCE, см. `src/lib/auth/oauth-vk.ts`) и почта с паролем (argon2id + подтверждение по письму, см. `src/lib/auth/flows.ts`). Сессии — database, выдаются общим `src/lib/auth/session.ts`.
-- **Storage:** S3-совместимое (Yandex Object Storage); загрузка изображений через `sharp` → webp (`/api/upload`).
-- **Стили:** Tailwind + CSS-токены в `theme/`, светлая/тёмная темы (`next-themes`).
-- **ID:** ULID (`newId()` в `src/lib/id.ts`). **Цены:** целые рубли. **Слаги:** `slugify()`.
-- **Тесты:** Vitest (342 теста, только в `tests/**`, импорт через `@/`).
-- **Деплой:** docker-compose (Caddy + app + Postgres + backup), HTTPS via Let's Encrypt. См. `docs/DEPLOY.md`, `docs/RECOVERY.md`.
+- **Fullstack:** Next.js 15 (App Router, Server Components, Server Actions),
+  React 19, TypeScript strict. SSR на всех публичных страницах.
+- **БД:** PostgreSQL 16 + Drizzle ORM. Схема — `drizzle/schema.ts`.
+- **Auth:** Auth.js v5, database-сессии. Яндекс ID, VK ID (свой OAuth 2.1 +
+  PKCE), почта с паролем (argon2id).
+- **Storage:** S3-совместимое, изображения через `sharp` → webp.
+- **Стили:** Tailwind + CSS-токены в `theme/`, светлая и тёмная темы.
+- **Тесты:** Vitest, только в `tests/**`.
+- **Деплой:** docker-compose (Caddy + app + Postgres + backup).
 
 ## Команды
 
 ```bash
-pnpm dev            # dev-сервер (http://localhost:3000)
-pnpm build          # production-сборка (перед сборкой остановить dev — общий .next)
-pnpm test           # vitest
-pnpm lint           # eslint
-pnpm exec tsc --noEmit   # проверка типов всего проекта
-pnpm db:generate    # drizzle-kit: сгенерировать миграцию из drizzle/schema.ts
-pnpm db:migrate     # применить миграции (.env → DATABASE_URL)
-pnpm db:seed        # заполнить тестовыми данными (идемпотентно)
-pnpm db:studio      # drizzle studio
+pnpm dev                 # dev-сервер (перед pnpm build остановить — общий .next)
+pnpm build               # production-сборка
+pnpm test                # vitest
+pnpm exec tsc --noEmit   # проверка типов
+pnpm check-theme         # проверка обязательных CSS-токенов
+pnpm db:generate         # миграция из drizzle/schema.ts
+pnpm db:migrate          # применить миграции
+pnpm db:seed             # тестовые данные (идемпотентно)
+pnpm db:studio           # drizzle studio
 ```
 
-## Модель данных (`drizzle/schema.ts`)
+`pnpm lint` **не работает** — конфигурации ESLint в проекте нет, `next lint`
+уходит в интерактивный визард и виснет. Не вызывать в скриптах. Подробности —
+[docs/testing.md](docs/testing.md).
 
-Плоская модель: **`users → listings → booking_requests`**. Отдельной сущности «прокат/
-бизнес» нет — товар принадлежит юзеру напрямую.
+Поднять окружение: `docker compose up -d db` → `pnpm db:migrate && pnpm db:seed`
+→ `pnpm dev`. Быстрый вход в dev: `GET /api/dev/login` (или `?role=admin`).
 
-| Таблица | Назначение | Ключевые поля / связи |
-|---|---|---|
-| **users** | пользователь (он же продавец и покупатель) | `id`, `email`, `name` (подпись у аватара и в заявке; nullable), `phone` (контакт продавца), `image`, `bio`, `role` (`user`/`moderator`/`admin`), `isVerified`+`verifiedAt` (ставит админ), `createdAt`, `bannedAt`/`banReason` |
-| **accounts / sessions / verification_tokens** | Auth.js | `accounts.provider` здесь = OAuth-провайдер (vk/yandex), **не** доменная сущность |
-| **uploads** | загруженные изображения в S3 | `userId`, `key`, `publicUrl`, размеры |
-| **cities** | справочник городов | `slug` (uniq), `isActive` |
-| **categories** | дерево 2 уровня | `parentId` (NULL = корневая), `slug` (uniq глобально), `vertical` |
-| **listings** | объявление/товар | **`ownerUserId`→users**, **`cityId`→cities**, `categoryId`→categories, `title`, `slug` (НЕ uniq), `location` (район, опц.), `priceDay/Hour/Week`, `depositType`+`depositAmount`, `quantity`, `photosJson`, `status` (`active`/`hidden`/`archived`) |
-| **availability** | занятость по дням | PK (`listingId`,`date`); `bookedQty`, `blockedQty`. Нет строки = день свободен |
-| **booking_requests** | заявка на бронь | `listingId`, **`ownerUserId`** (денорм. владелец, для индекса «мои входящие»), `customerUserId`, `dateFrom/To`, `qty`, `status` (`new`/`confirmed`/`declined`/`expired`/`completed`/`no_show`/`cancelled`), `customerPhone`, `customerComment`, `ownerComment`, `expiresAt` |
-| **events** | продуктовая аналитика | `entityType`, `entityId`, `event` (view_listing, view_phone, submit_request…), `userId`, `metaJson` |
+## Архитектурные принципы
 
-Связи: user 1—N listings (владелец); listing 1—N booking_requests; user (customer) 1—N
-booking_requests; listing 1—N availability; city/category 1—N listings.
+Зависимости идут в одну сторону: `app → server → lib → db`.
 
-## URL-структура
-
-| URL | Что |
+| Слой | Отвечает за |
 |---|---|
-| `/` | главная (герой + поиск + категории) |
-| `/{city}` | витрина города (категории + счётчики) |
-| `/{city}/{category}` и `/{city}/{category}/{sub}` | списки товаров (фильтры, пагинация) |
-| `/{city}/{categorySlug}/{slug}-{id}` | **карточка товара** — `id` это ULID в хвосте; резолв по нему, при неканоничном адресе 301 |
-| `/u/{id}` | публичный профиль продавца (товары, «на сайте с», значок «Проверен»); адрес по ULID — имя в URL не выносим |
-| `/search?q=` | поиск по названию/описанию в пределах города |
-| `/login`, `/reset`, `/banned` | вход, смена пароля по ссылке из письма, блокировка |
-| `/requests` | «Мои заявки» (как арендатор) |
-| `/cabinet/listings`, `/cabinet/listings/new`, `/cabinet/listings/[id]` | мои объявления, размещение, редактирование |
-| `/cabinet/requests`, `/cabinet/calendar` | входящие заявки (как владелец), календарь занятости |
-| `/profile` | профиль + настройки (имя, телефон, bio) — единый экран |
-| `/admin/{users,listings,cities,categories,requests}` | админка (role=admin); в `/admin/users` — verify + бан |
-| `/api/{auth,oauth/vk,upload,health}` | системные; `/api/auth/email/verify` — подтверждение почты; `/api/dev/login[?role=admin]` — быстрый dev-вход (404 в prod) |
+| `src/app/**` | роуты, страницы, метаданные |
+| `src/server/*.ts` | чтение данных |
+| `src/server/actions/*.ts` | мутации (Server Actions) |
+| `src/lib/**` | доменная логика без БД + инфраструктура |
+| `src/components/**` | UI |
+| `drizzle/schema.ts` | схема БД |
+| `theme/**` | токены, шрифты, тексты, SEO-дефолты |
 
-Резолвер сегментов — `src/app/(public)/[city]/[seg]/[sub]/page.tsx` + хелпер
-`src/lib/catalog/listing-path.ts` (`extractListingId`, `listingPath`).
+Псевдонимы: `@/` → `src`, `@theme/` → `theme`, `@db/` → `drizzle`.
 
-## Карта кода
+Подробно — [docs/architecture.md](docs/architecture.md).
 
-- **`drizzle/`** — `schema.ts` (источник схемы) + `migrations/`. Менять схему → `db:generate`.
-- **`scripts/`** — `seed.ts`, `migrate.ts`.
-- **`src/server/*.ts`** — read-слой (запросы): `catalog.ts` (публичный каталог, продавцы), `owner.ts` (кабинет владельца), `booking.ts` (заявки покупателя), `me.ts` (профиль), `admin.ts`.
-- **`src/server/actions/*.ts`** — мутации (Server Actions): `owner.ts` (создать/править товар, решения по заявкам, календарь), `booking.ts` (создать/отменить заявку), `admin.ts` (модерация, города/категории, бан, verify), `profile.ts`.
-- **`src/lib/`** — `auth/` (config, guard `requireAuthState`, VK OAuth, `flows`/`store`/`session`/`password`/`email-tokens`/`email` — вход по почте), `mail/` (SMTP или консоль + шаблоны писем), `http/`, `catalog/` (`availability`, `dates`, `filters`, `format`, `listing-path`, `booking-status`), `booking/` (валидация, параметры), `owner/` (валидация форм, `categories`), `images/`, `storage/`, `db.ts`, `id.ts`, `rate-limit.ts`, `jsonld.ts`.
-- **`src/components/`** — по зонам: `catalog/`, `booking/`, `cabinet/`, `admin/`, `me/`, `account/` (навигация кабинета), `home/`, `layout/`, `auth/`, `seo/`, `ui/`, `providers/` (**= `ThemeProvider`**, не доменная сущность).
-- **`src/app/`** — роуты: `(public)/`, `(app)/` (`cabinet`, `(me)`, `admin`), `(auth)/`, `api/`.
-- **`theme/`** — `tokens.css` (цвета/радиусы), `content.ts` (тексты), `seo.ts`.
-- **`tests/`** — Vitest, зеркалит структуру `src`.
-- **`docs/superpowers/`** — спеки (`specs/`) и пофазные планы (`plans/`): история и обоснование архитектурных решений.
-- **`docs/BACKLOG.md`** — осознанно отложенное, с причиной и ценой вопроса. Заметки про конкретный код живут комментарием `TODO` рядом с ним.
+## Правила разработки
 
-## Ключевые флоу
+- **Проверять права в самой мутации.** Server Action доступен по сети напрямую,
+  минуя UI. Гарда на странице недостаточно.
+- **Валидировать входные данные zod'ом** в actions: payload приходит извне и
+  типу не соответствует автоматически.
+- **Темы и адаптив обязательны на каждом экране.** Цвета — только через токены
+  `theme/tokens.css`, не хардкодить. Мобайл проектируется первым классом, без
+  горизонтального скролла body. Внимание: зелёный — это `--color-primary`,
+  а `--color-accent` это охра.
+- **Тесты только в `tests/**`**, импорт через `@/`. Тест рядом с исходником не
+  запустится.
+- **Коммиты** чистые и осмысленные, без нарратива задач и планов в теле.
+  Идентификаторы и сообщения — на английском.
+- Перед завершением задачи: `pnpm test` и `pnpm exec tsc --noEmit`.
 
-- **Auth:** VK ID (свой OAuth 2.1+PKCE), Яндекс ID или почта с паролем. Никакого онбординга после входа нет: ника в системе не существует, человека представляет `name` — у OAuth приходит от провайдера, при регистрации почтой спрашивается в той же форме. Гард `requireAuthState` проверяет только «залогинен и не забанен».
-- **Размещение:** любой залогиненный юзер → `/cabinet/listings/new` → `createListing` (город, категория, цены, фото, опц. район). Публикуется сразу `active` (премодерации нет).
-- **Бронь:** карточка товара → `BookingWidget` → `createBookingRequest` (заявка `new`, даты НЕ занимаются). Владелец в `/cabinet/requests` подтверждает → `confirmed` транзакционно увеличивает `bookedQty` с перепроверкой занятости под блокировкой. Телефоны раскрываются сторонам после подтверждения.
-- **Регистрация по почте:** форма на `/login` → письмо со ссылкой (24 ч) → подтверждение проставляет `emailVerified`, выдаёт сессию и возвращает на страницу, с которой человек уходил регистрироваться (адрес едет параметром `next` в ссылке, проверяется `safeCallback`). До подтверждения вход запрещён. Сброс пароля (ссылка 1 ч) удаляет все сессии юзера. Автосклейки с OAuth нет: коллизия почты — понятный отказ (дискриминатор — строки в `accounts`, **не** `emailVerified`: у OAuth-юзеров он всегда NULL). Стоп-лист иностранных доменов (`src/lib/auth/email.ts` + `BLOCKED_EMAIL_DOMAINS`) действует **только** на регистрации.
-- **Верификация:** админ в `/admin/users` жмёт «Проверить» → `users.isVerified`. Значок «Проверен» на профиле и в блоке продавца.
+## Ключевые ограничения
 
-## Инварианты домена (см. `src/lib/catalog/booking-status.ts`, `availability.ts`)
+- **Премодерации нет** — объявление публикуется сразу `active`.
+- **Крона нет.** Единственный планировщик в проде — контейнер бэкапа.
+  Протухание заявок ленивое, перед чтением списков.
+- **Rate limiter в памяти процесса** — обнуляется рестартом, не переживёт
+  масштабирование.
+- **Даты держит только подтверждённая заявка.** Создание заявки календарь не
+  трогает.
+- **Диапазон брони включает обе границы.**
+- **`emailVerified` не означает «аккаунт живой»** — у OAuth-пользователей он
+  всегда `NULL`. Признак способа входа — строки в `accounts`.
+- **Без `STORAGE_*` локально** `/api/upload` отвечает 503; это нормально.
 
-- Диапазон брони `[dateFrom, dateTo]` включает **обе** границы.
-- Свободно на день = `quantity − bookedQty − blockedQty`; отсутствие строки availability = день полностью свободен.
-- Только `confirmed` держит `bookedQty`. `completed`/`no_show` даты **не** освобождают; отмена `confirmed` — освобождает (в той же транзакции).
-- `blockedQty` — ручные закрытия владельцем («сдал по телефону», «в ремонте»).
-- Заявки `new` протухают лениво по `expiresAt` (+24ч): `expireStaleRequests()` вызывается перед чтением списков (крона нет).
+## Документация
 
-## Конвенции
+| Нужно | Читать |
+|---|---|
+| куда положить новую логику | [docs/architecture.md](docs/architecture.md) |
+| правила брони, занятости, статусы | [docs/domain.md](docs/domain.md) |
+| вход, сессии, письма, доступ | [docs/auth.md](docs/auth.md) |
+| загрузка картинок, обложки | [docs/media.md](docs/media.md) |
+| метаданные, sitemap, JSON-LD | [docs/seo.md](docs/seo.md) |
+| переменные окружения | [docs/environment.md](docs/environment.md) |
+| тесты и проверки | [docs/testing.md](docs/testing.md) |
+| деплой и эксплуатация | [docs/DEPLOY.md](docs/DEPLOY.md) |
+| восстановление БД | [docs/RECOVERY.md](docs/RECOVERY.md) |
+| почему сделано именно так | [docs/decisions/](docs/decisions/) |
+| что осознанно отложено | [docs/BACKLOG.md](docs/BACKLOG.md) |
 
-- **Темы и адаптив обязательны на каждом экране.** Цвета — только через токены `theme/tokens.css` (`:root` + `.dark`), не хардкодить. Акцент — зелёный. Мобайл проектируется первым классом (не «сжатый десктоп»), без горизонтального скролла body.
-- **Тесты** — только в `tests/**`, импорт через `@/` (vitest `include=tests/**`).
-- **Коммиты** — чистые и осмысленные, без нарратива задач/планов в теле; идентификаторы и сообщения на английском.
+Оглавление — [docs/README.md](docs/README.md).
 
-## Dev-заметки
+## Documentation Policy
 
-- Поднять окружение: `docker compose up -d db` → `pnpm db:migrate && pnpm db:seed` → `pnpm dev`.
-- Сброс dev-БД начисто: `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` + `DROP SCHEMA IF EXISTS drizzle CASCADE;` (журнал миграций живёт в схеме `drizzle`).
-- `.next/types` держит устаревшие типы удалённых роутов после dev-сервера → ложные `TS2307`; лечит `rm -rf .next/types`.
-- Перед `pnpm build` останавливать dev-сервер (общий каталог `.next`).
-- Seed создаёт: 1 город (Казань), 7 категорий, 5 юзеров-владельцев (2 «проверенных», с именем и телефоном), 20 товаров.
-- Вне production seed раздаёт владельцам (`ownerN@seed.local`) пароль `prokat-dev-12345` и проставляет `emailVerified` — чтобы вход по паролю можно было проверить без возни с письмами. В production ветка не выполняется (`devSeedPassword`). Без `SMTP_*` письма печатаются в консоль dev-сервера — ссылку подтверждения брать оттуда.
+Documentation describes the CURRENT state of the project.
+
+Do not create documentation for temporary implementation plans.
+
+After completing a task:
+
+- update existing documentation if the current system changed;
+- record significant architectural decisions in `docs/decisions/`;
+- do not preserve implementation plans unless they contain important historical
+  information.
+
+Do not duplicate the same fact across multiple documentation files.
+
+When documentation conflicts with the code, treat the code as the current source
+of truth and update the documentation.
+
+**If you are unsure how something works, inspect the code before documenting it.
+Never guess.** Если после изучения кода однозначного ответа нет — пиши
+`NEEDS REVIEW` и объясняй, что именно не удалось установить.
+
+### Что проверить перед завершением задачи
+
+Если задача изменила поведение системы, архитектурный подход, схему БД, API,
+user flow, команды запуска/тестов/деплоя или важные ограничения — обнови
+соответствующий документ **в той же задаче**. Если ничего из этого не менялось —
+документацию писать не надо.
+
+Не заводи новый `.md`, если факт можно корректно добавить в существующий.
+Числа, статусы и списки файлов в прозе не пиши: они устаревают молча — вместо
+них давай команду, которая покажет актуальный ответ.

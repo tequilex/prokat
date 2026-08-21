@@ -1,11 +1,15 @@
-# prokat — Deployment Guide
+# inrenta — Deployment Guide
 
 > Целевая платформа: **Timeweb Cloud VPS** 1×5GHz / 1GB / 15GB. Один сервер,
 > docker-compose (caddy + app + db + backup), Let's Encrypt автоматически.
 >
 > Гайд проверен пилотным деплоем (июль 2026, тогда домен был fuddly.ru).
 > Шаги идут в правильном порядке — SSH-ключ и DNS раньше всего, т.к. у них
-> внешние задержки. `example.ru` в примерах = твой домен (prokat.ru).
+> внешние задержки. `example.ru` в примерах = твой домен (`inrenta.ru`, как в
+> `.env.example`).
+>
+> Назначение каждой переменной окружения — в [environment.md](environment.md);
+> здесь только прод-специфика.
 
 ## 0. Pre-deploy smoke (на локальной машине)
 
@@ -287,9 +291,9 @@ curl -I https://example.ru
 В браузере (**в инкогнито** — обычная вкладка может держать кеш от локального
 dev-стека и сыпать "Failed to find Server Action"):
 
-- `/` открывается, обложки постов грузятся (это проверяет next/image + S3)
+- `/` открывается, фотографии объявлений грузятся (это проверяет next/image + S3)
 - Логин через Яндекс и VK проходит и возвращает на сайт
-- Создание поста с картинкой — файл появляется в бакете
+- Создание объявления с фотографией — файл появляется в бакете
 - Регистрация по почте: письмо приходит (проверить, что не в спаме), ссылка
   подтверждает аккаунт и логинит, повторный вход по паролю работает
 - Сброс пароля: письмо приходит, новый пароль применяется, старая сессия
@@ -300,6 +304,12 @@ dev-стека и сыпать "Failed to find Server Action"):
 ## 8. Post-deploy ручные шаги
 
 ### 8.1. IndexNow verification file
+
+> **Сейчас этот шаг ничего не даёт.** Модуль `src/lib/indexnow.ts` написан, но
+> `pingIndexNow()` не вызывается ни из одного места приложения — уведомления в
+> IndexNow не уходят, поисковики узнают о новых объявлениях только из sitemap.
+> Шаг оставлен, потому что ключ и файл понадобятся, как только вызов подключат.
+> См. раздел «Чего сейчас нет» в [seo.md](seo.md).
 
 ```bash
 cd /opt/prokat
@@ -413,7 +423,7 @@ docker compose logs backup --tail=50
 | `[auth][error] UntrustedHost` на все /api/auth/* | Нет `AUTH_TRUST_HOST=true` в `.env` | Добавить + `up -d --force-recreate app` |
 | OAuth-редирект уводит на `http://<container-id>:3000` | Редиректы строились от `req.url` | Исправлено в коде (base = `NEXTAUTH_URL`); проверить, что `NEXTAUTH_URL` = публичный https-URL |
 | Upload фото → 500, в логах `sharp ... ERR_DLOPEN_FAILED libvips` | Версия sharp в package.json ≠ версии, которую Next несёт как optional dep → standalone-трейс не кладёт libvips | Держать sharp той же minor-версии, что у Next (см. `pnpm why sharp`); `.npmrc` с `node-linker=hoisted` — в репо |
-| Обложка `/_next/image?url=...` → 400, но `<img>` в посте работает | `STORAGE_PUBLIC_BASE` не был доступен при сборке → S3-хост не в remotePatterns | Заполнить `.env` до сборки; compose прокидывает build arg сам |
+| Картинка `/_next/image?url=...` → 400, хотя прямая ссылка на файл открывается | `STORAGE_PUBLIC_BASE` не был доступен при сборке → S3-хост не в remotePatterns | Заполнить `.env` до сборки; compose прокидывает build arg сам |
 | `app` контейнер `unhealthy`, но сайт работает | Next standalone биндился на `$HOSTNAME` (= container ID), healthcheck по localhost не проходил | Исправлено: `ENV HOSTNAME=0.0.0.0` в Dockerfile |
 | Поменял `.env`, но ничего не изменилось | `restart` не перечитывает env_file | `up -d --force-recreate app` |
 | `acme: error` в Caddy | DNS ещё не указывает на VPS / 80,443 закрыты | `dig +short example.ru @1.1.1.1`; `ufw status` |

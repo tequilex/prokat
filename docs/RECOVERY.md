@@ -1,79 +1,132 @@
-# prokat — Disaster Recovery
+# Восстановление базы из бэкапа
 
-> Восстановление БД из бэкапа в Timeweb S3 Cold (bucket из `BACKUP_S3_BUCKET`).
+Аварийный документ. Дампы лежат в Timeweb S3 Cold, бакет из `BACKUP_S3_BUCKET`,
+путь `db/backup-YYYY-MM-DD-HHMM.sql.gz`. Кладёт их туда контейнер `backup`
+ежедневно около 03:00 MSK.
 
-## 1. Получить последний дамп
+Ручной прогон бэкапа: `docker compose exec backup sh /backup.sh`.
 
-На VPS (или с локалки, если у тебя есть credentials):
+## 1. Достать нужный дамп
+
+На VPS (или локально, если есть credentials):
 
 ```bash
-# Установить aws-cli если ещё нет
 sudo apt install awscli
 
-# Указать credentials BACKUP_S3_* (значения — из .env)
+# Значения — из .env, блок BACKUP_S3_*
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_DEFAULT_REGION=ru-1
 
-# Список доступных дампов
+# Что вообще есть
 aws --endpoint-url=https://s3.twcstorage.ru s3 ls s3://<cold-bucket-uuid>/db/
 
 # Скачать нужный
 aws --endpoint-url=https://s3.twcstorage.ru s3 cp \
-  s3://<cold-bucket-uuid>/db/backup-2026-06-29-0300.sql.gz /tmp/restore.sql.gz
+  s3://<cold-bucket-uuid>/db/backup-2026-08-19-0300.sql.gz /tmp/restore.sql.gz
 ```
 
-## 2. Восстановление в **новую** БД (рекомендуемый дрилл)
+## 2. Восстановление в отдельную базу (так и надо делать)
 
-Никогда не накатывайте дамп поверх живой БД без проверки. Сначала восстанавливайте в отдельную:
+Никогда не накатывайте дамп поверх живой базы, не проверив его. Сначала — в
+отдельную:
 
 ```bash
-# Поднять только db-контейнер
 docker compose up -d db
 docker compose exec db psql -U app -d postgres -c "CREATE DATABASE restore_test;"
 
 gunzip -c /tmp/restore.sql.gz | docker compose exec -T db psql -U app -d restore_test
+```
 
-# Проверить counts
+### Проверка содержимого
+
+```bash
 docker compose exec db psql -U app -d restore_test -c "
-  SELECT 'users' AS table, count(*) FROM users
-  UNION ALL SELECT 'posts', count(*) FROM posts
-  UNION ALL SELECT 'comments', count(*) FROM comments;
+  SELECT 'users'            AS entity, count(*) FROM users
+  UNION ALL SELECT 'listings',         count(*) FROM listings
+  UNION ALL SELECT 'booking_requests', count(*) FROM booking_requests
+  UNION ALL SELECT 'availability',     count(*) FROM availability
+  UNION ALL SELECT 'cities',           count(*) FROM cities
+  UNION ALL SELECT 'categories',       count(*) FROM categories;
 "
 ```
 
-Counts должны быть близки к prod (учитывая ~24h окно с момента дампа).
+Ожидание: числа близки к боевым с поправкой на окно до суток с момента дампа.
 
-## 3. Восстановление поверх боевой БД
+Полный список таблиц — в `drizzle/schema.ts`. На момент написания их двенадцать:
+`users`, `accounts`, `sessions`, `verification_tokens`, `email_tokens`,
+`uploads`, `cities`, `categories`, `listings`, `availability`,
+`booking_requests`, `events`.
 
-**ВНИМАНИЕ:** деструктивно. Делай только если живая БД корраптнута и/или потеряна.
+Проверить, что дамп не обрезан и схема цела:
+
+```bash
+# Таблиц должно быть 12 (плюс своя схема drizzle с журналом миграций)
+docker compose exec db psql -U app -d restore_test -c "
+  SELECT count(*) AS tables FROM information_schema.tables
+  WHERE table_schema = 'public';
+"
+
+# Журнал применённых миграций
+docker compose exec db psql -U app -d restore_test -c "
+  SELECT count(*) AS applied FROM drizzle.__drizzle_migrations;
+"
+```
+
+Дамп может быть старше последней миграции — это нормально: миграции применятся
+автоматически при старте контейнера приложения.
+
+Убрать за собой:
+
+```bash
+docker compose exec db psql -U app -d postgres -c "DROP DATABASE restore_test;"
+```
+
+## 3. Восстановление поверх боевой базы
+
+**Деструктивно.** Только если живая база потеряна или повреждена.
 
 ```bash
 docker compose stop app
 
-# Дроп текущей БД
 docker compose exec db psql -U app -d postgres -c "DROP DATABASE app;"
 docker compose exec db psql -U app -d postgres -c "CREATE DATABASE app;"
 
 gunzip -c /tmp/restore.sql.gz | docker compose exec -T db psql -U app -d app
 
 docker compose start app
-# Миграции применятся автоматически при старте app (entrypoint),
-# если дамп старше последней миграции.
+docker compose logs --tail 30 app   # ждём "Running migrations..." → "Starting Next.js..."
 ```
 
-## 4. Recovery drill (раз в квартал)
+Миграции применятся сами при старте (`scripts/entrypoint.sh`).
 
-Минимум раз в 3 месяца:
+### После восстановления
 
-1. Скачать последний дамп из S3
-2. Восстановить в отдельную БД (`restore_test`) по §2
-3. Сравнить counts с production
-4. Дропнуть `restore_test`
-5. Записать дату/результат в `docs/RECOVERY.md` (этот же файл, секция «История drill'ов» ниже)
+- Проверить, что сайт открывается и вход работает.
+- **Загруженные изображения дампом не покрываются.** Они лежат в отдельном
+  S3-бакете (`STORAGE_*`) и от базы не зависят: если бакет цел, картинки
+  вернутся вместе со строками `uploads` и `photosJson`. Если утрачен бакет —
+  восстанавливать нечего, ссылки останутся битыми.
+- Сессии в дампе есть, но старые cookie после восстановления могут указывать на
+  строки, которых уже нет: пользователей просто разлогинит.
 
-## История drill'ов
+## 4. Учения (раз в квартал)
 
-| Дата | Дамп | Counts (restore vs prod) | Кто | Заметки |
+Смысл в том, чтобы узнать о сломанном бэкапе не в день аварии.
+
+1. Скачать свежий дамп из S3.
+2. Восстановить в `restore_test` по разделу 2.
+3. Сверить counts с боевой базой.
+4. Дропнуть `restore_test`.
+5. Записать результат в таблицу ниже.
+
+## История учений
+
+| Дата | Дамп | Результат | Кто | Заметки |
 |---|---|---|---|---|
-| 2026-06-29 | local-drill (synthetic) | users=4, posts=84, comments=354 — совпали | tequilex | первый прогон в plan-06 |
+| 2026-06-29 | синтетический, локально | counts совпали | tequilex | Прогон выполнен на **прежней схеме данных** (модель контентного движка-предка, таблицы `posts`/`comments`). К текущей схеме отношения не имеет. |
+
+`NEEDS REVIEW`: на текущей C2C-схеме учения ещё **не проводились**. Последняя
+запись относится к схеме, которой в проекте больше нет, — то есть процедура из
+этого документа целиком проверена только по коду и конфигурации, но не прогоном.
+Ближайший дрилл стоит провести до того, как он понадобится всерьёз.
