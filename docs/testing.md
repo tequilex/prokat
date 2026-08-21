@@ -8,6 +8,7 @@
 | `pnpm test:watch` | Vitest в watch-режиме | работает |
 | `pnpm exec tsc --noEmit` | проверка типов по всему проекту | работает |
 | `pnpm check-theme` | проверяет, что в `theme/tokens.css` есть все обязательные токены | работает |
+| `pnpm check-storage` | круговая проверка S3: запись, чтение, публичная ссылка, удаление | требует заполненных `STORAGE_*` |
 | `pnpm lint` | — | **не работает**, см. ниже |
 
 Перед коммитом осмысленный минимум — `pnpm test` и `pnpm exec tsc --noEmit`.
