@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { YandexMetrika } from "@/components/analytics/YandexMetrika";
+import { getEnv } from "@/lib/env";
 import "./globals.css";
 import "@theme/tokens.css";
 import "@theme/typography.css";
@@ -25,8 +26,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${fontDisplay.variable} ${fontText.variable} ${fontMark.variable} ${fontMono.variable}`}
     >
       <body className="bg-background text-foreground font-sans antialiased min-h-screen flex flex-col">
-        {process.env.NODE_ENV === "production" && process.env.YANDEX_METRIKA_ID && (
-          <YandexMetrika counterId={process.env.YANDEX_METRIKA_ID} />
+        {getEnv().NODE_ENV === "production" && getEnv().YANDEX_METRIKA_ID && (
+          <YandexMetrika counterId={getEnv().YANDEX_METRIKA_ID!} />
         )}
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {/* Глобальный progress-bar поверх <html>: даёт моментальный visual
