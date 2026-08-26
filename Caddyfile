@@ -24,6 +24,9 @@ www.{$DOMAIN} {
 		Referrer-Policy strict-origin-when-cross-origin
 		Permissions-Policy "interest-cohort=()"
 		X-Frame-Options DENY
+		# Второй контур к экранированию в JsonLd.tsx. script-src/default-src здесь
+		# намеренно НЕ заданы: без nonce они ломают inline-скрипты Next и Метрику.
+		Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 		-Server
 	}
 }
