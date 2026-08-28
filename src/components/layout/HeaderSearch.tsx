@@ -11,7 +11,7 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
   return (
     <form
       role="search"
-      className={`glass flex h-12 w-full items-center gap-2 rounded-pill pl-4 pr-1.5 ${className}`}
+      className={`glass flex h-12 w-full items-center gap-2 rounded-lg pl-4 pr-1.5 ${className}`}
       onSubmit={(e) => {
         e.preventDefault();
         const query = q.trim();

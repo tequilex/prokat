@@ -26,7 +26,7 @@ export function StepProgress({
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
-            className={`h-[3px] flex-1 rounded-sm ${i < done ? "bg-accent" : "bg-border"}`}
+            className={`h-[3px] flex-1 rounded-pill ${i < done ? "bg-accent" : "bg-border"}`}
           />
         ))}
       </div>

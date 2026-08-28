@@ -62,7 +62,7 @@ export function OwnerCard({
       </div>
 
       {/* Карта-заглушка (нет интеграции карт), на мобиле не показываем */}
-      <div className="relative hidden min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-muted text-muted-foreground md:flex">
+      <div className="relative hidden min-h-[220px] items-center justify-center overflow-hidden rounded-lg bg-muted text-muted-foreground md:flex">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-40 [background-image:linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] [background-size:20px_20px]"

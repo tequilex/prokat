@@ -59,7 +59,7 @@ export function FullCalendar({
             <div
               key={d}
               title={`${d}: свободно ${free} из ${quantity}`}
-              className={`flex h-12 flex-col items-center justify-center rounded-md text-xs ${dayTone(free, quantity)}`}
+              className={`flex h-12 flex-col items-center justify-center rounded-lg text-xs ${dayTone(free, quantity)}`}
             >
               <span className="text-muted-foreground">{weekdayShort(d)}</span>
               <span className="font-medium">{dayOfMonth(d)}</span>

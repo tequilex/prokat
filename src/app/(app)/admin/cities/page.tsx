@@ -24,7 +24,7 @@ export default async function AdminCitiesPage() {
             <div>
               <span className="font-medium">{city.name}</span>
               {!city.isActive && (
-                <span className="ml-2 rounded-pill bg-muted px-2 py-0.5 text-xs text-muted-foreground">отключён</span>
+                <span className="ml-2 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">отключён</span>
               )}
               <p className="text-sm text-muted-foreground">
                 /{city.slug}{city.region ? ` · ${city.region}` : ""} · {listingsCountLabel(listingCount)}

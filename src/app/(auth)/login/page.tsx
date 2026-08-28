@@ -52,9 +52,9 @@ export default async function LoginPage({
   return (
     <main className="container mx-auto flex min-h-[calc(100vh-14rem)] max-w-md flex-col items-center justify-center px-4 py-12">
       <div className="w-full">
-        <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <div className="w-full rounded-lg border border-border bg-card p-8 shadow-sm">
           {errorText && (
-            <p className="mb-6 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-destructive">
+            <p className="mb-6 rounded-sm border border-border bg-muted/40 px-3 py-2 text-sm text-destructive">
               {errorText}
             </p>
           )}

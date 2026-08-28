@@ -36,7 +36,7 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
 
   if (count === 0) {
     return (
-      <div className="flex aspect-[4/3] items-center justify-center rounded-xl rounded-br-[56px] bg-muted text-muted-foreground">
+      <div className="flex aspect-[4/3] items-center justify-center rounded-lg rounded-br-[56px] bg-muted text-muted-foreground">
         <ImageOff className="h-10 w-10" aria-hidden="true" />
         <span className="sr-only">Без фото</span>
       </div>
@@ -48,7 +48,7 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
   return (
     <>
       {/* Большое фото со скруглением снизу + превью поверх */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl rounded-br-[56px] bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-lg rounded-br-[56px] bg-muted">
         <button
           type="button"
           onClick={() => setLightbox(true)}
@@ -75,7 +75,7 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
                 onClick={() => setActive(i)}
                 aria-label={`Фото ${i + 1}`}
                 aria-current={i === active}
-                className={`group pointer-events-auto relative h-12 w-12 shrink-0 overflow-hidden rounded-xl ring-2 transition ${
+                className={`group pointer-events-auto relative h-12 w-12 shrink-0 overflow-hidden rounded-lg ring-2 transition ${
                   i === active ? "ring-accent" : "ring-white/40 hover:ring-white/80"
                 }`}
               >
@@ -139,7 +139,7 @@ export function Gallery({ photos, title }: { photos: Photo[]; title: string }) {
               >
                 <ChevronRight className="h-7 w-7" />
               </button>
-              <span className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm text-white">
+              <span className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-10 -translate-x-1/2 rounded-sm bg-white/10 px-3 py-1 text-sm text-white">
                 {active + 1} / {count}
               </span>
             </>

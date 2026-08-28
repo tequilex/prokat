@@ -44,7 +44,7 @@ export function CabinetHub({
                   {i > 0 && <span aria-hidden="true" className="mx-3 h-px bg-border" />}
                   <Link
                     href={it.href as never}
-                    className="flex min-h-[52px] items-center gap-3 rounded-md px-3 transition-colors hover:bg-muted"
+                    className="flex min-h-[52px] items-center gap-3 rounded-sm px-3 transition-colors hover:bg-muted"
                   >
                     {Icon && <Icon className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />}
                     <span className="min-w-0 flex-1 truncate">{it.label}</span>
@@ -125,7 +125,7 @@ export function CabinetHubHeader({ me }: { me: AccountIdentity }) {
 
 function Tile({ value, label }: { value: number; label: string }) {
   return (
-    <div className="surface rounded-[14px] px-3.5 py-3">
+    <div className="surface px-3.5 py-3">
       <div className="font-mark text-xl font-bold leading-tight">{value}</div>
       <div className="text-[13px] text-muted-foreground">{label}</div>
     </div>

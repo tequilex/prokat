@@ -73,7 +73,7 @@ export default async function ProfilePage() {
         ) : (
           <ul className="flex flex-wrap gap-2">
             {providers.map((p) => (
-              <li key={p} className="rounded-pill border border-border px-3 py-1.5 text-sm">
+              <li key={p} className="rounded-sm border border-border px-3 py-1.5 text-sm">
                 {PROVIDER_LABELS[p] ?? p}
               </li>
             ))}

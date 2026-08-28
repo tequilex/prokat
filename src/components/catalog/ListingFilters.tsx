@@ -37,13 +37,13 @@ function FormInner({
           <input
             type="number" name="price_min" min={0} placeholder="от"
             defaultValue={state.priceMin ?? ""}
-            className={`${field} h-9 w-full min-w-0 flex-1 rounded-lg px-3 text-sm`}
+            className={`${field} h-9 w-full min-w-0 flex-1 px-3 text-sm`}
           />
           <span className="text-muted-foreground">—</span>
           <input
             type="number" name="price_max" min={0} placeholder="до"
             defaultValue={state.priceMax ?? ""}
-            className={`${field} h-9 w-full min-w-0 flex-1 rounded-lg px-3 text-sm`}
+            className={`${field} h-9 w-full min-w-0 flex-1 px-3 text-sm`}
           />
         </div>
       </fieldset>
@@ -52,7 +52,7 @@ function FormInner({
         Сортировка
         <select
           name="sort" defaultValue={state.sort ?? "new"}
-          className={`${field} h-9 w-full rounded-lg px-2 text-sm`}
+          className={`${field} h-9 w-full px-2 text-sm`}
         >
           <option value="new">Сначала новые</option>
           <option value="price_asc">Дешевле</option>
@@ -88,7 +88,7 @@ export function ListingFilters({
         <Link
           key={s.id}
           href={`${categoryBasePath}/${s.slug}` as never}
-          className={`rounded-pill border px-3 py-1.5 text-sm transition-colors ${
+          className={`rounded-sm border px-3 py-1.5 text-sm transition-colors ${
             s.slug === activeSubSlug
               ? "border-accent bg-accent/10 text-foreground"
               : "border-border text-muted-foreground hover:text-foreground"

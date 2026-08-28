@@ -82,16 +82,18 @@
 
   /* Плавающая карточка-контент: белая (тёмная) поверхность со скруглением,
    * тонким бордером и мягкой тенью — «парит» на фоне-холсте. Паддинги задаёт
-   * потребитель (напр. p-4). Переиспользуется для панелей/карточек. */
+   * потребитель (напр. p-4). Переиспользуется для панелей/карточек.
+   *
+   * Кант в обеих темах, а не только в тёмной: в тёмной он несёт основную
+   * работу (тень на почти-чёрном холсте не читается), в светлой — держит
+   * геометрию. Раньше он был только под .dark, и карточка меняла габарит на
+   * 2px при переключении темы. Толщина совпадает с блоками, которые собраны
+   * вручную из `border border-border bg-card`, — граница у всех одна. */
   .surface {
     background: var(--color-card);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--card-shadow);
-  }
-  /* В тёмной теме тень почти не читается на почти-чёрном фоне — добавляем
-   * тонкий световой кант, чтобы карточка отделялась от холста. */
-  .dark .surface {
-    border: 1px solid var(--color-border);
   }
 
   /* Затемнение обложки профиля. Два слоя: постоянный тёмный градиент держит
@@ -277,7 +279,7 @@
   --rdp-outside-opacity: 0.4;
   --rdp-day-height: 44px;
   --rdp-day_button-height: 44px;
-  --rdp-day_button-border-radius: 12px;
+  --rdp-day_button-border-radius: var(--radius-lg);
   margin: 0;
 }
 /* Календарь на всю ширину виджета: грид тянется, кнопки заполняют ячейки по
@@ -319,9 +321,9 @@
 .rdp-theme .rdp-outside.rdp-range_start,
 .rdp-theme .rdp-outside.rdp-range_middle,
 .rdp-theme .rdp-outside.rdp-range_end { opacity: 1; }
-.rdp-theme .rdp-range_start .rdp-day_button { border-radius: 12px 0 0 12px; }
-.rdp-theme .rdp-range_end .rdp-day_button { border-radius: 0 12px 12px 0; }
-.rdp-theme .rdp-range_start.rdp-range_end .rdp-day_button { border-radius: 12px; }
+.rdp-theme .rdp-range_start .rdp-day_button { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+.rdp-theme .rdp-range_end .rdp-day_button { border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+.rdp-theme .rdp-range_start.rdp-range_end .rdp-day_button { border-radius: var(--radius-lg); }
 /* Ховер только по НЕвыбранным дням — чтобы не мутнить зелёную заливку. */
 .rdp-theme .rdp-day:not(.rdp-selected) .rdp-day_button:hover:not([disabled]) {
   background: var(--color-muted);

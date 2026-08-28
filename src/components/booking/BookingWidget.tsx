@@ -179,7 +179,7 @@ export function BookingWidget(props: BookingWidgetProps) {
             <select
               value={sel.qty}
               onChange={(e) => setQty(Number(e.target.value))}
-              className={`${field} h-10 w-20 rounded-md px-2 text-sm`}
+              className={`${field} h-10 w-20 px-2 text-sm`}
             >
               {Array.from({ length: props.quantity }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>{n}</option>
@@ -215,7 +215,7 @@ export function BookingWidget(props: BookingWidgetProps) {
           </div>
           <div className="flex gap-2">
             {priceBoxes.map((b) => (
-              <div key={b.label} className="flex-1 rounded-xl border border-border bg-card p-3 text-center">
+              <div key={b.label} className="flex-1 rounded-lg border border-border bg-card p-3 text-center">
                 <div className="font-mark font-bold">{b.value}</div>
                 <div className="text-xs text-muted-foreground">{b.label}</div>
               </div>
@@ -232,7 +232,7 @@ export function BookingWidget(props: BookingWidgetProps) {
         data-booking-bar
         className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-40 px-4 md:hidden"
       >
-        <div className="glass mx-auto flex max-w-[420px] items-center justify-between gap-3 rounded-t-[22px] border-b-0 px-4 py-2.5">
+        <div className="glass mx-auto flex max-w-[420px] items-center justify-between gap-3 rounded-t-lg border-b-0 px-4 py-2.5">
           <span className="min-w-0">
             <span className="block font-mark text-base font-bold">
               {estimate !== null

@@ -101,7 +101,7 @@ export function BookingFormDialog({
                     type="tel" required value={phone} autoComplete="tel"
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+7 900 000-00-00"
-                    className={`${field} h-11 rounded-md px-3`}
+                    className={`${field} h-11 px-3`}
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
@@ -110,7 +110,7 @@ export function BookingFormDialog({
                     value={comment} maxLength={500} rows={3}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Например: нужен к 9 утра"
-                    className={`${field} rounded-md px-3 py-2`}
+                    className={`${field} px-3 py-2`}
                   />
                 </label>
                 {/* Honeypot: скрыто от людей, боты заполняют */}

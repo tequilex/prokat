@@ -14,7 +14,6 @@ export const REQUIRED_TOKENS = [
   "--color-ring",
   "--color-danger",
   "--radius-sm",
-  "--radius-md",
   "--radius-lg",
   "--radius-pill",
   "--font-display",

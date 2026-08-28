@@ -46,7 +46,7 @@ export default async function CabinetCalendarPage({
           <Link
             key={l.id}
             href={`/cabinet/calendar?listing=${l.id}` as never}
-            className={`rounded-pill border px-3 py-1.5 text-sm ${
+            className={`rounded-sm border px-3 py-1.5 text-sm ${
               l.id === selected.id
                 ? "border-accent bg-accent/10 text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground"

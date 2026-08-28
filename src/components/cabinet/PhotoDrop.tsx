@@ -42,13 +42,13 @@ export function PhotoDrop({
           <div
             key={p.url}
             className={cn(
-              "relative h-[100px] overflow-hidden rounded-md border border-border bg-muted",
+              "relative h-[100px] overflow-hidden rounded-lg border border-border bg-muted",
               i === 0 ? "w-[132px]" : "w-[100px]",
             )}
           >
             <Image src={p.url} alt={`Фото ${i + 1}`} fill sizes="132px" className="object-cover" />
             {i === 0 && (
-              <span className="absolute left-2 top-2 rounded-pill bg-accent px-2 py-0.5 font-mono text-micro font-medium uppercase tracking-mono text-accent-foreground">
+              <span className="absolute left-2 top-2 rounded-sm bg-accent px-2 py-0.5 font-mono text-micro font-medium uppercase tracking-mono text-accent-foreground">
                 Обложка
               </span>
             )}
@@ -76,7 +76,7 @@ export function PhotoDrop({
               if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files);
             }}
             className={cn(
-              "flex h-[100px] min-w-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-[1.5px] border-dashed border-accent px-3 text-center transition-colors",
+              "flex h-[100px] min-w-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-accent px-3 text-center transition-colors",
               dragging ? "bg-accent/15" : "bg-accent/5",
             )}
           >

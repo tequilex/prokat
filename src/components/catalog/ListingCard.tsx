@@ -62,7 +62,7 @@ export function ListingCard({
         )}
 
         {isNew(listing.createdAt) && (
-          <span className="absolute left-3 top-3 rounded-pill bg-accent px-2.5 py-1 font-mono text-2xs font-medium uppercase tracking-mono text-accent-foreground">
+          <span className="absolute left-3 top-3 rounded-sm bg-accent px-2.5 py-1 font-mono text-2xs font-medium uppercase tracking-mono text-accent-foreground">
             Новое
           </span>
         )}

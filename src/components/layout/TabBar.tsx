@@ -60,7 +60,7 @@ export function TabBar({
       data-tabbar
       className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
     >
-      <div className="glass mx-auto flex max-w-[420px] items-center justify-between gap-2 rounded-[22px] px-4 py-1.5">
+      <div className="glass mx-auto flex max-w-[420px] items-center justify-between gap-2 rounded-lg px-4 py-1.5">
         <Link
           href={catalogHref as never}
           className={itemClass(catalogHref !== "/" && isOn(catalogHref))}

@@ -69,7 +69,7 @@ export const ModalContent = React.forwardRef<
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
         // Мобайл: лист снизу во всю ширину, с запасом под системную полосу
         // жестов. Высота ограничена, длинное содержимое прокручивается внутри.
-        "inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto rounded-t-2xl",
+        "inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto rounded-t-lg",
         "p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]",
         // Величина сдвига обязательна: без неё утилита не генерирует ничего.
         "data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full",
@@ -81,7 +81,7 @@ export const ModalContent = React.forwardRef<
         // и margin:auto центрует. md:inset-0 тут не подошёл бы: в собранном CSS
         // он идёт раньше bottom-0 и проиграл бы ему.
         "md:top-0 md:m-auto md:h-fit md:max-h-[85vh] md:w-[calc(100vw-2rem)]",
-        "md:rounded-2xl md:p-6",
+        "md:rounded-lg md:p-6",
         "md:data-[state=open]:zoom-in-95 md:data-[state=closed]:zoom-out-95",
         "md:data-[state=open]:slide-in-from-bottom-0 md:data-[state=closed]:slide-out-to-bottom-0",
         className,
@@ -98,7 +98,7 @@ export const ModalContent = React.forwardRef<
       {showClose && (
         <Dialog.Close
           aria-label="Закрыть"
-          className="absolute right-3 top-3 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute right-3 top-3 rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </Dialog.Close>

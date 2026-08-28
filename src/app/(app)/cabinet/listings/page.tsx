@@ -52,7 +52,7 @@ export default async function CabinetListingsPage() {
             const catS = catSlug.get(l.categoryId);
             return (
               <li key={l.id} className="flex gap-3 rounded-lg border border-border bg-card p-3">
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
                   {photo ? (
                     <Image src={photo.url} alt={l.title} fill sizes="80px" className="object-cover" />
                   ) : (
@@ -66,7 +66,7 @@ export default async function CabinetListingsPage() {
                     <Link href={`/cabinet/listings/${l.id}` as never} className="font-medium hover:underline underline-offset-2">
                       {l.title}
                     </Link>
-                    <span className="rounded-pill bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {STATUS_LABEL[l.status] ?? l.status}
                     </span>
                   </div>

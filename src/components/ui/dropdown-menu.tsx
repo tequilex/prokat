@@ -15,7 +15,7 @@ export const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "glass z-50 min-w-[8rem] overflow-hidden rounded-xl p-1 text-foreground",
+        "glass z-50 min-w-[8rem] overflow-hidden rounded-lg p-1 text-foreground",
         // Раскрытие: 150 мс, как на нажатие в брендбуке. Меню выезжает от своей
         // стороны — со стороны триггера, а не «ниоткуда».
         "duration-150 data-[state=closed]:animate-out data-[state=open]:animate-in",

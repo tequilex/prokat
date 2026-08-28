@@ -11,7 +11,7 @@ export function HeroSearch() {
   return (
     <form
       role="search"
-      className="flex w-full items-center gap-2 rounded-pill border border-white/15 bg-black/40 p-2.5 pl-5 backdrop-blur-md"
+      className="flex w-full items-center gap-2 rounded-lg border border-white/15 bg-black/40 p-2.5 pl-5 backdrop-blur-md"
       onSubmit={(e) => {
         e.preventDefault();
         const query = q.trim();
@@ -29,7 +29,7 @@ export function HeroSearch() {
       />
       <button
         type="submit"
-        className="h-12 shrink-0 rounded-pill bg-primary px-6 text-base font-semibold text-primary-foreground transition-transform active:scale-[0.97]"
+        className="h-12 shrink-0 rounded-lg bg-primary px-6 text-base font-semibold text-primary-foreground transition-transform active:scale-[0.97]"
       >
         {content.nav.search}
       </button>

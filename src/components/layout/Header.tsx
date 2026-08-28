@@ -33,7 +33,7 @@ export async function Header() {
           <div className="flex min-w-0 items-center gap-2.5 md:contents">
             {/* На мобайле в пилюле только знак: город переехал в ленту фильтров
              * первым чипом, и поиск получает всю освободившуюся ширину. */}
-            <div className="glass flex h-12 shrink-0 items-center gap-2 rounded-pill px-4 md:min-w-0 md:gap-3 md:pl-5 md:pr-3 md:order-1">
+            <div className="glass flex h-12 shrink-0 items-center gap-2 rounded-lg px-4 md:min-w-0 md:gap-3 md:pl-5 md:pr-3 md:order-1">
               {/* flex, а не просто shrink-0: знак — inline-flex, и внутри
                * строки он садится на baseline с пустотой под ним, из-за чего
                * пилюля центрирует ссылку вместе с этим «хвостом». */}
@@ -51,7 +51,7 @@ export async function Header() {
             <div className="hidden md:order-3 md:contents">
               <Button
                 asChild
-                className="h-12 shrink-0 rounded-pill px-5 shadow-[var(--glass-shadow)] md:order-3"
+                className="h-12 shrink-0 px-5 shadow-[var(--glass-shadow)] md:order-3"
               >
                 {/* Анониму «Разместить» открывает вход модалкой и возвращает
                   * на ту же страницу; остальным — обычная ссылка. */}
@@ -70,7 +70,7 @@ export async function Header() {
 
               {/* Профиль или вход. Тема переехала в меню пользователя, у анонима
                 * она остаётся в подвале. */}
-              <div className="glass flex h-12 shrink-0 items-center gap-1 rounded-pill px-1.5 md:order-4">
+              <div className="glass flex h-12 shrink-0 items-center gap-1 rounded-lg px-1.5 md:order-4">
                 {user ? (
                   <UserMenu
                     name={user.name ?? null}
@@ -79,7 +79,7 @@ export async function Header() {
                     isAdmin={user.role === "admin"}
                   />
                 ) : (
-                  <Button asChild variant="ghost" size="sm" className="rounded-pill">
+                  <Button asChild variant="ghost" size="sm">
                     <LoginTrigger {...authProps}>{content.nav.login}</LoginTrigger>
                   </Button>
                 )}

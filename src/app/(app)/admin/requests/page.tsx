@@ -27,7 +27,7 @@ export default async function AdminRequestsPage() {
                   {" · "}{request.createdAt.toLocaleDateString("ru-RU")}
                 </p>
               </div>
-              <span className={`rounded-pill px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_CLASSES[status]}`}>
+              <span className={`rounded-sm px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_CLASSES[status]}`}>
                 {STATUS_LABELS[status]}
               </span>
             </li>

@@ -19,13 +19,13 @@ export default async function AdminUsersPage() {
               <span className="font-medium">{user.name ?? "—"}</span>
               <span className="ml-2 text-sm text-muted-foreground">{user.email}</span>
               {user.isVerified && (
-                <span className="ml-2 rounded-pill bg-accent/10 px-2 py-0.5 text-xs text-accent">проверен</span>
+                <span className="ml-2 rounded-sm bg-accent/10 px-2 py-0.5 text-xs text-accent">проверен</span>
               )}
               {user.role !== "user" && (
-                <span className="ml-2 rounded-pill bg-muted px-2 py-0.5 text-xs text-muted-foreground">{user.role}</span>
+                <span className="ml-2 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">{user.role}</span>
               )}
               {user.bannedAt && (
-                <span className="ml-2 rounded-pill bg-destructive/15 px-2 py-0.5 text-xs">забанен</span>
+                <span className="ml-2 rounded-sm bg-destructive/15 px-2 py-0.5 text-xs">забанен</span>
               )}
               <p className="text-sm text-muted-foreground">
                 {user.email} · {listingCount} объявл. · {requestCount} заявок · с {user.createdAt.toLocaleDateString("ru-RU")}

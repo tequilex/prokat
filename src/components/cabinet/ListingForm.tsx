@@ -27,7 +27,7 @@ export interface ListingFormValues {
   photos: Photo[];
 }
 
-const INPUT = `${field} h-11 rounded-md px-3`;
+const INPUT = `${field} h-11 px-3`;
 const MAX_PHOTOS = 10;
 
 export function ListingForm({
@@ -146,7 +146,7 @@ export function ListingForm({
           Описание
           <textarea maxLength={3000} rows={4} value={v.description}
             onChange={(e) => set({ description: e.target.value })}
-            className={`${field} rounded-md px-3 py-2`} />
+            className={`${field} px-3 py-2`} />
         </label>
       </FormBlock>
 

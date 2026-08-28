@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Brackets } from "@/components/brand/Brackets";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-pill text-sm font-medium ring-offset-background transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:[outline:none] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
+  "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] focus-visible:[outline:none] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
   {
     variants: {
       variant: {
@@ -14,10 +14,12 @@ const buttonVariants = cva(
         ghost: "hover:bg-muted hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       },
+      // Скругление живёт в размере, а не в базе: 12px полноразмерной кнопке,
+      // 8px компактной — граница проходит по 40px высоты.
       size: {
-        default: "h-11 px-4 py-2 min-w-11",
-        sm: "h-9 px-3 min-w-9",
-        icon: "h-11 w-11",
+        default: "h-11 px-4 py-2 min-w-11 rounded-lg",
+        sm: "h-9 px-3 min-w-9 rounded-sm",
+        icon: "h-11 w-11 rounded-lg",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

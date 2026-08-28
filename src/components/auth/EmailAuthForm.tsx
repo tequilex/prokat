@@ -11,7 +11,7 @@ import {
   checkEmailDomain, login, register, requestReset, resendVerificationEmail,
 } from "@/server/actions/auth-email";
 
-const INPUT = `${field} h-11 w-full rounded-pill px-5`;
+const INPUT = `${field} h-11 w-full px-5`;
 
 type Mode = "login" | "register" | "forgot";
 

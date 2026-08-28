@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { field } from "@/components/ui/field";
 import { updateProfile } from "@/server/actions/profile";
 
-const INPUT = `${field} h-11 rounded-md px-3`;
+const INPUT = `${field} h-11 px-3`;
 
 export function ProfileForm({
   initialName, initialPhone, initialBio,
@@ -52,7 +52,7 @@ export function ProfileForm({
         <textarea maxLength={500} rows={3} value={bio}
           onChange={(e) => { setBio(e.target.value); setSaved(false); }}
           placeholder="Пара слов для покупателей — видно в вашем профиле"
-          className={`${field} rounded-md px-3 py-2`} />
+          className={`${field} px-3 py-2`} />
       </label>
 
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}

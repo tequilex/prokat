@@ -32,7 +32,7 @@ export function AccountHero({
             {me.name ?? "Без имени"}
           </span>
           {me.isVerified && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-accent/15 px-2.5 py-0.5 text-sm font-medium text-accent">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-accent/15 px-2.5 py-0.5 text-sm font-medium text-accent">
               <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
               Проверенный продавец
             </span>

@@ -88,7 +88,7 @@ export default async function SellerProfilePage({ params }: Props) {
             <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-display text-2xl font-extrabold tracking-tight md:text-[32px] md:leading-tight">
               {displayName}
               {seller.isVerified && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-accent/15 px-2.5 py-0.5 text-sm font-medium text-accent">
+                <span className="inline-flex items-center gap-1 rounded-sm bg-accent/15 px-2.5 py-0.5 text-sm font-medium text-accent">
                   <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
                   Проверенный продавец
                 </span>

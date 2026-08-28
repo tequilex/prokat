@@ -65,7 +65,7 @@ export function Hero({
                     <Link
                       key={c.slug}
                       href={`/${citySlug}/${c.slug}` as never}
-                      className="rounded-pill border border-white/25 bg-white/10 px-3 py-1.5 text-sm text-white backdrop-blur transition-colors hover:bg-white/20"
+                      className="rounded-sm border border-white/25 bg-white/10 px-3 py-1.5 text-sm text-white backdrop-blur transition-colors hover:bg-white/20"
                     >
                       {c.name}
                     </Link>
@@ -89,7 +89,7 @@ export function Hero({
                   <Link
                     key={c.slug}
                     href={`/${citySlug}/${c.slug}` as never}
-                    className="rounded-pill border border-primary/40 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/10"
+                    className="rounded-sm border border-primary/40 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/10"
                   >
                     {c.name}
                   </Link>
@@ -97,7 +97,7 @@ export function Hero({
               </div>
               <Link
                 href={`/${citySlug}` as never}
-                className="mt-5 inline-flex w-fit items-center rounded-pill border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                className="mt-5 inline-flex w-fit items-center rounded-lg border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
               >
                 Все категории →
               </Link>

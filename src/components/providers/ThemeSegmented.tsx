@@ -29,12 +29,12 @@ export function ThemeSegmented() {
     <div
       role="radiogroup"
       aria-label="Тема"
-      className="relative flex shrink-0 rounded-pill bg-muted p-0.5"
+      className="relative flex shrink-0 rounded-sm bg-muted p-0.5"
     >
       {index >= 0 && (
         <span
           aria-hidden="true"
-          className="absolute inset-y-0.5 left-0.5 w-7 rounded-pill bg-card shadow-sm transition-transform duration-200 ease-out"
+          className="absolute inset-y-0.5 left-0.5 w-7 rounded-sm bg-card shadow-sm transition-transform duration-200 ease-out"
           style={{ transform: `translateX(${index * 28}px)` }}
         />
       )}
@@ -49,7 +49,7 @@ export function ThemeSegmented() {
           title={label}
           onClick={() => setTheme(value)}
           className={cn(
-            "relative z-10 flex h-7 w-7 items-center justify-center rounded-pill transition-colors",
+            "relative z-10 flex h-7 w-7 items-center justify-center rounded-sm transition-colors",
             current === value ? "text-accent" : "text-muted-foreground hover:text-foreground",
           )}
         >

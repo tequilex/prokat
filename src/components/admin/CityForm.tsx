@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { field } from "@/components/ui/field";
 import { adminCreateCity } from "@/server/actions/admin";
 
-const INPUT = `${field} h-10 rounded-md px-3 text-sm`;
+const INPUT = `${field} h-10 px-3 text-sm`;
 
 export function CityForm() {
   const [name, setName] = useState("");

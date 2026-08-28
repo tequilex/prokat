@@ -176,7 +176,7 @@ function HeroPreview({
 }) {
   const candidate = { ...me, coverUrl };
   const changeButton = (
-    <span className="glass-photo absolute bottom-4 right-4 inline-flex h-9 items-center gap-2 rounded-pill px-4 text-sm font-medium md:bottom-5 md:right-6">
+    <span className="glass-photo absolute bottom-4 right-4 inline-flex h-9 items-center gap-2 rounded-sm px-4 text-sm font-medium md:bottom-5 md:right-6">
       <ImagePlus className="h-4 w-4" aria-hidden="true" />
       Сменить обложку
     </span>
@@ -302,7 +302,7 @@ export function CoverPickerButton({
     <Modal open={open} onOpenChange={setOpen}>
       <ModalTrigger
         className={cn(
-          "glass-photo inline-flex h-9 items-center gap-2 rounded-pill px-4 text-sm font-medium transition-opacity hover:opacity-90",
+          "glass-photo inline-flex h-9 items-center gap-2 rounded-sm px-4 text-sm font-medium transition-opacity hover:opacity-90",
           className,
         )}
       >

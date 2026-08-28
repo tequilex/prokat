@@ -41,12 +41,12 @@ export function CategoryTiles({
               key={c.slug}
               href={`/${citySlug}/${c.slug}` as never}
               style={{ "--len": c.name.length } as CSSProperties}
-              className="relative flex min-h-[72px] min-w-[96px] grow basis-[calc(66px_+_var(--len)*4px)] overflow-hidden rounded-2xl bg-card p-3 transition-transform hover:-translate-y-0.5 active:scale-[0.99] sm:min-h-[96px] sm:min-w-[140px] sm:basis-[calc(104px_+_var(--len)*7px)] sm:rounded-[20px] sm:p-4"
+              className="relative flex min-h-[72px] min-w-[96px] grow basis-[calc(66px_+_var(--len)*4px)] overflow-hidden rounded-lg bg-card p-3 transition-transform hover:-translate-y-0.5 active:scale-[0.99] sm:min-h-[96px] sm:min-w-[140px] sm:basis-[calc(104px_+_var(--len)*7px)] sm:p-4"
             >
               <span className="pr-8 text-sm font-semibold leading-snug text-foreground sm:pr-10">
                 {c.name}
               </span>
-              <span className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-accent sm:bottom-3 sm:right-3 sm:h-10 sm:w-10 sm:rounded-xl">
+              <span className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-sm bg-muted text-accent sm:bottom-3 sm:right-3 sm:h-10 sm:w-10">
                 <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
               </span>
             </Link>

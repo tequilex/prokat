@@ -8,7 +8,7 @@ import { field } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { submitNewPassword } from "@/server/actions/auth-email";
 
-const INPUT = `${field} h-11 w-full rounded-pill px-5`;
+const INPUT = `${field} h-11 w-full px-5`;
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();

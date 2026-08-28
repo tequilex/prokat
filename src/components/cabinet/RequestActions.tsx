@@ -53,7 +53,7 @@ export function RequestActions({ requestId, status }: { requestId: string; statu
             value={comment} maxLength={500} rows={2}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Клиент увидит этот комментарий — например, предложите другие даты"
-            className={`${field} rounded-md px-3 py-2 text-sm`}
+            className={`${field} px-3 py-2 text-sm`}
           />
         )}
         {error && <p className="text-sm text-destructive" role="alert">{error}</p>}

@@ -11,6 +11,18 @@ export default {
   content: ["./src/**/*.{ts,tsx}", "./theme/**/*.{ts,tsx}"],
   darkMode: ["class"],
   theme: {
+    // Шкала скруглений заменена целиком, а не расширена: дефолтные ключи
+    // Tailwind (md, xl, 2xl, 3xl) убраны намеренно, иначе случайный
+    // rounded-2xl молча заводит в проект третий радиус. Живых значения два —
+    // см. --radius-* в theme/tokens.css.
+    borderRadius: {
+      none: "0",
+      sm: "var(--radius-sm)",
+      lg: "var(--radius-lg)",
+      pill: "var(--radius-pill)",
+      // Круг: аватары, иконочные кружки, счётчики.
+      full: "9999px",
+    },
     extend: {
       colors: {
         background: c("--color-background"),
@@ -35,12 +47,6 @@ export default {
         border: c("--color-border"),
         ring:   c("--color-ring"),
         destructive: c("--color-danger"),
-      },
-      borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
-        pill: "var(--radius-pill)",
       },
       fontFamily: {
         display: "var(--font-display)",

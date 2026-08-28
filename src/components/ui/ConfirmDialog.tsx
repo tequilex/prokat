@@ -48,7 +48,7 @@ export function ConfirmDialog({
                 id={inputId}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className={`${field} w-full rounded-md px-3 py-2 text-sm`}
+                className={`${field} w-full px-3 py-2 text-sm`}
               />
             </div>
           )}

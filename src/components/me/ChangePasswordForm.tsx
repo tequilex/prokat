@@ -6,7 +6,7 @@ import { field } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { changeAccountPassword } from "@/server/actions/auth-email";
 
-const INPUT = `${field} h-11 rounded-md px-3`;
+const INPUT = `${field} h-11 px-3`;
 
 // Смена пароля из профиля. Показывается только аккаунтам с паролем —
 // страница профиля проверяет это по users.password_hash.
