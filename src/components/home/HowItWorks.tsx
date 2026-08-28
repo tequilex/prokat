@@ -2,7 +2,7 @@ import { content } from "@theme/content";
 
 export function HowItWorks() {
   return (
-    <section id="how" className="scroll-mt-[calc(var(--header-h)+16px)]">
+    <section id="how" className="scroll-mt-[calc(var(--header-total)+16px)]">
       <h2 className="mb-5 text-xl font-semibold text-foreground">{content.home.howHeading}</h2>
       <ol className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {content.home.howSteps.map((step, i) => (

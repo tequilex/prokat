@@ -101,6 +101,7 @@ pnpm db:studio           # drizzle studio
 | вход, сессии, письма, доступ | [docs/auth.md](docs/auth.md) |
 | загрузка картинок, обложки | [docs/media.md](docs/media.md) |
 | метаданные, sitemap, JSON-LD | [docs/seo.md](docs/seo.md) |
+| цвета, скругления, кант, тени | [theme/tokens.schema.md](theme/tokens.schema.md) |
 | переменные окружения | [docs/environment.md](docs/environment.md) |
 | тесты и проверки | [docs/testing.md](docs/testing.md) |
 | деплой и эксплуатация | [docs/DEPLOY.md](docs/DEPLOY.md) |

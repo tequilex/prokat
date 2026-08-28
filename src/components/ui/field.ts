@@ -9,7 +9,18 @@
 // Кольцо внутреннее (ring-inset), а не наружное с отступом, как у кнопок:
 // поля тянутся на всю ширину, и внешнее кольцо обрезалось краем модалки —
 // ModalContent прокручивается, а значит и обрезает по обеим осям.
+// Заливка холстом, а не --color-muted: поле обязано читаться «колодцем» на
+// любой поверхности. На карточке и на панели хедера muted почти совпадает с
+// фоном под ним (в тёмной теме — разница в четыре уровня), и поле пропадает.
+const FIELD_BASE = "rounded-lg border border-border bg-background text-foreground";
+
 export const field =
-  "rounded-lg border border-border bg-background text-foreground " +
-  "focus-visible:[outline:none] focus-visible:border-ring " +
+  `${FIELD_BASE} focus-visible:[outline:none] focus-visible:border-ring ` +
   "focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset";
+
+// Тот же вид для обёртки, внутри которой лежит настоящий input — поиск в шапке
+// это form с прозрачным полем. :focus-visible на обёртке не сработает (фокус
+// достаётся вложенному элементу), поэтому кольцо ловим через :focus-within.
+export const fieldWithin =
+  `${FIELD_BASE} focus-within:border-ring focus-within:ring-1 ` +
+  "focus-within:ring-ring focus-within:ring-inset";

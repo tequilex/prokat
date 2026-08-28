@@ -18,13 +18,14 @@ export function Hero({
   categories?: HeroChip[];
 }) {
   return (
-    // Отрицательный отступ на высоту хедера: блок уходит под плавающий хедер
-    // до верхнего края экрана. Контент внутри опущен паддингом (см. photo/panel).
-    <section className="w-full" style={{ marginTop: "calc(-1 * var(--header-h))" }}>
+    // Отрицательный отступ на весь след хедера: блок уходит под плавающую
+    // панель до верхнего края экрана, и фото видно в зазорах вокруг неё.
+    // Контент внутри опущен паддингом (см. photo/panel).
+    <section className="w-full" style={{ marginTop: "calc(-1 * var(--header-total))" }}>
       <div className="grid lg:grid-cols-[2.45fr_1fr]">
         {/* Фото-герой: прижат к краям экрана (флаш слева/сверху под хедером),
          * скруглён только нижний-правый угол. Картинка — public/hero.webp. */}
-        <div className="hero-photo relative flex min-h-[610px] flex-col justify-center overflow-hidden rounded-br-[48px] px-6 pb-16 pt-[calc(var(--header-h)+2rem)] sm:px-10 lg:px-12">
+        <div className="hero-photo relative flex min-h-[610px] flex-col justify-center overflow-hidden rounded-br-[48px] px-6 pb-16 pt-[calc(var(--header-total)+2rem)] sm:px-10 lg:px-12">
           <div
             className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/40"
             aria-hidden="true"
@@ -78,7 +79,7 @@ export function Hero({
 
         {/* Панель популярных категорий — прямо на фоне страницы, без карточки.
          * На десктопе верх опущен под хедер (стоит рядом с фото). */}
-        <aside className="flex flex-col px-6 pb-2 pt-8 sm:px-8 lg:pb-10 lg:pt-[calc(var(--header-h)+1.5rem)]">
+        <aside className="flex flex-col px-6 pb-2 pt-8 sm:px-8 lg:pb-10 lg:pt-[calc(var(--header-total)+1.5rem)]">
           <h2 className="mb-4 text-xl font-semibold text-foreground">
             {content.home.categoriesHeading}
           </h2>

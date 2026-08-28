@@ -60,11 +60,11 @@ export default async function SellerProfilePage({ params }: Props) {
   ].filter(Boolean).join(" · ");
 
   return (
-    <main data-cover-hero="all">
-      {/* Обложка уезжает под стеклянный хедер; крошки лежат на фото под ним,
-        * затемнение держит их читаемыми на любой фотографии. */}
-      <ProfileCover src={seller.coverUrl} className="-mt-[var(--header-h)] h-40 md:h-80" priority>
-        <div className="absolute inset-x-0 top-[calc(var(--header-h)+4px)] px-4">
+    <main>
+      {/* Обложка уезжает под плавающую панель хедера; крошки лежат на фото
+        * под ней, затемнение держит их читаемыми на любой фотографии. */}
+      <ProfileCover src={seller.coverUrl} className="-mt-[var(--header-total)] h-40 md:h-80" priority>
+        <div className="absolute inset-x-0 top-[calc(var(--header-total)+4px)] px-4">
           {/* Обложка тёмная в обеих темах (своя или стандартная), поэтому
             * крошки всегда светлые: утилиты Breadcrumbs читают токены, здесь
             * они локально переопределены. */}

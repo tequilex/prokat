@@ -32,7 +32,7 @@ export default async function ResetPage({
           <ArrowLeft className="h-4 w-4" />
           {content.auth.loginTitle}
         </Link>
-        <div className="w-full rounded-lg border border-border bg-card p-8 shadow-sm">
+        <div className="w-full rounded-lg border border-border bg-card p-8">
           <h1 className="font-display text-2xl text-center mb-6">Новый пароль</h1>
           {usable && token
             ? <ResetPasswordForm token={token} />

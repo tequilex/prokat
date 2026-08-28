@@ -21,8 +21,10 @@ describe("theme tokens", () => {
     expect(block(".dark")).toMatch(/--color-primary:\s*#30D158/i);
   });
 
-  it("keeps header equal to background", () => {
-    expect(block(":root")).toMatch(/--color-header:\s*#EDF0EE/i);
-    expect(block(".dark")).toMatch(/--color-header:\s*#191919/i);
+  // Хедер стал сплошной панелью: он совпадает с карточкой, а не с холстом,
+  // иначе панель сливается с фоном и залитое поле поиска в ней пропадает.
+  it("keeps header equal to card", () => {
+    expect(block(":root")).toMatch(/--color-header:\s*#FFFFFF/i);
+    expect(block(".dark")).toMatch(/--color-header:\s*#242426/i);
   });
 });
