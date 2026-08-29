@@ -120,12 +120,6 @@ async function SubcategoryPage({
   // Страница подкатегории существует только при ≥1 активной позиции.
   if ((directCounts.get(sub.id) ?? 0) === 0) notFound();
 
-  const cats = await getAllCategories();
-  const siblings = cats
-    .filter((c) => c.parentId === root.id)
-    .map((c) => ({ ...c, count: directCounts.get(c.id) ?? 0 }))
-    .filter((c) => c.count > 0);
-
   const categoryBasePath = `/${city.slug}/${root.slug}`;
 
   return (
@@ -149,9 +143,9 @@ async function SubcategoryPage({
         city={city}
         categoryIds={[sub.id]}
         basePath={`${categoryBasePath}/${sub.slug}`}
-        categoryBasePath={categoryBasePath}
-        subcategories={siblings}
+        activeRootSlug={root.slug}
         activeSubSlug={sub.slug}
+        activeLabel={sub.name}
         searchParams={searchParams}
       />
     </main>

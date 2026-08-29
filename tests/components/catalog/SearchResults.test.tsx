@@ -5,6 +5,10 @@ vi.mock("@/server/catalog", async (orig) => ({
   ...(await orig<typeof import("@/server/catalog")>()),
   searchListings: vi.fn(async () => ({ items: [], total: 0 })),
   getAvailabilityRows: vi.fn(async () => []),
+  getAllCategories: vi.fn(async () => []),
+  getSearchFacets: vi.fn(async () => ({
+    countsByCategory: new Map(), minPriceDay: null, maxPriceDay: null,
+  })),
 }));
 
 import { SearchResults } from "@/components/catalog/SearchResults";

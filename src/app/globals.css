@@ -140,6 +140,36 @@
     backdrop-filter: blur(12px);
   }
 
+  /* Двуручный слайдер цены (PriceRange). Два <input type="range"> лежат друг на
+   * друге, поэтому сама дорожка кликов не ловит — иначе верхний вход перекрыл
+   * бы нижний целиком и вторая ручка не бралась бы. Ловят только ручки. */
+  .price-range {
+    pointer-events: none;
+  }
+  .price-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    pointer-events: auto;
+    height: 18px;
+    width: 18px;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    border: 2px solid var(--color-card);
+    cursor: pointer;
+  }
+  .price-range::-moz-range-thumb {
+    pointer-events: auto;
+    height: 18px;
+    width: 18px;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    border: 2px solid var(--color-card);
+    cursor: pointer;
+  }
+  .price-range:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
   /* Фон героя главной. Картинка-плейсхолдер public/hero.webp — замени файлом
    * на своё фото (путь не меняется). Оверлей для контраста текста — в разметке. */
   .hero-photo {

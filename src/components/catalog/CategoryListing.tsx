@@ -1,38 +1,55 @@
-// Общий вид листинга категории/подкатегории: вводный блок из данных,
-// чипы подкатегорий, фильтры, сетка карточек, пагинация. Server component.
+// Общий вид листинга категории/подкатегории: вводный блок из данных, дерево
+// категорий, фильтры, сетка карточек, пагинация. Server component.
 
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
-  getAvailabilityRows, getCategoryStats, getListingsForCategories,
+  buildCategoryTree, getAllCategories, getAvailabilityRows, getCategoryStats,
+  getListingCountsByCategory, getListingsForCategories,
   DEFAULT_PAGE_SIZE,
-  type Category, type City,
+  type City,
 } from "@/server/catalog";
-import { parseFilters, type CategorySearchParams } from "@/lib/catalog/filters";
+import {
+  filterParams, parseFilters, SORT_OPTIONS, type CategorySearchParams,
+} from "@/lib/catalog/filters";
 import { todayStr, addDaysStr } from "@/lib/catalog/dates";
 import { formatPrice, listingsCountLabel, ownersCountLabel } from "@/lib/catalog/format";
 import { buildAvailabilityByListing } from "@/lib/catalog/availability";
 import { ListingCard } from "@/components/catalog/ListingCard";
 import { ListingFilters, type FilterState } from "@/components/catalog/ListingFilters";
+import { CategoryTree } from "@/components/catalog/CategoryTree";
+import { SortMenu } from "@/components/catalog/SortMenu";
+import { DateRangeFilter } from "@/components/catalog/DateRangeFilter";
+import { ViewToggle, parseView } from "@/components/catalog/ViewToggle";
 
 export type { CategorySearchParams } from "@/lib/catalog/filters";
 
 export async function CategoryListing({
-  city, categoryIds, basePath, categoryBasePath, subcategories, activeSubSlug, searchParams,
+  city, categoryIds, basePath, activeRootSlug, activeSubSlug, activeLabel, searchParams,
 }: {
   city: City;
   categoryIds: string[];
-  basePath: string;          // текущая страница (для формы фильтров и пагинации)
-  categoryBasePath: string;  // /{city}/{rootCategory} — база для чипов подкатегорий
-  subcategories: Array<Category & { count: number }>;
+  basePath: string;        // текущая страница (для формы фильтров и пагинации)
+  activeRootSlug?: string; // корень текущей страницы; на витрине города его нет
   activeSubSlug?: string;
+  activeLabel: string;     // подпись на мобильной кнопке выбора раздела
   searchParams: CategorySearchParams;
 }) {
   const filters = parseFilters(searchParams);
-  const [{ items, total }, stats] = await Promise.all([
+  const [{ items, total }, stats, cats, directCounts] = await Promise.all([
     getListingsForCategories(city.id, categoryIds, filters),
     getCategoryStats(city.id, categoryIds),
+    getAllCategories(),
+    getListingCountsByCategory(city.id),
   ]);
+  const tree = buildCategoryTree(cats, directCounts);
+
+  // Границы слайдера — из раздела. Совпали min и max (или цен нет вовсе) —
+  // двигать нечего, панель покажет обычные поля ввода.
+  const priceBounds =
+    stats.minPriceDay !== null && stats.maxPriceDay !== null && stats.maxPriceDay > stats.minPriceDay
+      ? { min: stats.minPriceDay, max: stats.maxPriceDay }
+      : undefined;
 
   // Занятость всех карточек страницы на неделю — одним запросом.
   const from = todayStr();
@@ -41,16 +58,34 @@ export async function CategoryListing({
   const availByListing = buildAvailabilityByListing(availRows);
 
   const filterState: FilterState = {
-    priceMin: filters.priceMin, priceMax: filters.priceMax, sort: filters.sort,
+    priceMin: filters.priceMin, priceMax: filters.priceMax,
+    deposit: filters.deposit, verifiedOnly: filters.verifiedOnly, sort: filters.sort,
   };
 
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / DEFAULT_PAGE_SIZE));
+  const view = parseView(searchParams.view);
+  const withParams = (mutate: (q: URLSearchParams) => void) => {
+    const q = filterParams(searchParams);
+    mutate(q);
+    const qs = q.toString();
+    return qs ? `${basePath}?${qs}` : basePath;
+  };
+  const datesResetHref = withParams((q) => { q.delete("from"); q.delete("to"); });
+  const gridHref = withParams((q) => q.delete("view"));
+  const listHref = withParams((q) => q.set("view", "list"));
+
+  // Адреса сортировки собирает сервер: SortMenu клиентский, и функцию через
+  // границу ему не передать. «new» — значение по умолчанию, в адрес не пишется.
+  const sortOptions = SORT_OPTIONS.map((o) => {
+    const q = filterParams(searchParams);
+    if (o.value === "new") q.delete("sort"); else q.set("sort", o.value);
+    const qs = q.toString();
+    return { ...o, href: qs ? `${basePath}?${qs}` : basePath };
+  });
+
   const pageHref = (p: number) => {
-    const q = new URLSearchParams();
-    if (searchParams.price_min) q.set("price_min", searchParams.price_min);
-    if (searchParams.price_max) q.set("price_max", searchParams.price_max);
-    if (searchParams.sort) q.set("sort", searchParams.sort);
+    const q = filterParams(searchParams);
     if (p > 1) q.set("page", String(p));
     const qs = q.toString();
     return qs ? `${basePath}?${qs}` : basePath;
@@ -75,21 +110,55 @@ export async function CategoryListing({
       )}
 
       <div className="flex flex-col gap-5 md:flex-row">
-        <aside className="md:sticky md:top-20 md:h-fit md:w-56 md:shrink-0 md:self-start">
+        {/* Панель липнет под хедером: отступ считается от его полного
+          * следа (--header-total), а не забитым числом — высота хедера уже
+          * менялась, и 80px тут держались случайно. */}
+        <aside className="md:sticky md:top-[calc(var(--header-total)+1rem)] md:h-fit md:w-64 md:shrink-0 md:self-start">
           <ListingFilters
             basePath={basePath}
             state={filterState}
-            subcategories={subcategories}
-            categoryBasePath={categoryBasePath}
-            activeSubSlug={activeSubSlug}
+            hidden={{
+              view: searchParams.view ?? "",
+              from: searchParams.from ?? "",
+              to: searchParams.to ?? "",
+              sort: searchParams.sort ?? "",
+            }}
+            priceBounds={priceBounds}
+            categoryLabel={activeLabel}
+            categoryNav={
+              <CategoryTree
+                tree={tree}
+                citySlug={city.slug}
+                activeRootSlug={activeRootSlug}
+                activeSubSlug={activeSubSlug}
+              />
+            }
           />
         </aside>
 
-        <div className="flex-1">
+        <div className="flex flex-1 flex-col gap-4">
+          {/* Шапка выдачи: даты слева, сортировка и вид справа. Все ссылки
+            * строятся от текущих параметров, чтобы переключение одного не
+            * сбрасывало остальные и не тащило номер страницы. */}
+          <div className="surface flex items-center justify-between gap-2 p-1.5">
+            <DateRangeFilter
+              from={searchParams.from}
+              to={searchParams.to}
+              resetHref={datesResetHref}
+              today={from}
+            />
+            <div className="flex items-center gap-2">
+              <SortMenu options={sortOptions} current={searchParams.sort} />
+              <ViewToggle view={view} gridHref={gridHref} listHref={listHref} />
+            </div>
+          </div>
+
           {items.length === 0 ? (
             <EmptyState>По этим условиям позиций не нашлось.</EmptyState>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">
+            <div className={view === "list"
+              ? "flex flex-col gap-3"
+              : "grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3"}>
               {items.map((item) => (
                 <ListingCard
                   key={item.listing.id}
@@ -97,6 +166,7 @@ export async function CategoryListing({
                   citySlug={city.slug}
                   availabilityMap={availByListing.get(item.listing.id) ?? new Map()}
                   from={from}
+                  view={view}
                 />
               ))}
             </div>

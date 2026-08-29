@@ -4,7 +4,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
-  getAllCategories, getCategoryBySlug, getCityBySlug, getListingCountsByCategory,
+  getAllCategories, getCategoryBySlug, getCityBySlug,
   type Category, type City,
 } from "@/server/catalog";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
@@ -64,14 +64,10 @@ async function RootCategoryPage({
   category: Category;
   searchParams: CategorySearchParams;
 }) {
-  const [cats, directCounts] = await Promise.all([
-    getAllCategories(),
-    getListingCountsByCategory(city.id),
-  ]);
+  // Счётчики грузит дерево внутри CategoryListing; здесь нужны только дети —
+  // их id входят в выдачу корневой категории.
+  const cats = await getAllCategories();
   const children = cats.filter((c) => c.parentId === category.id);
-  const subcategories = children
-    .map((c) => ({ ...c, count: directCounts.get(c.id) ?? 0 }))
-    .filter((c) => c.count > 0);
   const categoryIds = [category.id, ...children.map((c) => c.id)];
   const basePath = `/${city.slug}/${category.slug}`;
 
@@ -94,8 +90,8 @@ async function RootCategoryPage({
         city={city}
         categoryIds={categoryIds}
         basePath={basePath}
-        categoryBasePath={basePath}
-        subcategories={subcategories}
+        activeRootSlug={category.slug}
+        activeLabel={category.name}
         searchParams={searchParams}
       />
     </main>

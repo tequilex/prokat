@@ -3,7 +3,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
-  getAllCategories, getCityBySlug, getListingCountsByCategory, rollupToRoots,
+  getAllCategories, getCityBySlug,
 } from "@/server/catalog";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { CategoryListing, type CategorySearchParams } from "@/components/catalog/CategoryListing";
@@ -32,17 +32,9 @@ export default async function CityPage({ params, searchParams }: Props) {
   const city = await getCityBySlug(citySlug);
   if (!city) notFound();
 
-  const [cats, direct] = await Promise.all([
-    getAllCategories(),
-    getListingCountsByCategory(city.id),
-  ]);
-  const rootCounts = rollupToRoots(cats, direct);
-  // Корневые категории с товарами — как чипы навигации.
-  const rootChips = cats
-    .filter((c) => c.parentId === null)
-    .map((c) => ({ ...c, count: rootCounts.get(c.id) ?? 0 }))
-    .filter((c) => c.count > 0);
-  const allCategoryIds = cats.map((c) => c.id);
+  // Счётчики категорий грузит само дерево внутри CategoryListing — здесь нужен
+  // только полный список id для выдачи «всё в городе».
+  const allCategoryIds = (await getAllCategories()).map((c) => c.id);
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
@@ -52,8 +44,7 @@ export default async function CityPage({ params, searchParams }: Props) {
         city={city}
         categoryIds={allCategoryIds}
         basePath={`/${city.slug}`}
-        categoryBasePath={`/${city.slug}`}
-        subcategories={rootChips}
+        activeLabel="Все категории"
         searchParams={await searchParams}
       />
     </main>
