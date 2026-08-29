@@ -23,7 +23,7 @@ import { CategoryListing, type CategorySearchParams } from "@/components/catalog
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
 import { siteConfig } from "@/lib/site-config";
-import { freeQty } from "@/lib/catalog/availability";
+import { buildAvailabilityByListing, freeQty } from "@/lib/catalog/availability";
 import { BOOKING_HORIZON_DAYS, parseBookingParams } from "@/lib/booking/params";
 import { BookingWidget } from "@/components/booking/BookingWidget";
 import { authPanelProps } from "@/lib/auth/panel-props";
@@ -224,6 +224,13 @@ async function ListingPage({
   const moreFromSeller = sellerItemsAll.filter((i) => i.listing.id !== listing.id).slice(0, 8);
   const moreInCategory = categoryItemsRes.items.filter((i) => i.listing.id !== listing.id).slice(0, 8);
 
+  // Занятость карточек в блоках «ещё»: у самой позиции она уже загружена выше,
+  // но на горизонт брони — соседям хватает недели, как в каталоге.
+  const relatedIds = [...moreFromSeller, ...moreInCategory].map((i) => i.listing.id);
+  const relatedAvail = buildAvailabilityByListing(
+    await getAvailabilityRows(relatedIds, from, addDaysStr(from, 6)),
+  );
+
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
       <JsonLd data={buildProductJsonLd({
@@ -334,7 +341,12 @@ async function ListingPage({
           <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {moreFromSeller.map((item) => (
               <div key={item.listing.id} className="w-[220px] shrink-0 sm:w-[240px]">
-                <ListingCard item={item} citySlug={item.citySlug} />
+                <ListingCard
+                  item={item}
+                  citySlug={item.citySlug}
+                  availabilityMap={relatedAvail.get(item.listing.id) ?? new Map()}
+                  from={from}
+                />
               </div>
             ))}
           </div>
@@ -350,7 +362,12 @@ async function ListingPage({
           <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {moreInCategory.map((item) => (
               <div key={item.listing.id} className="w-[220px] shrink-0 sm:w-[240px]">
-                <ListingCard item={item} citySlug={city.slug} />
+                <ListingCard
+                  item={item}
+                  citySlug={city.slug}
+                  availabilityMap={relatedAvail.get(item.listing.id) ?? new Map()}
+                  from={from}
+                />
               </div>
             ))}
           </div>

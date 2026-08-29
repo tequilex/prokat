@@ -73,27 +73,40 @@ export interface ListingFilters {
   pageSize?: number;
 }
 
+// Всё, что карточке в выдаче нужно показать, кроме занятости: её страница
+// грузит отдельно, одним запросом на все карточки сразу.
 export interface ListingWithOwner {
   listing: Listing;
   ownerName: string | null;
   ownerImage: string | null;
+  /** Галочка «проверенный продавец» на плашке владельца. */
+  ownerIsVerified: boolean;
   categorySlug: string;
+  cityName: string;
 }
+
+// Поля продавца, города и категории одинаковы во всех выборках карточек —
+// держим их одним объектом, чтобы новая колонка не появилась в трёх запросах
+// из четырёх.
+const CARD_COLUMNS = {
+  listing: listings,
+  ownerName: users.name,
+  ownerImage: users.image,
+  ownerIsVerified: users.isVerified,
+  categorySlug: categories.slug,
+  cityName: cities.name,
+} as const;
 
 export const DEFAULT_PAGE_SIZE = 24;
 
 // Недавно добавленные активные позиции по городу (для секции на главной).
 export async function getRecentListings(cityId: string, limit = 12): Promise<ListingWithOwner[]> {
   return getDb()
-    .select({
-      listing: listings,
-      ownerName: users.name,
-      ownerImage: users.image,
-      categorySlug: categories.slug,
-    })
+    .select(CARD_COLUMNS)
     .from(listings)
     .innerJoin(users, eq(users.id, listings.ownerUserId))
     .innerJoin(categories, eq(categories.id, listings.categoryId))
+    .innerJoin(cities, eq(cities.id, listings.cityId))
     .where(and(eq(listings.cityId, cityId), eq(listings.status, "active")))
     .orderBy(desc(listings.createdAt), asc(listings.id))
     .limit(limit);
@@ -125,10 +138,11 @@ export async function getListingsForCategories(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerImage: users.image, categorySlug: categories.slug })
+    db.select(CARD_COLUMNS)
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
       .innerJoin(categories, eq(categories.id, listings.categoryId))
+      .innerJoin(cities, eq(cities.id, listings.cityId))
       .where(where)
       .orderBy(order, asc(listings.id))
       .limit(pageSize)
@@ -170,10 +184,11 @@ export async function searchListings(
     desc(listings.createdAt);
 
   const [items, totalRows] = await Promise.all([
-    db.select({ listing: listings, ownerName: users.name, ownerImage: users.image, categorySlug: categories.slug })
+    db.select(CARD_COLUMNS)
       .from(listings)
       .innerJoin(users, eq(users.id, listings.ownerUserId))
       .innerJoin(categories, eq(categories.id, listings.categoryId))
+      .innerJoin(cities, eq(cities.id, listings.cityId))
       .where(where)
       .orderBy(order, asc(listings.id))
       .limit(pageSize)
@@ -302,13 +317,7 @@ export interface OwnerCardListing extends ListingWithOwner {
 // Активные товары продавца в форме карточки — для профиля /u/{id}.
 export async function getActiveListingCardsByOwner(userId: string): Promise<OwnerCardListing[]> {
   return getDb()
-    .select({
-      listing: listings,
-      ownerName: users.name,
-      ownerImage: users.image,
-      categorySlug: categories.slug,
-      citySlug: cities.slug,
-    })
+    .select({ ...CARD_COLUMNS, citySlug: cities.slug })
     .from(listings)
     .innerJoin(users, eq(users.id, listings.ownerUserId))
     .innerJoin(categories, eq(categories.id, listings.categoryId))
