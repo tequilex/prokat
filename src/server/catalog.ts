@@ -5,6 +5,7 @@ import {
   and, asc, desc, eq, gte, ilike, inArray, lte, or, sql,
 } from "drizzle-orm";
 import { getDb } from "@/lib/db";
+import { todayStr } from "@/lib/catalog/dates";
 import {
   availability, bookingRequests, categories, cities, listings, users,
 } from "@db/schema";
@@ -47,6 +48,38 @@ export async function getListingCountsByCategory(cityId: string): Promise<Map<st
   return new Map(rows.map((r) => [r.categoryId, r.cnt]));
 }
 
+// Дерево категорий со счётчиками для навигации каталога. Корню достаётся
+// роллап (свои позиции плюс детские), ребёнку — только его собственные.
+//
+// Пустые ветки отброшены: раздел без активных позиций ведёт на страницу, которая
+// по правилам подкатегории отдаёт 404. Корень остаётся, если ненулевой роллап, —
+// его страница показывает объединённую выдачу и живёт даже без детей.
+//
+// Дерево ровно два уровня: внуков не строим, потому что маршрут категории
+// (/{city}/{seg}/{sub}) третьего сегмента под них не имеет.
+export interface CategoryNode extends Category {
+  count: number;
+  children: Array<Category & { count: number }>;
+}
+
+export function buildCategoryTree(
+  cats: Category[],
+  direct: Map<string, number>,
+): CategoryNode[] {
+  const rolled = rollupToRoots(cats, direct);
+  return cats
+    .filter((c) => c.parentId === null)
+    .map((root) => ({
+      ...root,
+      count: rolled.get(root.id) ?? 0,
+      children: cats
+        .filter((c) => c.parentId === root.id)
+        .map((c) => ({ ...c, count: direct.get(c.id) ?? 0 }))
+        .filter((c) => c.count > 0),
+    }))
+    .filter((root) => root.count > 0);
+}
+
 // Роллап прямых счётчиков на корневые категории по дереву.
 export function rollupToRoots(cats: Category[], direct: Map<string, number>): Map<string, number> {
   const parentOf = new Map(cats.map((c) => [c.id, c.parentId]));
@@ -68,9 +101,53 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 export interface ListingFilters {
   priceMin?: number;
   priceMax?: number;
-  sort?: "price_asc" | "price_desc" | "new";
+  deposit?: "money" | "document" | "none";
+  /** Только объявления продавцов с галочкой (users.is_verified). */
+  verifiedOnly?: boolean;
+  /** Диапазон дат: позиция должна быть свободна во ВСЕ дни включительно. */
+  availableFrom?: string;
+  availableTo?: string;
+  sort?: "price_asc" | "price_desc" | "new" | "free";
   page?: number;
   pageSize?: number;
+}
+
+// «Свободна во все дни диапазона»: ни одного дня, где занято всё количество.
+// Отсутствие строки в availability = день полностью свободен, поэтому условие
+// написано через NOT EXISTS, а не через подсчёт совпадений.
+function freeInRange(from: string, to: string) {
+  return sql`not exists (
+    select 1 from ${availability}
+    where ${availability.listingId} = ${listings.id}
+      and ${availability.date} between ${from} and ${to}
+      and ${availability.bookedQty} + ${availability.blockedQty} >= ${listings.quantity}
+  )`;
+}
+
+// Условия фильтров, общие для выдачи категории и поиска. Возвращает массив,
+// чтобы вызывающий дописал свои (город, статус, категории, текст запроса).
+// verifiedOnly ссылается на users, поэтому join обязателен и в счётном запросе.
+function filterConditions(f: ListingFilters) {
+  const conds = [];
+  if (f.priceMin !== undefined) conds.push(gte(listings.priceDay, f.priceMin));
+  if (f.priceMax !== undefined) conds.push(lte(listings.priceDay, f.priceMax));
+  if (f.deposit !== undefined) conds.push(eq(listings.depositType, f.deposit));
+  if (f.verifiedOnly) conds.push(eq(users.isVerified, true));
+  if (f.availableFrom && f.availableTo) conds.push(freeInRange(f.availableFrom, f.availableTo));
+  return conds;
+}
+
+// Порядок выдачи. «Сначала свободные» считает свободу по выбранному диапазону,
+// а если его нет — по сегодняшнему дню: иначе сортировка спорила бы с фильтром.
+function orderBy(f: ListingFilters, today: string) {
+  if (f.sort === "price_asc") return asc(listings.priceDay);
+  if (f.sort === "price_desc") return desc(listings.priceDay);
+  if (f.sort === "free") {
+    const from = f.availableFrom ?? today;
+    const to = f.availableTo ?? from;
+    return desc(freeInRange(from, to));
+  }
+  return desc(listings.createdAt);
 }
 
 // Всё, что карточке в выдаче нужно показать, кроме занятости: её страница
@@ -123,19 +200,14 @@ export async function getListingsForCategories(
   const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
   const page = Math.max(1, filters.page ?? 1);
 
-  const conds = [
+  const where = and(
     eq(listings.cityId, cityId),
     eq(listings.status, "active"),
     inArray(listings.categoryId, categoryIds),
-  ];
-  if (filters.priceMin !== undefined) conds.push(gte(listings.priceDay, filters.priceMin));
-  if (filters.priceMax !== undefined) conds.push(lte(listings.priceDay, filters.priceMax));
-  const where = and(...conds);
+    ...filterConditions(filters),
+  );
 
-  const order =
-    filters.sort === "price_asc" ? asc(listings.priceDay) :
-    filters.sort === "price_desc" ? desc(listings.priceDay) :
-    desc(listings.createdAt);
+  const order = orderBy(filters, todayStr());
 
   const [items, totalRows] = await Promise.all([
     db.select(CARD_COLUMNS)
@@ -149,10 +221,56 @@ export async function getListingsForCategories(
       .offset((page - 1) * pageSize),
     db.select({ cnt: sql<number>`count(*)::int` })
       .from(listings)
+      .innerJoin(users, eq(users.id, listings.ownerUserId))
       .where(where),
   ]);
 
   return { items, total: totalRows[0]?.cnt ?? 0 };
+}
+
+// Разбивка результатов поиска по категориям и границы цены — для панели
+// фильтров на /search. Считается по запросу и прочим фильтрам, но БЕЗ фильтра
+// по разделу: иначе у невыбранных разделов всегда стоял бы ноль и переключиться
+// между ними было бы нельзя.
+export interface SearchFacets {
+  countsByCategory: Map<string, number>;
+  minPriceDay: number | null;
+  maxPriceDay: number | null;
+}
+
+export async function getSearchFacets(
+  cityId: string,
+  q: string,
+  filters: ListingFilters = {},
+): Promise<SearchFacets> {
+  const query = q.trim();
+  const empty: SearchFacets = { countsByCategory: new Map(), minPriceDay: null, maxPriceDay: null };
+  if (query === "") return empty;
+  const like = `%${query}%`;
+
+  const rows = await getDb()
+    .select({
+      categoryId: listings.categoryId,
+      cnt: sql<number>`count(*)::int`,
+      minPrice: sql<number | null>`min(${listings.priceDay})::int`,
+      maxPrice: sql<number | null>`max(${listings.priceDay})::int`,
+    })
+    .from(listings)
+    .innerJoin(users, eq(users.id, listings.ownerUserId))
+    .where(and(
+      eq(listings.cityId, cityId),
+      eq(listings.status, "active"),
+      or(ilike(listings.title, like), ilike(listings.description, like)),
+      ...filterConditions(filters),
+    ))
+    .groupBy(listings.categoryId);
+
+  const prices = rows.flatMap((r) => [r.minPrice, r.maxPrice]).filter((v): v is number => v !== null);
+  return {
+    countsByCategory: new Map(rows.map((r) => [r.categoryId, r.cnt])),
+    minPriceDay: prices.length ? Math.min(...prices) : null,
+    maxPriceDay: prices.length ? Math.max(...prices) : null,
+  };
 }
 
 // Текстовый поиск по позициям в пределах города: ILIKE по названию и описанию.
@@ -161,6 +279,8 @@ export async function searchListings(
   cityId: string,
   q: string,
   filters: ListingFilters = {},
+  /** Сужение по разделу. В каталоге раздел задаёт страница, здесь — фильтр. */
+  categoryIds?: string[],
 ): Promise<{ items: ListingWithOwner[]; total: number }> {
   const query = q.trim();
   if (query === "") return { items: [], total: 0 };
@@ -169,19 +289,15 @@ export async function searchListings(
   const page = Math.max(1, filters.page ?? 1);
   const like = `%${query}%`;
 
-  const conds = [
+  const where = and(
     eq(listings.cityId, cityId),
     eq(listings.status, "active"),
     or(ilike(listings.title, like), ilike(listings.description, like)),
-  ];
-  if (filters.priceMin !== undefined) conds.push(gte(listings.priceDay, filters.priceMin));
-  if (filters.priceMax !== undefined) conds.push(lte(listings.priceDay, filters.priceMax));
-  const where = and(...conds);
+    ...(categoryIds && categoryIds.length > 0 ? [inArray(listings.categoryId, categoryIds)] : []),
+    ...filterConditions(filters),
+  );
 
-  const order =
-    filters.sort === "price_asc" ? asc(listings.priceDay) :
-    filters.sort === "price_desc" ? desc(listings.priceDay) :
-    desc(listings.createdAt);
+  const order = orderBy(filters, todayStr());
 
   const [items, totalRows] = await Promise.all([
     db.select(CARD_COLUMNS)
@@ -195,6 +311,7 @@ export async function searchListings(
       .offset((page - 1) * pageSize),
     db.select({ cnt: sql<number>`count(*)::int` })
       .from(listings)
+      .innerJoin(users, eq(users.id, listings.ownerUserId))
       .where(where),
   ]);
 

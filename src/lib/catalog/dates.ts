@@ -29,6 +29,17 @@ const MONTHS_GEN = [
   "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ] as const;
 
+const MONTHS_SHORT = [
+  "янв", "фев", "мар", "апр", "мая", "июн",
+  "июл", "авг", "сен", "окт", "ноя", "дек",
+] as const;
+
+/* «28 авг» — для кнопок и чипов, где полное название распирает контрол. */
+export function formatDayMonthShort(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`;
+}
+
 export function formatDayMonth(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
   return `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]}`;
