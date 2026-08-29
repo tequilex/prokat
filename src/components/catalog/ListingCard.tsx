@@ -24,11 +24,24 @@ function depositValue(l: Listing): string {
 
 // Подписи держим короткими: в две колонки на мобайле карточке достаётся около
 // 140px под содержимое, и длинная подпись со значением в одну строку не встают.
-function SpecRow({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function SpecRow({
+  label, value, tone, inline, className = "",
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  /** Списком характеристики идут строкой подряд, а не колонкой с выключкой. */
+  inline?: boolean;
+  className?: string;
+}) {
   return (
-    <div className="flex items-baseline justify-between gap-2 sm:gap-3">
+    <div className={`${inline
+      ? "flex items-baseline gap-1.5"
+      : "flex items-baseline justify-between gap-2 sm:gap-3"} ${className}`}>
       <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className={`min-w-0 truncate text-right ${tone ?? "text-foreground"}`}>{value}</dd>
+      <dd className={`min-w-0 truncate ${inline ? "" : "text-right"} ${tone ?? "text-foreground"}`}>
+        {value}
+      </dd>
     </div>
   );
 }
@@ -44,12 +57,16 @@ export function ListingCard({
   citySlug,
   availabilityMap,
   from,
+  view = "grid",
 }: {
   item: ListingWithOwner;
   citySlug: string;
   availabilityMap: AvailabilityMap;
   from: string;
+  /** Списком фото уезжает влево, остальное — в колонку рядом. */
+  view?: "grid" | "list";
 }) {
+  const list = view === "list";
   const { listing, ownerName, ownerImage, ownerIsVerified, categorySlug, cityName } = item;
   const photo = listingPhotos(listing)[0];
   const href = listingPath(citySlug, categorySlug, listing.slug, listing.id);
@@ -70,14 +87,24 @@ export function ListingCard({
     // четыре длинные записи (border-top-left-radius и соседи) ложатся поверх
     // короткой border-radius из компонентного слоя. overflow-hidden обрезает по
     // ним фотографию — она верх карточки и повторяет её форму.
-    <article className="surface flex flex-col overflow-hidden rounded-tl-[26px] rounded-tr-[8px] rounded-bl-[8px] rounded-br-[26px]">
+    <article
+      className={`surface overflow-hidden rounded-tl-[26px] rounded-tr-[8px] rounded-bl-[8px] rounded-br-[26px] ${
+        list ? "flex flex-row" : "flex flex-col"
+      }`}
+    >
       {/* Обёртка, а не ссылка: плашка продавца ведёт в его профиль, а вложенная
         * ссылка невалидна и не кликается. Поэтому фото и обе плашки — соседи,
         * позиционируются относительно этой обёртки. */}
-      <div className="relative">
+      <div className={`relative ${list ? "w-[112px] shrink-0 self-stretch sm:w-[200px]" : ""}`}>
+        {/* Списком фото заполняет колонку по высоте ряда. Через h-full этого
+          * делать нельзя: при заданном aspect-[4/3] высота начинает определять
+          * ШИРИНУ, и фото вылезает из колонки поверх текста. Поэтому оно
+          * absolute и растягивается по обёртке, а пропорция снимается. */}
         <Link
           href={href as never}
-          className="group relative block aspect-[4/3] overflow-hidden bg-muted"
+          className={`group block overflow-hidden bg-muted ${
+            list ? "absolute inset-0" : "relative aspect-[4/3]"
+          }`}
         >
           {photo ? (
             <Image
@@ -98,10 +125,10 @@ export function ListingCard({
         {/* Плашки лежат на фотографии, поэтому .glass-photo: она тёмная в обеих
           * темах — снимок о теме интерфейса не знает.
           *
-          * Только слово, без «N из M»: точный остаток на витрине всё равно
-          * ничего не решает, а строка «Свободно с» ниже и календарь на самой
-          * позиции говорят точнее. Оттенок точки при этом сохраняет разницу —
-          * зелёная значит свободно всё, охряная что часть уже занята. */}
+          * Только слово, без «N из M»: точный остаток на витрине ничего не
+          * решает, а календарь на самой позиции скажет точнее. Оттенок точки
+          * при этом сохраняет разницу — зелёная значит свободно всё, охряная
+          * что часть уже занята. */}
         <span className="glass-photo pointer-events-none absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-sm px-2 py-0.5 text-micro font-medium sm:left-2.5 sm:top-2.5 sm:max-w-[calc(100%-1.25rem)] sm:px-2.5 sm:py-1 sm:text-2xs">
           <i className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
           <span className={`truncate ${tone}`}>{busy ? "Занято" : "Свободно"}</span>
@@ -136,7 +163,15 @@ export function ListingCard({
         </Link>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 p-3 sm:gap-3 sm:p-4">
+      <div className={`flex min-w-0 flex-1 p-3 ${
+        list
+          ? "flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
+          : "flex-col gap-2.5 sm:gap-3 sm:p-4"
+      }`}>
+        {/* display:contents в сетке — обёртка не участвует в раскладке, и
+          * колонка остаётся ровно такой, какой была. В списке она становится
+          * настоящей колонкой, чтобы кнопка встала рядом, а не под ней. */}
+        <div className={list ? "flex min-w-0 flex-1 flex-col gap-2" : "contents"}>
         <div>
           {/* Одна строка с многоточием: карточки в ряду обязаны быть одной
             * высоты, иначе вторая строка у одного названия сдвигает вниз цену и
@@ -154,18 +189,34 @@ export function ListingCard({
           )}
         </div>
 
-        <dl className="flex flex-col gap-1.5 border-t border-border pt-2.5 text-xs sm:pt-3 sm:text-sm">
-          <SpecRow label="Залог" value={depositValue(listing)} />
-          {/* В значении голое число: «Количество — 3» читается как соседние
-            * «Залог — 3 000 ₽» и «Город — Казань». Прежнее «Всего единиц /
-            * 1 единица» повторяло одно слово дважды. */}
-          <SpecRow label="Количество" value={String(listing.quantity)} />
-          <SpecRow label="Город" value={cityName} />
+        <dl
+          className={`border-t border-border text-xs sm:text-sm ${
+            list
+              ? "flex flex-wrap gap-x-4 gap-y-1 pt-2"
+              : "flex flex-col gap-1.5 pt-2.5 sm:pt-3"
+          }`}
+        >
+          {/* Списком на узком экране остаётся только залог — он решает, брать
+            * вещь или нет, а три пары в оставшиеся ~200px не встают. С sm
+            * ширины хватает, и показываем всё.
+            * В значении голое число: «Количество — 3» читается как соседние
+            * «Залог — 3 000 ₽» и «Город — Казань». */}
+          <SpecRow label="Залог" value={depositValue(listing)} inline={list} />
+          <SpecRow
+            label="Количество" value={String(listing.quantity)} inline={list}
+            className={list ? "hidden sm:flex" : ""}
+          />
+          <SpecRow
+            label="Город" value={cityName} inline={list}
+            className={list ? "hidden sm:flex" : ""}
+          />
         </dl>
+        </div>
 
-        {/* mt-auto: в ряду карточек с разной длиной названия кнопки стоят на
-          * одной линии, а не пляшут по высоте. */}
-        <Button asChild className="mt-auto w-full">
+        {/* Сеткой mt-auto держит кнопки на одной линии при названиях разной
+          * длины. Списком прижимать не к чему — кнопка стоит справа. */}
+        <Button asChild size={list ? "sm" : "default"}
+          className={list ? "w-full shrink-0 sm:w-fit sm:px-6" : "mt-auto w-full"}>
           <Link href={href as never}>Подробнее</Link>
         </Button>
       </div>
