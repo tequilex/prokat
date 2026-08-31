@@ -5,7 +5,7 @@
 
 ## Общая картина
 
-Next.js 15 (App Router) в режиме fullstack: один процесс отдаёт и HTML, и
+Next.js 16 (App Router) в режиме fullstack: один процесс отдаёт и HTML, и
 мутации. Отдельного backend-сервиса нет, REST API для фронтенда нет — данные
 приезжают в Server Components напрямую из базы, а изменения идут через Server
 Actions.

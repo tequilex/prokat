@@ -13,7 +13,7 @@ GitHub и у локального каталога — это рабочая з�
 
 ## Стек
 
-- **Fullstack:** Next.js 15 (App Router, Server Components, Server Actions),
+- **Fullstack:** Next.js 16 (App Router, Server Components, Server Actions),
   React 19, TypeScript strict. SSR на всех публичных страницах.
 - **БД:** PostgreSQL 16 + Drizzle ORM. Схема — `drizzle/schema.ts`.
 - **Auth:** Auth.js v5, database-сессии. Яндекс ID, VK ID (свой OAuth 2.1 +
@@ -29,6 +29,7 @@ GitHub и у локального каталога — это рабочая з�
 pnpm dev                 # dev-сервер (перед pnpm build остановить — общий .next)
 pnpm build               # production-сборка
 pnpm test                # vitest
+pnpm exec next typegen   # типы роутов (нужны tsc при typedRoutes)
 pnpm exec tsc --noEmit   # проверка типов
 pnpm check-theme         # проверка обязательных CSS-токенов
 pnpm db:generate         # миграция из drizzle/schema.ts
@@ -37,8 +38,8 @@ pnpm db:seed             # тестовые данные (идемпотентн
 pnpm db:studio           # drizzle studio
 ```
 
-`pnpm lint` **не работает** — конфигурации ESLint в проекте нет, `next lint`
-уходит в интерактивный визард и виснет. Не вызывать в скриптах. Подробности —
+Линтера нет: конфигурации ESLint в проекте не заведено, а команду `next lint`
+в Next 16 удалили — скрипта `lint` больше нет. Подробности —
 [docs/testing.md](docs/testing.md).
 
 Поднять окружение: `docker compose up -d db` → `pnpm db:migrate && pnpm db:seed`
@@ -75,8 +76,8 @@ pnpm db:studio           # drizzle studio
    утверждён, код не пишется.
 4. **Реализация** по утверждённому плану. Отклонение от плана называется вслух,
    а не проходит молча.
-5. **Проверки:** `pnpm test` и `pnpm exec tsc --noEmit`; плюс
-   `pnpm check-theme`, если трогали `theme/tokens.css`.
+5. **Проверки:** `pnpm test` и `pnpm exec next typegen && pnpm exec tsc
+   --noEmit`; плюс `pnpm check-theme`, если трогали `theme/tokens.css`.
 6. **Ревью кода.** Диф против плана и правил этого файла читает отдельный агент
    со свежим контекстом. Каждая находка либо чинится, либо получает
    обоснованный отказ; итог показывается вместе с результатом задачи.
@@ -168,3 +169,13 @@ user flow, команды запуска/тестов/деплоя или важ
 Не заводи новый `.md`, если факт можно корректно добавить в существующий.
 Числа, статусы и списки файлов в прозе не пиши: они устаревают молча — вместо
 них давай команду, которая покажет актуальный ответ.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

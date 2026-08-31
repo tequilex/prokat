@@ -14,7 +14,8 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
     },
   },
-  // Next/React 19 — JSX automatic runtime; в tsconfig стоит "preserve" (для Next).
-  // Vitest идёт через esbuild и игнорирует tsconfig.jsx — задаём явно.
+  // Next/React 19 — JSX automatic runtime. Vitest идёт через esbuild и
+  // tsconfig.jsx не читает, поэтому задаём явно и не зависим от того, что
+  // впишет в tsconfig `next typegen`.
   esbuild: { jsx: "automatic" },
 });

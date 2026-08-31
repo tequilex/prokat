@@ -33,7 +33,7 @@
 
 ## Стек
 
-- Next.js 15 (App Router, Server Components, Server Actions), React 19, TypeScript
+- Next.js 16 (App Router, Server Components, Server Actions), React 19, TypeScript
 - PostgreSQL 16 + Drizzle ORM
 - Auth.js v5, database-сессии
 - S3-совместимое хранилище, обработка изображений через `sharp`
@@ -65,6 +65,7 @@ pnpm dev                         # http://localhost:3000
 pnpm dev                 # dev-сервер
 pnpm build               # production-сборка (сначала остановить dev)
 pnpm test                # тесты
+pnpm exec next typegen   # типы роутов (нужны tsc при typedRoutes)
 pnpm exec tsc --noEmit   # проверка типов
 pnpm check-theme         # проверка CSS-токенов
 pnpm db:generate         # сгенерировать миграцию из drizzle/schema.ts
@@ -73,9 +74,9 @@ pnpm db:seed             # тестовые данные
 pnpm db:studio           # drizzle studio
 ```
 
-`pnpm lint` в проекте не работает: конфигурации ESLint нет, а `next lint`
-уходит в интерактивный визард. Статическую проверку выполняет
-`pnpm exec tsc --noEmit`.
+Линтера в проекте нет: конфигурации ESLint не заведено, а команду `next lint`
+в Next 16 удалили. Статическую проверку выполняет
+`pnpm exec next typegen && pnpm exec tsc --noEmit`.
 
 ## Структура
 

@@ -39,6 +39,7 @@
 - [0003](decisions/0003-profile-by-id.md) — отказ от ника, профиль по ULID
 - [0004](decisions/0004-no-oauth-email-merging.md) — аккаунты не склеиваются по совпадающей почте
 - [0005](decisions/0005-booking-as-request-no-payments.md) — бронь как заявка, без платежей внутри
+- [0006](decisions/0006-next-16-upgrade.md) — мажорный скачок на Next 16 и точный пин версии
 
 ## Где ещё лежит правда
 
