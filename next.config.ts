@@ -1,4 +1,20 @@
+import { networkInterfaces } from "node:os";
 import type { NextConfig } from "next";
+
+// Адреса этой машины в локальной сети — по ним с телефона и открывают dev.
+function lanAddresses(): string[] {
+  return Object.values(networkInterfaces())
+    .flatMap((list) => list ?? [])
+    .filter((n) => n.family === "IPv4" && !n.internal)
+    .map((n) => n.address);
+}
+
+function extraDevOrigins(): string[] {
+  return (process.env.DEV_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 type Pattern = NonNullable<NonNullable<NextConfig["images"]>["remotePatterns"]>[number];
 
@@ -42,6 +58,20 @@ const config: NextConfig = {
     // так и задумано, ослаблять её ради удобства нельзя.
     dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
   },
+  // Dev-сервер отдаёт свои ресурсы (чанки, HMR) только тому origin, с которого
+  // сам поднят, — по умолчанию localhost. Телефон в той же сети открывает сайт
+  // по адресу машины вида 192.168.x.x, и чанки ему блокируются: разметка
+  // приезжает, а гидратация не проходит. Снаружи это выглядит не как ошибка, а
+  // как «тормозит и не открываются шторки» — интерактива просто нет.
+  //
+  // Адреса берутся у самих сетевых интерфейсов, а не пишутся руками: они
+  // меняются при переезде между сетями, и захардкоженный IP молча перестал бы
+  // работать. DEV_ORIGINS добавляет к ним произвольные хосты через запятую —
+  // например, адрес туннеля.
+  //
+  // Поле действует только под `next dev`; в production-сборке Next его не
+  // смотрит, поэтому послаблением для прода это не является.
+  allowedDevOrigins: [...lanAddresses(), ...extraDevOrigins()],
 };
 
 export default config;
