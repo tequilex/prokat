@@ -12,19 +12,43 @@
 // обложка и герой (≈363px на десктопе), и 672px из макета кончались бы за
 // нижней кромкой вьюпорта — композер пришлось бы доскроллвать.
 
-import { useEffect, useRef } from "react";
 import { useSelectedLayoutSegment } from "next/navigation";
+import { useVisualViewport } from "@/components/chat/useVisualViewport";
 
-// Панель занимает экран за вычетом плавающего хедера. sticky здесь не работает
-// и не используется: содержащий блок — грид-айтем AccountShell при items-start,
-// его высота равна высоте панели, запаса для прилипания нет. Вместо этого при
-// открытии переписки панель подскроллвается под хедер (scroll-mt), и композер
-// оказывается у нижней кромки.
-// Потолок обязателен: без него на большом мониторе панель растягивается на весь
-// экран и стоит почти пустой — двум переписками там делать нечего. 40rem это
-// примерно два десятка строк списка, дальше высота ничего не добавляет.
-const PANEL = "md:h-[min(calc(100svh-var(--header-total)-1.5rem),40rem)] "
-  + "md:scroll-mt-[calc(var(--header-total)+0.75rem)]";
+// Высота считается от свободного места под обложкой и героем, а не от всего
+// экрана: панель должна помещаться целиком, без прокрутки страницы. Из вьюпорта
+// вычитается блок шапки кабинета и нижний отступ контейнера (pb-6).
+//
+// Потолок нужен на большом мониторе: без него панель растягивается во всю
+// доступную высоту и стоит почти пустой. 40rem — примерно два десятка строк
+// списка, дальше высота ничего не добавляет.
+const PANEL = "md:h-[min(calc(100svh-var(--account-hero-block)-1.5rem),40rem)]";
+
+// На мобайле раздел занимает экран целиком и перестаёт быть карточкой: поля,
+// кант и скругления сняты, отступы контейнера погашены в AccountShell.
+//
+// Панель прибита к видимой части экрана (position: fixed) и получает её
+// высоту напрямую от visualViewport — см. useVisualViewport. Это единственный
+// способ пережить клавиатуру iOS: она не меняет layout viewport, поэтому
+// раскладка от svh/dvh остаётся прежней высоты, поле ввода уезжает под неё, а
+// Safari начинает прокручивать документ.
+//
+// top: --vvt — потому что fixed позиционируется от layout viewport, а не от
+// видимой части: при открытой клавиатуре без сдвига панель уедет за кромку.
+//
+// Высота — вся видимая часть, без вычета таб-бара: он плавающий и ложится
+// поверх панели. Если панель обрывать на нём, между её низом и кромкой экрана
+// остаётся полоса фона. Чтобы содержимое не пряталось под таб-баром, нижний
+// отступ на его высоту добавляют сами скроллируемые ленты.
+//
+// Шапки в кабинете на мобайле нет (см. правило про --header-total в
+// globals.css), поэтому её в расчёте тоже нет.
+//
+// Побочный эффект fixed, который здесь нужен: контейнер схлопывается, документу
+// нечего прокручивать — и Safari не уводит страницу вверх при фокусе.
+const PANEL_MOBILE = "max-md:fixed max-md:inset-x-0 max-md:top-[var(--vvt)] "
+  + "max-md:h-[var(--vvh)] "
+  + "max-md:overflow-hidden max-md:rounded-none max-md:border-0";
 
 export function ChatPanes({
   list, hasThreads, children,
@@ -36,34 +60,32 @@ export function ChatPanes({
   children: React.ReactNode;
 }) {
   const threadOpen = useSelectedLayoutSegment() !== null;
-  const panelRef = useRef<HTMLDivElement>(null);
+  useVisualViewport();
 
-  // Открыл переписку — панель встаёт под хедер, обложка уезжает вверх.
-  // Только на десктопе: на мобиле панель обычной высоты и скроллить нечего.
-  useEffect(() => {
-    if (!threadOpen) return;
-    if (!window.matchMedia("(min-width: 768px)").matches) return;
-    panelRef.current?.scrollIntoView({ block: "start" });
-  }, [threadOpen]);
-
-  if (!hasThreads) return <div className="surface overflow-hidden">{children}</div>;
+  if (!hasThreads) {
+    return (
+      <div data-chat-screen className={`surface flex flex-col overflow-hidden ${PANEL_MOBILE}`}>
+        {children}
+      </div>
+    );
+  }
 
   return (
+    // flex-col на мобайле, а не блок: иначе видимая колонка не растянется на
+    // высоту панели и лента не получит своей высоты.
     <div
-      ref={panelRef}
-      // overflow-hidden только на десктопе: на мобиле он сделал бы панель
-      // scrollport'ом и sticky-композер перестал бы прилипать.
-      className={`surface md:grid md:grid-cols-[minmax(0,280px)_1fr] md:overflow-hidden ${PANEL} lg:grid-cols-[320px_1fr]`}
+      data-chat-screen
+      className={`surface flex flex-col md:grid md:grid-cols-[minmax(0,280px)_1fr] md:overflow-hidden ${PANEL} ${PANEL_MOBILE} lg:grid-cols-[320px_1fr]`}
     >
       <div
-        className={`min-h-0 min-w-0 flex-col md:flex md:border-r md:border-border ${
+        className={`min-h-0 min-w-0 flex-1 flex-col md:flex md:border-r md:border-border ${
           threadOpen ? "hidden md:flex" : "flex"
         }`}
       >
         {list}
       </div>
       <div
-        className={`min-h-0 min-w-0 flex-col md:flex ${threadOpen ? "flex" : "hidden md:flex"}`}
+        className={`min-h-0 min-w-0 flex-1 flex-col md:flex ${threadOpen ? "flex" : "hidden md:flex"}`}
       >
         {children}
       </div>

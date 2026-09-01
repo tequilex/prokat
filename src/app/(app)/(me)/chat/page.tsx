@@ -81,7 +81,7 @@ export default async function ChatPage({
   return (
     <section
       aria-label="Новая переписка"
-      className="flex min-h-0 flex-1 flex-col max-md:min-h-[calc(100svh-var(--header-total)-1.5rem)]"
+      className="flex min-h-0 flex-1 flex-col"
     >
       <header className="shrink-0 border-b border-border px-3 py-2.5 md:px-4">
         <h2 className="truncate font-display text-base font-bold md:text-lg">

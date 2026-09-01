@@ -44,7 +44,7 @@ export default async function ThreadPage({
     <section
       data-chat-thread
       aria-label="Переписка"
-      className="flex min-h-0 flex-1 flex-col max-md:min-h-[calc(100svh-var(--header-total)-1.5rem)]"
+      className="flex min-h-0 flex-1 flex-col"
     >
       <ThreadTopBar header={header} viewerId={session.user.id} />
       <ThreadListingBar header={header} />

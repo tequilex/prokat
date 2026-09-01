@@ -83,10 +83,10 @@ export function ThreadView({
     });
   }, []);
 
-  // На десктопе лента — свой скроллер, и двигаем её scrollTop: страницу трогать
-  // нельзя, иначе уедет вся панель. На мобиле высота у ленты по контенту, своего
-  // скролла нет — там доводим документ до конца переписки. Без второй ветки
-  // телефон открывал бы каждую переписку на самом старом сообщении.
+  // Лента — свой скроллер: панель ограничена по высоте на обеих ширинах, и
+  // двигать надо её scrollTop, а не страницу, иначе уедет вся панель. Запасная
+  // ветка на случай, когда высота ленты всё-таки по контенту (короткая
+  // переписка): тогда доводим до якоря в конце.
   const scrollToEnd = useCallback(() => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
@@ -168,6 +168,14 @@ export function ThreadView({
         aria-label="Сообщения"
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 py-4 [overscroll-behavior:contain] md:px-5"
       >
+        {/* Распорка прижимает короткую переписку к низу ленты — как в любом
+          * мессенджере: пара сообщений висит над полем ввода, а не под шапкой.
+          * Именно распоркой, а не justify-end: при justify-end переполненная
+          * лента вылезает за верхнюю кромку и доскроллить до начала нельзя.
+          * flex-1 растёт только в свободное место, поэтому на длинной переписке
+          * распорка схлопывается в ноль и ничего не занимает. */}
+        <li aria-hidden="true" className="min-h-0 flex-1" />
+
         {hasMore && (
           <li className="mb-1 flex justify-center">
             <Button
@@ -219,10 +227,11 @@ export function ThreadView({
         // см. ChatPanes); на десктопе он просто нижняя полоса панели.
         /* pb с safe-area: на странице переписки --tabbar-h обнулена, а вместе с
          * ней ушёл и учёт домашней полосы айфона, который жил внутри неё. */
-        /* rounded-b-lg — композер это визуальный низ панели, а обрезки по её
-         * скруглению на мобиле нет: overflow-hidden там снят намеренно, иначе
-         * панель стала бы scrollport'ом и sticky перестал бы прилипать. */
-        <div className="sticky bottom-[var(--tabbar-h)] shrink-0 rounded-b-lg border-t border-border bg-card px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:rounded-none md:px-4 md:pb-3">
+        /* Не sticky: панель ограничена по высоте и обрезает содержимое, поэтому
+         * композер — просто нижний элемент колонки. Отступ снизу учитывает
+         * домашнюю полосу айфона; при открытой клавиатуре её нет, и max() сам
+         * отдаёт базовое значение. */
+        <div className="shrink-0 border-t border-border bg-card px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-4 md:pb-3">
           {showQuickReplies && <QuickReplies onPick={setDraft} />}
           <div className="flex items-end gap-2">
             <textarea

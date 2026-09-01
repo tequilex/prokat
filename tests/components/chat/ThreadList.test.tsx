@@ -1,8 +1,11 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
+const push = vi.fn();
+
 vi.mock("next/navigation", () => ({
   useSelectedLayoutSegment: () => "01B",
+  useRouter: () => ({ push }),
 }));
 
 const { ThreadList } = await import("@/components/chat/ThreadList");

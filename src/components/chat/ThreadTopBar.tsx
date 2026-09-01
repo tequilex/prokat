@@ -5,8 +5,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { ThreadBackButton } from "@/components/chat/ThreadBackButton";
 import { listingPath } from "@/lib/catalog/listing-path";
 import { formatDeposit, formatPrice } from "@/lib/catalog/format";
 import { content } from "@theme/content";
@@ -56,13 +56,7 @@ export function ThreadTopBar({ header, viewerId }: { header: ThreadHeader; viewe
     <header className="flex shrink-0 items-center gap-3 border-b border-border px-3 py-2.5 md:px-4">
       {/* Кнопка назад только на мобиле: там заголовок раздела скрыт, и другого
         * пути к списку нет. На десктопе список виден слева. */}
-      <Link
-        href={"/chat" as never}
-        aria-label={t.back}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground md:hidden"
-      >
-        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-      </Link>
+      <ThreadBackButton />
 
       <Avatar src={header.counterpartImage} name={name} size={40} />
 
