@@ -348,6 +348,10 @@ curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
 
 ### 8.4. UptimeRobot + Telegram
 
+Мониторов нужно **два**: `/api/health` следит за приложением, `/realtime-health`
+за процессом доставки. Подмешивать второй в первый нельзя — падение
+вспомогательного сервиса начало бы поднимать алерт «сайт лёг».
+
 1. uptimerobot.com (free) → Add Monitor → HTTP(s) → `https://example.ru/api/health`,
    interval 5 min, alert after 2 failures
 2. Telegram-алерт: бот у @BotFather → Alert Contact типа Webhook →
@@ -398,9 +402,24 @@ docker compose build app && docker compose up -d app
 # Процесс доставки собирается и обновляется отдельно — он переживает рестарт
 # app и наоборот, потому что общаются они только через базу.
 docker compose build realtime && docker compose up -d realtime
+
+# Caddyfile примонтирован файлом: смена его содержимого сама по себе контейнер
+# не пересоздаёт, а маршруты /ws появились именно там.
+docker compose restart caddy
 ```
 
 Миграции применятся сами при старте контейнера `app`.
+
+Проверка после обновления:
+
+```bash
+docker compose ps                       # realtime — healthy
+curl -sS https://example.ru/realtime-health   # {"ok":true,...}
+```
+
+**Откат без простоя.** `docker compose stop realtime` возвращает сайт к
+поведению до задачи: сообщения доезжают при переходе по страницам, всплывашек и
+кружка нет. Ломается только живая доставка — на это и рассчитано.
 
 `realtime` при первом старте таблиц не читает, только `LISTEN`, поэтому порядка
 относительно миграций не требует.
