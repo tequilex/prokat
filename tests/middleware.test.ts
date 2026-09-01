@@ -11,7 +11,10 @@ import { middleware, config } from "@/middleware";
 // Смысл этих тестов — чтобы такой переезд нельзя было сделать молча сломав
 // редиректы.
 
-const SESSION_COOKIES = ["authjs.session-token", "__Secure-authjs.session-token"];
+// Список берётся из модуля, а не переписывается: третья копия имени была бы
+// ровно тем, что этот модуль и убирает.
+import { SESSION_COOKIE_NAMES } from "@/lib/auth/cookie-name";
+const SESSION_COOKIES = [...SESSION_COOKIE_NAMES];
 const PROTECTED = ["/requests", "/profile", "/cabinet", "/admin", "/chat", "/notifications"];
 
 function request(path: string, cookie?: string): NextRequest {

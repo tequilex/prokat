@@ -1,13 +1,8 @@
-import { networkInterfaces } from "node:os";
 import type { NextConfig } from "next";
-
 // Адреса этой машины в локальной сети — по ним с телефона и открывают dev.
-function lanAddresses(): string[] {
-  return Object.values(networkInterfaces())
-    .flatMap((list) => list ?? [])
-    .filter((n) => n.family === "IPv4" && !n.internal)
-    .map((n) => n.address);
-}
+// Правило вынесено в общий модуль: те же адреса нужны процессу realtime для
+// allow-list Origin, а импортировать этот конфиг оттуда нельзя.
+import { lanAddresses } from "./src/lib/net/lan-addresses";
 
 function extraDevOrigins(): string[] {
   return (process.env.DEV_ORIGINS ?? "")

@@ -3,6 +3,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { sessions } from "@db/schema";
 import { getEnv } from "@/lib/env";
+import { sessionCookieNameFor } from "@/lib/auth/cookie-name";
 
 // Общий механизм выдачи сессии для всех способов входа: VK, почта с паролем,
 // dev-логин. Сессия — строка в БД, cookie хранит только её токен, поэтому
@@ -12,9 +13,7 @@ const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const sessionTtlSeconds = SESSION_TTL_SECONDS;
 
 export function sessionCookieName(): string {
-  return getEnv().NEXTAUTH_URL.startsWith("https://")
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
+  return sessionCookieNameFor(getEnv().NEXTAUTH_URL);
 }
 
 // Только собственный путь: иначе callbackUrl превращается в открытый редирект.

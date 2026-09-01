@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clientIp } from "@/lib/http/client-ip";
+import { clientIp, clientIpFromForwardedFor } from "@/lib/http/client-ip";
 
 function headers(xff?: string): Headers {
   const h = new Headers();
@@ -24,5 +24,15 @@ describe("clientIp", () => {
 
   it("falls back to local on a blank header", () => {
     expect(clientIp(headers(" , "))).toBe("local");
+  });
+
+  // Две реализации одного правила разъехались бы молча: realtime получает
+  // IncomingMessage, а не web-Headers.
+  it("gives the same answer for a bare string as for Headers", () => {
+    for (const xff of ["1.2.3.4, 5.6.7.8", "5.6.7.8", "", "  ,  "]) {
+      expect(clientIpFromForwardedFor(xff)).toBe(clientIp(headers(xff)));
+    }
+    expect(clientIpFromForwardedFor(undefined)).toBe("local");
+    expect(clientIpFromForwardedFor(null)).toBe("local");
   });
 });

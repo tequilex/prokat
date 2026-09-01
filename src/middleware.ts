@@ -1,15 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE_NAMES } from "@/lib/auth/cookie-name";
 
 // Маршруты, на которые анон не должен попадать вообще (префикс-match).
 const PROTECTED_PREFIXES: string[] = [
   "/requests", "/profile", "/cabinet", "/admin", "/chat", "/notifications",
-];
-
-// Auth.js v5 в production использует префикс `__Secure-`, в dev — голый.
-// Имя самой cookie — `authjs.session-token` (NextAuth v5 переименовал из next-auth).
-const SESSION_COOKIE_NAMES = [
-  "authjs.session-token",
-  "__Secure-authjs.session-token",
 ];
 
 function hasSessionCookie(req: NextRequest): boolean {
