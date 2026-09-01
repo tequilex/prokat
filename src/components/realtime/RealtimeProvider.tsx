@@ -122,13 +122,22 @@ export function RealtimeProvider({
       socketRef.current = socket;
       store.getState().setStatus("connecting");
 
+      // Каждый обработчик сначала убеждается, что он всё ещё «действующий»
+      // сокет. В деве React монтирует эффект дважды: уборка первого прогона
+      // закрывает сокет, но его onclose приходит ПОЗЖЕ — и без этой проверки он
+      // обнулял бы ссылку уже на новый сокет и планировал переподключение.
+      // Итог — два живых соединения на вкладку и по две всплывашки на сообщение.
+      const isCurrent = () => socketRef.current === socket;
+
       socket.onopen = () => {
+        if (!isCurrent()) return;
         attemptsRef.current = 0;
         store.getState().setStatus("online");
         void pull();
       };
 
       socket.onmessage = (event) => {
+        if (!isCurrent()) return;
         let frame: ClientFrame;
         try {
           frame = JSON.parse(String(event.data)) as ClientFrame;
@@ -153,6 +162,7 @@ export function RealtimeProvider({
       };
 
       socket.onclose = (event) => {
+        if (!isCurrent()) return;
         socketRef.current = null;
         const state = store.getState();
         // Счётчики перестают быть достоверными: без этого умерший realtime
@@ -177,7 +187,7 @@ export function RealtimeProvider({
         reconnectTimer.current = setTimeout(connect, wait);
       };
 
-      socket.onerror = () => socket.close();
+      socket.onerror = () => { if (isCurrent()) socket.close(); };
     };
 
     connect();
@@ -206,8 +216,13 @@ export function RealtimeProvider({
       document.removeEventListener("visibilitychange", onVisible);
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      socketRef.current?.close();
+      const socket = socketRef.current;
       socketRef.current = null;
+      if (socket) {
+        // Ссылка обнулена ДО close(), поэтому isCurrent() в его обработчиках
+        // уже вернёт false и переподключения они не запланируют.
+        socket.close();
+      }
     };
   }, [enabled, store, pull, scheduleRefresh]);
 
