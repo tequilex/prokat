@@ -24,6 +24,7 @@ import { parseBookingParams } from "@/lib/booking/params";
 import { unavailableDates, type AvailabilityMap } from "@/lib/catalog/availability";
 import { canTransition, availabilityDelta } from "@/lib/catalog/booking-status";
 import { todayStr } from "@/lib/catalog/dates";
+import { notify } from "@/server/notifications";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -102,6 +103,14 @@ export async function createBookingRequest(
       userId: session.user.id,
       metaJson: { requestId, from: sel.from, to: sel.to, qty: sel.qty },
     });
+    // Заявку на своё объявление создать можно — статус объявления единственное,
+    // что проверяется выше. Охранник внутри notify это и отсекает.
+    await notify(tx, {
+      recipientId: listing.ownerUserId,
+      actorId: session.user.id,
+      kind: "request_created",
+      entityId: requestId,
+    });
   });
 
   revalidatePath("/requests");
@@ -145,6 +154,13 @@ export async function cancelBookingRequest(requestId: string): Promise<ActionRes
         event: "cancel_request",
         userId: session.user.id,
         metaJson: { fromStatus: req.status },
+      });
+      // Отменяет арендатор — узнать об этом должен владелец.
+      await notify(tx, {
+        recipientId: req.ownerUserId,
+        actorId: session.user.id,
+        kind: "request_cancelled",
+        entityId: requestId,
       });
     });
   } catch (e) {

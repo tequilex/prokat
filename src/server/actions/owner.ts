@@ -25,6 +25,8 @@ import {
   unavailableDates, eachDate, type AvailabilityMap,
 } from "@/lib/catalog/availability";
 import { canTransition, type BookingStatus } from "@/lib/catalog/booking-status";
+import { kindForDecision, type OwnerDecision } from "@/lib/notifications/kinds";
+import { notify } from "@/server/notifications";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -135,9 +137,12 @@ export async function setListingStatus(
 
 // ============================== Заявки ==============================
 
+// to сужен до решений владельца: BookingStatus знает семь значений, а вид
+// уведомления есть только у четырёх, и `request_${to}` на полном union не
+// типизируется. Все вызывающие и так передают одно из этих четырёх.
 async function transitionRequest(
   requestId: string,
-  to: BookingStatus,
+  to: OwnerDecision,
   ownerComment?: string,
 ): Promise<ActionResult> {
   const owner = await requireUser();
@@ -200,6 +205,13 @@ async function transitionRequest(
         event: `request_${to}`,
         userId,
         metaJson: { fromStatus: req.status },
+      });
+      // Решение принимает владелец — узнать о нём должен арендатор.
+      await notify(tx, {
+        recipientId: req.customerUserId,
+        actorId: userId,
+        kind: kindForDecision(to),
+        entityId: requestId,
       });
     });
   } catch (e) {

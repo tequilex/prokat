@@ -12,9 +12,9 @@
 // - отправитель в той же транзакции двигает свой курсор прочтения — иначе
 //   собственное сообщение считалось бы непрочитанным.
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { chatMessages, chatThreads, listings, users } from "@db/schema";
+import { chatMessages, chatThreads, listings, notifications, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { newId, newSortableId } from "@/lib/id";
 import { checkLimit } from "@/lib/rate-limit";
@@ -24,6 +24,7 @@ import {
 } from "@/lib/chat/validation";
 import { z } from "zod";
 import { findThreadByListing, getMessages, type ThreadMessage } from "@/server/chat";
+import { notify } from "@/server/notifications";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -40,12 +41,17 @@ export type SentMessage = {
 type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 
 // Общий путь записи для обоих действий: разъехаться этим двум веткам нельзя.
+//
+// recipientId приходит параметром, а не дочитывается из треда: в postMessage он
+// уже вычислен counterpartOf, в startThread это владелец объявления — четвёртый
+// запрос внутри транзакции был бы лишним.
 async function insertMessage(
   tx: Tx,
   threadId: string,
   senderUserId: string,
   senderIsOwner: boolean,
   body: string,
+  recipientId: string | null,
 ): Promise<SentMessage> {
   // Монотонный id: он же курсор пагинации и единственный ключ сортировки ленты.
   const id = newSortableId();
@@ -68,6 +74,17 @@ async function insertMessage(
         : { customerLastReadMessageId: sql`greatest(coalesce(${cursor}, ''), ${id})` }),
     })
     .where(eq(chatThreads.id, threadId));
+
+  // Строго после обновления треда: порядок блокировок chat_threads →
+  // notifications держится одинаковым здесь и в markThreadRead, иначе дедлок.
+  // entity_id — тред, а не сообщение: иначе частичный UNIQUE не сработает
+  // никогда и на тред нападает по строке за сообщение.
+  await notify(tx, {
+    recipientId,
+    actorId: senderUserId,
+    kind: "chat_message",
+    entityId: threadId,
+  });
 
   return { id, threadId, senderUserId, body, createdAt };
 }
@@ -139,7 +156,7 @@ export async function startThread(
       threadId = rows[0].id;
     }
     // Тред заводит арендатор, владельцу это запрещено правилом own_listing.
-    return insertMessage(tx, threadId, viewer.id, false, body);
+    return insertMessage(tx, threadId, viewer.id, false, body, listing.ownerUserId);
   });
 
   return { ok: true, data: { threadId: message.threadId, message } };
@@ -191,7 +208,9 @@ export async function postMessage(
   if (!verdict.ok) return { ok: false, error: verdict.reason };
 
   const message = await db.transaction((tx) =>
-    insertMessage(tx, threadId, viewer.id, thread.ownerUserId === viewer.id, body));
+    insertMessage(
+      tx, threadId, viewer.id, thread.ownerUserId === viewer.id, body, counterpartId,
+    ));
 
   return { ok: true, data: { message } };
 }
@@ -253,26 +272,50 @@ export async function markThreadRead(rawThreadId: unknown): Promise<ActionResult
     return { ok: false, error: "not_participant" };
   }
 
-  const latest = await db.select({ id: chatMessages.id })
-    .from(chatMessages)
-    .where(eq(chatMessages.threadId, threadId))
-    .orderBy(sql`${chatMessages.id} desc`)
-    .limit(1);
-  const latestId = latest[0]?.id;
-  if (!latestId) return { ok: true, data: undefined };
+  // Сдвиг курсора и гашение уведомлений — одной транзакцией. Порознь они дают
+  // гонку: снят latestId = M1, собеседник коммитит M2 с уведомлением, курсор
+  // встаёт на M1, а уведомление про M2 гаснет вместе с ним. Бейдж чата покажет
+  // «1», список уведомлений будет пуст.
+  await db.transaction(async (tx) => {
+    const latest = await tx.select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(eq(chatMessages.threadId, threadId))
+      .orderBy(sql`${chatMessages.id} desc`)
+      .limit(1);
+    const latestId = latest[0]?.id;
+    if (!latestId) return;
 
-  const isOwner = thread.ownerUserId === viewerId;
-  const column = isOwner
-    ? chatThreads.ownerLastReadMessageId
-    : chatThreads.customerLastReadMessageId;
+    const isOwner = thread.ownerUserId === viewerId;
+    const column = isOwner
+      ? chatThreads.ownerLastReadMessageId
+      : chatThreads.customerLastReadMessageId;
 
-  // greatest(): курсор двигается только вперёд. Открытая старая вкладка,
-  // доехавшая позже, не должна возвращать переписку в непрочитанное.
-  await db.update(chatThreads)
-    .set(isOwner
-      ? { ownerLastReadMessageId: sql`greatest(coalesce(${column}, ''), ${latestId})` }
-      : { customerLastReadMessageId: sql`greatest(coalesce(${column}, ''), ${latestId})` })
-    .where(eq(chatThreads.id, threadId));
+    // greatest(): курсор двигается только вперёд. Открытая старая вкладка,
+    // доехавшая позже, не должна возвращать переписку в непрочитанное.
+    await tx.update(chatThreads)
+      .set(isOwner
+        ? { ownerLastReadMessageId: sql`greatest(coalesce(${column}, ''), ${latestId})` }
+        : { customerLastReadMessageId: sql`greatest(coalesce(${column}, ''), ${latestId})` })
+      .where(eq(chatThreads.id, threadId));
+
+    // Гасим не «всё непрочитанное треда», а только то, что не новее снимка.
+    // Сравнение обязано остаться внутри SQL: Postgres хранит микросекунды, а
+    // node-postgres отдаёт Date с миллисекундами — пронесённая через JS граница
+    // даёт created_at <= $1 равным false на той же самой строке, и гашение не
+    // срабатывает никогда. Живого Postgres тесты не требуют, поймать нечем.
+    await tx.update(notifications)
+      .set({ readAt: sql`now()` })
+      .where(and(
+        eq(notifications.userId, viewerId),
+        eq(notifications.kind, "chat_message"),
+        eq(notifications.entityId, threadId),
+        isNull(notifications.readAt),
+        sql`${notifications.createdAt} <= (
+          select ${chatMessages.createdAt} from ${chatMessages}
+          where ${chatMessages.id} = ${latestId}
+        )`,
+      ));
+  });
 
   return { ok: true, data: undefined };
 }
