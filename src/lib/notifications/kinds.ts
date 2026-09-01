@@ -20,6 +20,10 @@ export const NOTIFICATION_KINDS = [
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
+// Виды, относящиеся к заявке. Отдельный тип, потому что у события доставки
+// разные формы: у заявки нет ни threadId, ни messageId.
+export type RequestNotificationKind = Exclude<NotificationKind, "chat_message">;
+
 // Решения владельца по заявке — подмножество BookingStatus. Сужение не
 // косметика: transitionRequest принимает все семь статусов, а вид уведомления
 // есть только у четырёх, и `request_${to}` на полном union не типизируется.
@@ -28,7 +32,10 @@ export type OwnerDecision = Extract<
   "confirmed" | "declined" | "completed" | "no_show"
 >;
 
-export function kindForDecision(to: OwnerDecision): NotificationKind {
+// Возвращаемый тип сужен до request_*: решение владельца не может дать
+// chat_message, и widening до NotificationKind ломал бы вызывающих, которым
+// нужна именно заявка.
+export function kindForDecision(to: OwnerDecision): RequestNotificationKind {
   return `request_${to}`;
 }
 

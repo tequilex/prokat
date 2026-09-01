@@ -27,6 +27,8 @@ import {
 import { canTransition, type BookingStatus } from "@/lib/catalog/booking-status";
 import { kindForDecision, type OwnerDecision } from "@/lib/notifications/kinds";
 import { notify } from "@/server/notifications";
+import { publish } from "@/server/realtime";
+import { requestNotify } from "@/lib/realtime/events";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -207,12 +209,17 @@ async function transitionRequest(
         metaJson: { fromStatus: req.status },
       });
       // Решение принимает владелец — узнать о нём должен арендатор.
-      await notify(tx, {
+      const notified = await notify(tx, {
         recipientId: req.customerUserId,
         actorId: userId,
         kind: kindForDecision(to),
         entityId: requestId,
       });
+      if (notified) {
+        await publish(tx, requestNotify({
+          kind: kindForDecision(to), requestId, recipientId: req.customerUserId,
+        }));
+      }
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "unknown";

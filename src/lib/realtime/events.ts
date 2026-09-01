@@ -11,14 +11,18 @@
 // не раскроет — участие перепроверяет сам ридер.
 
 import { z } from "zod";
-import { NOTIFICATION_KINDS, type NotificationKind } from "@/lib/notifications/kinds";
+import { NOTIFICATION_KINDS, type RequestNotificationKind } from "@/lib/notifications/kinds";
 
 // Один канал на все виды. По каналу на вид означало бы N подписок LISTEN и N
 // мест, где о новом виде забудут.
 export const REALTIME_CHANNEL = "inrenta_realtime";
 
-const REQUEST_KINDS = NOTIFICATION_KINDS.filter((k) => k !== "chat_message");
-export type RequestKind = Exclude<NotificationKind, "chat_message">;
+// Список для zod собирается из общего, чтобы новый вид не пришлось вписывать
+// сюда руками — забыть это можно только молча.
+const REQUEST_KINDS = NOTIFICATION_KINDS.filter(
+  (k): k is RequestNotificationKind => k !== "chat_message",
+);
+export type RequestKind = RequestNotificationKind;
 
 const idSchema = z.string().min(1).max(64);
 

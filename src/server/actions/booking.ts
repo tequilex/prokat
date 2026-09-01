@@ -25,6 +25,8 @@ import { unavailableDates, type AvailabilityMap } from "@/lib/catalog/availabili
 import { canTransition, availabilityDelta } from "@/lib/catalog/booking-status";
 import { todayStr } from "@/lib/catalog/dates";
 import { notify } from "@/server/notifications";
+import { publish } from "@/server/realtime";
+import { requestNotify } from "@/lib/realtime/events";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -105,12 +107,19 @@ export async function createBookingRequest(
     });
     // Заявку на своё объявление создать можно — статус объявления единственное,
     // что проверяется выше. Охранник внутри notify это и отсекает.
-    await notify(tx, {
+    const notified = await notify(tx, {
       recipientId: listing.ownerUserId,
       actorId: session.user.id,
       kind: "request_created",
       entityId: requestId,
     });
+    // notify вернул null — значит получатель и деятель совпали (заявка на своё
+    // объявление). Рассказывать некому.
+    if (notified) {
+      await publish(tx, requestNotify({
+        kind: "request_created", requestId, recipientId: listing.ownerUserId,
+      }));
+    }
   });
 
   revalidatePath("/requests");
@@ -156,12 +165,17 @@ export async function cancelBookingRequest(requestId: string): Promise<ActionRes
         metaJson: { fromStatus: req.status },
       });
       // Отменяет арендатор — узнать об этом должен владелец.
-      await notify(tx, {
+      const notified = await notify(tx, {
         recipientId: req.ownerUserId,
         actorId: session.user.id,
         kind: "request_cancelled",
         entityId: requestId,
       });
+      if (notified) {
+        await publish(tx, requestNotify({
+          kind: "request_cancelled", requestId, recipientId: req.ownerUserId,
+        }));
+      }
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "unknown";

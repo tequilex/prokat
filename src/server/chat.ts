@@ -8,7 +8,7 @@
 // каждой дают два индексных прохода; слияние по last_message_at доделывается в
 // JS и на размере страницы стоит ничего.
 
-import { and, desc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { categories, chatMessages, chatThreads, cities, listings, users } from "@db/schema";
 import { canReadThread } from "@/lib/chat/rules";
@@ -294,6 +294,35 @@ export async function getMessages(
   const hasMore = rows.length > MESSAGES_PAGE_SIZE;
   const page = hasMore ? rows.slice(0, MESSAGES_PAGE_SIZE) : rows;
   return { messages: page.reverse(), hasMore };
+}
+
+// Догон после разрыва: всё, что появилось СТРОГО ПОСЛЕ курсора.
+//
+// Форму getMessages копировать нельзя. Тот отдаёт самые новые — и при
+// накопленных за разрыв ста сообщениях клиент получил бы последние сорок, а
+// шестьдесят в середине исчезли бы бесследно: buildFeed нарисовал бы блоки
+// встык, «Показать более ранние» читает только строго старше самого старого, а
+// refresh ленту из пропов не пересевает. Поэтому порядок по возрастанию от
+// курсора, а клиент догоняет циклом, пока hasMore не станет false.
+export async function getMessagesAfter(
+  threadId: string,
+  after: string,
+): Promise<{ messages: ThreadMessage[]; hasMore: boolean }> {
+  const rows = await getDb().select({
+    id: chatMessages.id,
+    senderUserId: chatMessages.senderUserId,
+    body: chatMessages.body,
+    createdAt: chatMessages.createdAt,
+  })
+    .from(chatMessages)
+    .where(and(eq(chatMessages.threadId, threadId), gt(chatMessages.id, after)))
+    .orderBy(asc(chatMessages.id))
+    // Потолок обязателен: древний курсор без него вытянул бы весь тред в память
+    // процесса, а её на сервере гигабайт.
+    .limit(MESSAGES_PAGE_SIZE + 1);
+
+  const hasMore = rows.length > MESSAGES_PAGE_SIZE;
+  return { messages: hasMore ? rows.slice(0, MESSAGES_PAGE_SIZE) : rows, hasMore };
 }
 
 // Бейдж в личной навигации. Считается рядом с newRequestsCount, поэтому запрос

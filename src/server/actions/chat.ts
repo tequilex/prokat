@@ -25,6 +25,8 @@ import {
 import { z } from "zod";
 import { findThreadByListing, getMessages, type ThreadMessage } from "@/server/chat";
 import { notify } from "@/server/notifications";
+import { publish } from "@/server/realtime";
+import { chatMessageNotify } from "@/lib/realtime/events";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -79,12 +81,23 @@ async function insertMessage(
   // notifications держится одинаковым здесь и в markThreadRead, иначе дедлок.
   // entity_id — тред, а не сообщение: иначе частичный UNIQUE не сработает
   // никогда и на тред нападает по строке за сообщение.
-  await notify(tx, {
+  const notified = await notify(tx, {
     recipientId,
     actorId: senderUserId,
     kind: "chat_message",
     entityId: threadId,
   });
+
+  // Событие доставки уходит ВСЕГДА, даже когда уведомление схлопнулось: иначе
+  // второе и последующие сообщения треда не доехали бы до открытой ленты вовсе.
+  // Флаг inserted гейтит только «счётчик +1».
+  await publish(tx, chatMessageNotify({
+    threadId,
+    messageId: id,
+    senderId: senderUserId,
+    recipientId,
+    inserted: notified?.inserted ?? false,
+  }));
 
   return { id, threadId, senderUserId, body, createdAt };
 }

@@ -8,7 +8,7 @@ export type LimitKind =
   | "booking" | "login" | "register" | "resend" | "reset"
   | "mail_ip" | "mail_daily" | "password_change"
   | "chat_message" | "chat_thread" | "chat_read"
-  | "notification_read";
+  | "notification_read" | "realtime_sync";
 
 // Потолок отправки на весь сервис за сутки. Яндекс даёт 300 писем в сутки по
 // SMTP и режет раньше, если письма однотипные, — упереться хочется в свой
@@ -52,6 +52,12 @@ const RULES: Record<LimitKind, Rule> = {
   // строкам пользователя, то есть дешёвый способ заставить базу работать;
   // без лимита у него нет никакой цены.
   notification_read: { windowMs: 60 * 60 * 1000, maxInWindow: 200, gapMs: 0 },
+  // Догон после разрыва и перечитывание счётчиков по событию сокета. Свой
+  // бакет, а не chat_read: событие тела сообщения не несёт, поэтому каждое
+  // доставленное сообщение стоит одного чтения — расходуется это ОБЫЧНЫМ
+  // разговором, а не только флапающей сетью, и потолок chat_read такую
+  // нагрузку выел бы, после чего чат молча перестал бы догонять.
+  realtime_sync: { windowMs: 60 * 60 * 1000, maxInWindow: 1200, gapMs: 0 },
 };
 
 const MAX_KEYS = 10_000;
