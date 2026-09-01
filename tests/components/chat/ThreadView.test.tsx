@@ -175,3 +175,25 @@ describe("ThreadView: прочтение гасит счётчики", () => {
     await waitFor(() => expect(realtime.fetchRealtimeUpdate).toHaveBeenCalled());
   });
 });
+
+// Найдено на мобиле при обрыве LTE: пузырь навсегда завис в «отправляется…».
+// Server Action при сетевом сбое не возвращает {ok:false}, а бросает — без
+// перехвата промис отклонялся молча, а текст пропадал вместе с пузырём.
+describe("ThreadView: обрыв связи при отправке", () => {
+  it("не оставляет сообщение висеть и возвращает текст в поле", async () => {
+    const chat = await import("@/server/actions/chat");
+    vi.mocked(chat.postMessage).mockRejectedValueOnce(new Error("Failed to fetch"));
+
+    render(<ThreadView {...base} />);
+    const input = screen.getByLabelText(content.chat.composerLabel);
+    fireEvent.change(input, { target: { value: "не доехало" } });
+    fireEvent.click(screen.getByRole("button", { name: content.chat.send }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(content.chat.sending)).toBeNull();
+    });
+    // Текст возвращается в поле: иначе он потерян безвозвратно.
+    expect(screen.getByLabelText(content.chat.composerLabel)).toHaveValue("не доехало");
+    expect(screen.getByText(/Нет связи/)).toBeInTheDocument();
+  });
+});

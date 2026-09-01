@@ -221,20 +221,27 @@ export function ThreadView({
     };
 
     startTransition(async () => {
-      if (mode.kind === "new") {
-        const res = await startThread({ listingId: mode.listingId, body });
+      // try обязателен: при обрыве сети вызов action'а не возвращает {ok:false},
+      // а БРОСАЕТ. Без перехвата промис отклонялся молча, пузырь навсегда
+      // оставался в состоянии «отправляется…», а текст пропадал вместе с ним.
+      try {
+        if (mode.kind === "new") {
+          const res = await startThread({ listingId: mode.listingId, body });
+          if (!res.ok) { fail(res.error); return; }
+          upsert([res.data.message]);
+          setPending([]);
+          router.replace(`/chat/${res.data.threadId}` as never);
+          return;
+        }
+
+        const res = await postMessage({ threadId: mode.threadId, body });
         if (!res.ok) { fail(res.error); return; }
         upsert([res.data.message]);
-        setPending([]);
-        router.replace(`/chat/${res.data.threadId}` as never);
-        return;
+        setPending((prev) => prev.filter((p) => p.key !== key));
+        router.refresh();
+      } catch {
+        fail("network");
       }
-
-      const res = await postMessage({ threadId: mode.threadId, body });
-      if (!res.ok) { fail(res.error); return; }
-      upsert([res.data.message]);
-      setPending((prev) => prev.filter((p) => p.key !== key));
-      router.refresh();
     });
   }
 

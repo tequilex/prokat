@@ -33,10 +33,20 @@ export function ConnectionStatus() {
   return (
     <div
       role="status"
-      // Над таб-баром на мобиле, иначе плашка легла бы под него.
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+0.75rem)] z-40 flex justify-center px-4 md:bottom-4"
+      // Сверху, а не снизу. Внизу она ложилась прямо на поле ввода переписки:
+      // там таб-бар скрыт (--tabbar-h: 0px), а композер прижат к краю экрана —
+      // писать становилось невозможно ровно в тот момент, когда связь и так
+      // барахлит.
+      //
+      // Отступ берёт максимум из высоты шапки и 3.5rem: на публичных страницах
+      // высота настоящая, а в кабинете и переписке --header-total обнулена, и
+      // без запаса плашка накрыла бы имя собеседника.
+      //
+      // pointer-events-none без исключений: плашка ничего не сообщает по клику,
+      // а перехватывать тапы поверх интерфейса ей нельзя.
+      className="pointer-events-none fixed inset-x-0 top-[max(var(--header-total),3.5rem)] z-40 flex justify-center px-4"
     >
-      <span className="surface pointer-events-auto flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground shadow-md">
+      <span className="surface flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground shadow-md">
         <span
           aria-hidden="true"
           className={`size-2 shrink-0 rounded-pill ${terminal ? "bg-destructive" : "bg-muted-foreground"}`}
