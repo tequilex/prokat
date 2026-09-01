@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:up": "docker compose --profile dev up -d db minio minio-init",
+    "dev:realtime": "tsx --env-file=.env realtime/server.ts",
     "dev:down": "docker compose --profile dev down",
     "build": "next build",
     "start": "next start",

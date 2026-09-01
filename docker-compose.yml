@@ -14,11 +14,15 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
-    depends_on: [app]
+    depends_on: [app, realtime]
 
   app:
     build:
       context: .
+      # target обязателен с появлением стадий realtime: без него compose
+      # собирает ПОСЛЕДНЮЮ стадию Dockerfile, и перестановка стадий молча
+      # превратила бы app в realtime-образ.
+      target: runner
       args:
         STORAGE_PUBLIC_BASE: ${STORAGE_PUBLIC_BASE}
     restart: unless-stopped
@@ -34,6 +38,33 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # Доставка в реальном времени. Порт наружу НЕ публикуется намеренно: сервис
+  # доверяет заголовку X-Forwarded-For, и снаружи лимит на IP обходился бы одной
+  # строкой заголовка. Дотянуться может только Caddy из этой сети.
+  realtime:
+    build:
+      context: .
+      target: realtime
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Явным override: в .env лежит localhost-вариант, одного env_file мало.
+      DATABASE_URL: postgres://app:${DB_PASSWORD}@db:5432/app
+      NODE_ENV: production
+      REALTIME_PORT: 3100
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Отдаёт 503, когда слушатель LISTEN протух: half-open TCP иначе не
+      # отличить от рабочего состояния. Сам по себе healthcheck контейнер не
+      # перезапускает — это делает process.exit(1) внутри процесса.
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   db:
     image: postgres:16-alpine

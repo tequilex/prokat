@@ -8,6 +8,26 @@ www.{$DOMAIN} {
 
 {$DOMAIN} {
 	encode gzip zstd
+
+	# Сокет и его health — отдельным обработчиком. Именно два правила, а не
+	# `/ws*`: последний матчил бы и /wsomething. handle терминальный и стоит в
+	# порядке директив Caddy раньше reverse_proxy, поэтому голый прокси ниже
+	# остаётся обработчиком всего прочего — переносить его в handle не нужно,
+	# иначе @static и общие заголовки уедут в другую ветку.
+	handle /ws {
+		reverse_proxy realtime:3100
+	}
+	handle /ws/* {
+		reverse_proxy realtime:3100
+	}
+	# Цель внешнего монитора. В /api/health приложения realtime не подмешан
+	# намеренно: туда смотрит uptimerobot, и падение вспомогательного сервиса
+	# начало бы поднимать алерт «сайт лёг» и валить healthcheck самого app.
+	handle /realtime-health {
+		rewrite * /health
+		reverse_proxy realtime:3100
+	}
+
 	reverse_proxy app:3000
 
 	@static {
