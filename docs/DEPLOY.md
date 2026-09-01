@@ -17,7 +17,10 @@
 
 1. `pnpm test` — зелёно (нужен локальный Postgres: `docker compose up -d db`)
 2. `pnpm exec tsc --noEmit` — зелёно
-3. `docker compose build app` — Docker-сборка локально проходит
+3. `docker compose build app` и `docker compose build realtime` — обе сборки
+   локально проходят. По одной за раз: без аргумента compose собирает сервисы
+   параллельно, а `next build` на гигабайте требует swap и рядом со второй
+   сборкой уходит в OOM
 
 Только после зелёного — деплой.
 
@@ -392,9 +395,15 @@ docker volume rm prokat_pg_data prokat_caddy_data prokat_caddy_config
 cd /opt/inrenta
 git pull
 docker compose build app && docker compose up -d app
+# Процесс доставки собирается и обновляется отдельно — он переживает рестарт
+# app и наоборот, потому что общаются они только через базу.
+docker compose build realtime && docker compose up -d realtime
 ```
 
-Миграции применятся сами при старте контейнера.
+Миграции применятся сами при старте контейнера `app`.
+
+`realtime` при первом старте таблиц не читает, только `LISTEN`, поэтому порядка
+относительно миграций не требует.
 
 ### Изменение `.env`
 

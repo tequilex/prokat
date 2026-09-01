@@ -41,8 +41,9 @@
 - [0004](decisions/0004-no-oauth-email-merging.md) — аккаунты не склеиваются по совпадающей почте
 - [0005](decisions/0005-booking-as-request-no-payments.md) — бронь как заявка, без платежей внутри
 - [0006](decisions/0006-next-16-upgrade.md) — мажорный скачок на Next 16 и точный пин версии
-- [0007](decisions/0007-chat-thread-per-listing.md) — переписка тредом на объявление, без реального времени
+- [0007](decisions/0007-chat-thread-per-listing.md) — переписка тредом на объявление
 - [0008](decisions/0008-interaction-states-as-overlays.md) — состояния накладками, охра как «выбрано», перестроенные шкалы нейтралей
+- [0009](decisions/0009-realtime-as-a-separate-process.md) — доставка в реальном времени отдельным процессом, фанаут через LISTEN/NOTIFY
 
 ## Где ещё лежит правда
 
