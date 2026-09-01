@@ -111,16 +111,18 @@ export function toNotificationItem(row: NotificationRow): NotificationItem {
 
 // Курсор непрозрачный для вызывающего: пара (created_at, id), потому что
 // created_at не уникален и на бампе при схлопывании двигается.
-function encodeCursor(row: { createdAt: Date; id: string }): string {
-  return `${row.createdAt.toISOString()}|${row.id}`;
-}
-
-function decodeCursor(raw: string): { createdAt: Date; id: string } | null {
+//
+// Метка возится ТЕКСТОМ, отданным самим Postgres, и биндится обратно как
+// timestamp. Через Date её проносить нельзя: Postgres хранит микросекунды, а
+// node-postgres отдаёт миллисекунды — округлённый курсор перескакивает через
+// строки, и вторая страница молча теряет всё, что попало в тот же миллисекундный
+// интервал. Та же ловушка, что и в гашении уведомлений при markThreadRead.
+function decodeCursor(raw: string): { createdAt: string; id: string } | null {
   const at = raw.indexOf("|");
   if (at <= 0) return null;
-  const createdAt = new Date(raw.slice(0, at));
+  const createdAt = raw.slice(0, at);
   const id = raw.slice(at + 1);
-  return Number.isNaN(createdAt.getTime()) || !id ? null : { createdAt, id };
+  return createdAt && id ? { createdAt, id } : null;
 }
 
 export async function countUnreadNotifications(userId: string): Promise<number> {
@@ -154,6 +156,8 @@ export async function getNotifications(
     entityId: notifications.entityId,
     readAt: notifications.readAt,
     createdAt: notifications.createdAt,
+    // Текстовое представление метки — из него собирается курсор.
+    createdAtText: sql<string>`${notifications.createdAt}::text`,
     listingTitle: sql<string | null>`coalesce(${threadListing.title}, ${requestListing.title})`,
     partyName: sql<string | null>`coalesce(${threadParty.name}, ${requestParty.name})`,
   })
@@ -178,7 +182,8 @@ export async function getNotifications(
     .where(and(
       eq(notifications.userId, userId),
       after
-        ? sql`(${notifications.createdAt}, ${notifications.id}) < (${after.createdAt}, ${after.id})`
+        ? sql`(${notifications.createdAt}, ${notifications.id})
+             < (${after.createdAt}::timestamp, ${after.id})`
         : undefined,
     ))
     .orderBy(desc(notifications.createdAt), desc(notifications.id))
@@ -186,8 +191,9 @@ export async function getNotifications(
     .limit(NOTIFICATIONS_PAGE_SIZE + 1);
 
   const page = rows.slice(0, NOTIFICATIONS_PAGE_SIZE);
-  const nextCursor = rows.length > NOTIFICATIONS_PAGE_SIZE && page.length > 0
-    ? encodeCursor(page[page.length - 1])
+  const last = page[page.length - 1];
+  const nextCursor = rows.length > NOTIFICATIONS_PAGE_SIZE && last
+    ? `${last.createdAtText}|${last.id}`
     : null;
   return { rows: page, nextCursor };
 }

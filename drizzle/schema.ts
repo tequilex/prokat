@@ -276,7 +276,10 @@ export const notifications = pgTable("notifications", {
   unreadUq: uniqueIndex("notifications_unread_uq")
     .on(t.userId, t.kind, t.entityId)
     .where(sql`${t.readAt} is null`),
-  listIdx: index("notifications_user_created_idx").on(t.userId, t.createdAt.desc()),
+  // id третьей колонкой: сортировка идёт по (created_at desc, id desc), и без
+  // него страница обходится сортировкой всего, что старше курсора.
+  listIdx: index("notifications_user_created_idx")
+    .on(t.userId, t.createdAt.desc(), t.id.desc()),
   // Под ленивую чистку. Критерий именно read_at: по created_at этот индекс не
   // зайдёт, и удаление пойдёт сиквеншл-сканом.
   cleanupIdx: index("notifications_cleanup_idx")

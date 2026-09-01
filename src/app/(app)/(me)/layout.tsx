@@ -26,6 +26,7 @@ export default async function MeLayout({ children }: { children: React.ReactNode
       groups={buildAccountNav({
         newRequestsCount: newCount,
         unreadMessages: unread,
+        unreadNotifications: notifications,
         activeListings: identity?.activeListings,
         upcomingBookings: identity?.upcomingBookings,
         pendingMine: identity?.pendingMine,

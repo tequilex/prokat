@@ -43,6 +43,13 @@
       "when": 1788282463783,
       "tag": "0005_wonderful_catseye",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788286622034,
+      "tag": "0006_black_piledriver",
+      "breakpoints": true
     }
   ]
 }

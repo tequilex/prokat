@@ -122,6 +122,10 @@ function broadcast(frame: ClientFrame): void {
 // ============================== База ==============================
 // Пул узкий: единственный запрос — проверка сессии на подключении.
 const pool = new Pool({ connectionString: DATABASE_URL, max: 4 });
+// Без слушателя ошибка простаивающего клиента (рестарт Postgres, обрыв) —
+// необработанное событие error на EventEmitter, то есть падение процесса. Для
+// realtime цена выше, чем для app: падение сбрасывает все живые сокеты разом.
+pool.on("error", (e) => console.error("realtime: ошибка пула", e));
 
 type SessionLookup = { userId: string; expires: Date; bannedAt: Date | null } | null;
 
@@ -139,6 +143,16 @@ async function lookupSession(token: string): Promise<SessionLookup> {
 }
 
 // ============================== Аутентификация ==============================
+// Места, занятые рукопожатиями в полёте: между проверкой лимита и register()
+// стоит поход в базу.
+const pendingPerUser = new Map<string, number>();
+
+function releasePending(userId: string): void {
+  const left = (pendingPerUser.get(userId) ?? 1) - 1;
+  if (left <= 0) pendingPerUser.delete(userId);
+  else pendingPerUser.set(userId, left);
+}
+
 type Rejection = { code: number; status: number; reason: string };
 
 async function authenticate(req: IncomingMessage): Promise<
@@ -179,9 +193,14 @@ async function authenticate(req: IncomingMessage): Promise<
     return { ok: false, code, status: 401, reason: verdict.reason };
   }
 
-  if ((registry.get(verdict.userId)?.size ?? 0) >= MAX_PER_USER) {
+  // Резерв, а не просто проверка: между чтением счётчика и register() лежит
+  // await за сессией, и залп одновременных рукопожатий иначе проходит лимит
+  // целиком. Освобождается на закрытии сокета и на всех отказах ниже.
+  const used = pendingPerUser.get(verdict.userId) ?? 0;
+  if ((registry.get(verdict.userId)?.size ?? 0) + used >= MAX_PER_USER) {
     return { ok: false, code: CLOSE.tooMany, status: 429, reason: "user" };
   }
+  pendingPerUser.set(verdict.userId, used + 1);
   return { ok: true, userId: verdict.userId, ip };
 }
 
@@ -224,19 +243,43 @@ const wss = new WebSocketServer({
 });
 
 http.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-  if (new URL(req.url ?? "/", "http://localhost").pathname !== "/ws") {
+  // Между upgrade и ответом стоит поход в базу за сессией. Отвалившийся в этом
+  // окне клиент эмитит error на Duplex, и без слушателя это падение процесса —
+  // тот самый случай, ради которого README ws ставит обработчик первой строкой.
+  const onSocketError = (e: Error) => console.error("realtime: сокет апгрейда", e);
+  socket.on("error", onSocketError);
+
+  let pathname: string;
+  try {
+    pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+  } catch {
+    socket.destroy();
+    return;
+  }
+  if (pathname !== "/ws") {
     socket.destroy();
     return;
   }
   void authenticate(req).then((auth) => {
     if (!auth.ok) {
-      socket.write(`HTTP/1.1 ${auth.status} ${auth.reason}\r\nConnection: close\r\n\r\n`);
-      socket.destroy();
+      // Рукопожатие доводится до конца и только потом сокет закрывается своим
+      // кодом. Оборвать его на HTTP-ответе значило бы отдать браузеру 1006,
+      // неотличимый от сетевого сбоя, — и вкладка с мёртвой cookie
+      // переподключалась бы вечно, ради чего коды и заводились.
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        ws.close(auth.code, auth.reason);
+      });
       return;
     }
+    socket.removeListener("error", onSocketError);
+    let accepted = false;
     wss.handleUpgrade(req, socket, head, (ws) => {
+      accepted = true;
       accept(ws, auth.userId, auth.ip);
     });
+    // handleUpgrade молча ничего не делает, если сокет уже мёртв. Без этого
+    // зарезервированное место осталось бы занятым навсегда.
+    if (!accepted) releasePending(auth.userId);
   }).catch((e) => {
     console.error("realtime: апгрейд не состоялся", e);
     socket.destroy();
@@ -245,6 +288,7 @@ http.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
 
 function accept(socket: WebSocket, userId: string, ip: string): void {
   register(socket, userId, ip);
+  releasePending(userId);
 
   // TTL с разбросом. Нужен потому, что выход из аккаунта и сброс пароля удаляют
   // строку сессии, а сокет иначе пушил бы до закрытия вкладки — при TTL сессии
@@ -312,14 +356,26 @@ async function startListening(): Promise<void> {
   console.log(`realtime: слушаю ${REALTIME_CHANNEL}`);
 }
 
+// Флаг single-flight. Без него разрыв даёт два вызова подряд (из обработчика
+// error и из провалившегося пинга), второй видит listener уже обнулённым,
+// очистку пропускает — и в живых остаются ДВА клиента: оба слушают, оба шлют,
+// закрыть второй некому.
+let relistening = false;
+
 async function relisten(): Promise<void> {
+  if (relistening) return;
+  relistening = true;
   if (listener) {
     const old = listener;
     listener = null;
-    old.removeAllListeners();
+    // Не removeAllListeners: снятый обработчик error сделал бы ошибку закрытия
+    // уже мёртвого соединения необработанной. end() ниже закрывает клиент, и
+    // notification с него больше не придёт.
+    old.on("error", () => {});
     await old.end().catch(() => {});
   }
   if (listenRetries >= LISTEN_MAX_RETRIES) {
+    relistening = false;
     // Не healthcheck: compose по проваленному healthcheck контейнер НЕ
     // перезапускает, restart: unless-stopped срабатывает только на выход.
     console.error("realtime: слушатель не восстановился, выхожу");
@@ -332,8 +388,8 @@ async function relisten(): Promise<void> {
       // Разрыв означает потерю всего, что случилось в нём: NOTIFY не
       // персистентен. Клиенты дочитывают дельту сами — с джиттером на своей
       // стороне, иначе все вкладки ударят в базу одновременно.
-      .then(() => broadcast({ type: "resync" }))
-      .catch(() => { void relisten(); });
+      .then(() => { relistening = false; broadcast({ type: "resync" }); })
+      .catch(() => { relistening = false; void relisten(); });
   }, delay);
 }
 

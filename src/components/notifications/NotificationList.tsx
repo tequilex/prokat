@@ -12,6 +12,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { content } from "@theme/content";
 import { notificationTarget } from "@/lib/notifications/target";
+import { useRealtime } from "@/components/realtime/context";
 import {
   fetchMoreNotifications, markAllNotificationsRead, markNotificationRead,
 } from "@/server/actions/notifications";
@@ -30,19 +31,43 @@ export function NotificationList({
   const [cursor, setCursor] = useState(initialCursor);
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [failed, setFailed] = useState(false);
+  // При живом сокете бейдж читает стор, а не серверный groups. Значит
+  // прочитанное надо погасить и там — иначе число не упадёт до ближайшего
+  // чужого события, и это было бы хуже, чем до задачи.
+  const setCounters = useRealtime((s) => s.setCounters);
+  const counters = useRealtime((s) => s.counters);
 
   const unread = items.filter((i) => i.unread).length;
 
+  function applyUnread(next: number) {
+    if (counters) setCounters({ ...counters, notifications: next });
+  }
+
   function markOne(id: string) {
-    // Оптимистично: человек уходит по ссылке, ждать ответа незачем. Не сошлось —
-    // следующий заход покажет строку непрочитанной.
+    // Оптимистично: человек уходит по ссылке, ждать ответа незачем.
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, unread: false } : i)));
-    startTransition(() => { void markNotificationRead(id); });
+    startTransition(async () => {
+      const res = await markNotificationRead(id);
+      // Откат: без него строка выглядит прочитанной, а в базе непрочитана, и
+      // расхождение всплывёт только при следующем заходе.
+      if (!res.ok) {
+        setItems((prev) => prev.map((i) => (i.id === id ? { ...i, unread: true } : i)));
+        setFailed(true);
+        return;
+      }
+      applyUnread(res.data.unread);
+    });
   }
 
   function markAll() {
+    const before = items;
     setItems((prev) => prev.map((i) => ({ ...i, unread: false })));
-    startTransition(() => { void markAllNotificationsRead(); });
+    startTransition(async () => {
+      const res = await markAllNotificationsRead();
+      if (!res.ok) { setItems(before); setFailed(true); return; }
+      applyUnread(res.data.unread);
+    });
   }
 
   async function loadMore() {
@@ -51,7 +76,9 @@ export function NotificationList({
     setLoading(true);
     const res = await fetchMoreNotifications(cursor);
     setLoading(false);
-    if (!res.ok) return;
+    // Молчаливый выход оставлял бы кнопку на месте и выглядел как «зависло».
+    if (!res.ok) { setFailed(true); return; }
+    setFailed(false);
     // Дедупликация по id: страницы могли пересечься, если между запросами
     // created_at сдвинулся бампом при схлопывании.
     setItems((prev) => {
@@ -74,6 +101,12 @@ export function NotificationList({
             {t.markAll}
           </button>
         </div>
+      )}
+
+      {failed && (
+        <p role="status" className="text-sm text-destructive">
+          {content.notifications.actionFailed}
+        </p>
       )}
 
       <ul className="flex flex-col gap-2">
@@ -121,7 +154,7 @@ export function NotificationList({
             disabled={loading}
             className="hoverable rounded-sm border border-border px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
           >
-            {loading ? content.chat.loadingOlder : t.loadMore}
+            {loading ? t.loadingMore : t.loadMore}
           </button>
         </div>
       )}

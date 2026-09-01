@@ -63,6 +63,7 @@ export function RealtimeProvider({
   const socketRef = useRef<WebSocket | null>(null);
   const attemptsRef = useRef(0);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
@@ -93,6 +94,13 @@ export function RealtimeProvider({
 
     const connect = () => {
       if (stoppedRef.current) return;
+      // Второй сокет поверх живого копил бы фантомов до потолка на пользователя,
+      // после чего сервер начал бы отвечать «слишком много» на всё подряд.
+      if (socketRef.current) return;
+      if (reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = null;
+      }
       const socket = new WebSocket(socketUrl());
       socketRef.current = socket;
       store.getState().setStatus("connecting");
@@ -116,7 +124,11 @@ export function RealtimeProvider({
           void pullCounters();
         } else if (frame.type === "message") {
           state.pushMessage(frame.threadId, frame.messageId);
-          if (frame.counters) void pullCounters();
+          // Всегда, а не по frame.counters: второе сообщение треда схлопывает
+          // уведомление, флаг приходит false — а непрочитанных сообщений при
+          // этом стало больше, и бейдж «Сообщения» замер бы на прежнем числе.
+          // Числа абсолютные, лишний вызов безвреден.
+          void pullCounters();
         } else if (frame.type === "request") {
           if (frame.counters) void pullCounters();
         }
@@ -145,7 +157,7 @@ export function RealtimeProvider({
           : Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** attemptsRef.current)
             * (0.5 + Math.random());
         attemptsRef.current += 1;
-        setTimeout(connect, wait);
+        reconnectTimer.current = setTimeout(connect, wait);
       };
 
       socket.onerror = () => socket.close();
@@ -165,6 +177,10 @@ export function RealtimeProvider({
         store.getState().markResync();
         void pullCounters();
       }
+      // События, пришедшие в скрытую вкладку, refresh не планировали — иначе
+      // фоновая вкладка гоняла бы полный SSR. Значит список переписок, галочки
+      // и превью протухли, и обновить их надо здесь.
+      scheduleRefresh();
     };
     document.addEventListener("visibilitychange", onVisible);
 
@@ -172,6 +188,7 @@ export function RealtimeProvider({
       stoppedRef.current = true;
       document.removeEventListener("visibilitychange", onVisible);
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       socketRef.current?.close();
       socketRef.current = null;
     };
