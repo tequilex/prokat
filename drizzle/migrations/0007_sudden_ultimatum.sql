@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "booking_requests_stale_idx" ON "booking_requests" USING btree ("status","expires_at");

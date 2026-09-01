@@ -8,8 +8,14 @@
 // длина payload гарантируется построением (ULID фиксированной длины, тела
 // сообщения в событии нет), а лимит pg_notify — почти 8 КБ.
 
-import { sql } from "drizzle-orm";
-import type { getDb } from "@/lib/db";
+import { and, eq, sql } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { bookingRequests, chatMessages, chatThreads, listings, users } from "@db/schema";
+import { canReadThread } from "@/lib/chat/rules";
+import { toPreview } from "@/server/chat";
+import { notificationTarget } from "@/lib/notifications/target";
+import type { RequestNotificationKind } from "@/lib/notifications/kinds";
+import { content } from "@theme/content";
 import {
   REALTIME_CHANNEL, serializeNotify, type NotifyPayload,
 } from "@/lib/realtime/events";
@@ -18,4 +24,69 @@ type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 
 export async function publish(tx: Tx, payload: NotifyPayload): Promise<void> {
   await tx.execute(sql`select pg_notify(${REALTIME_CHANNEL}, ${serializeNotify(payload)})`);
+}
+
+// ============================== Содержимое тоста ==============================
+// Тело сообщения через сокет не возим — событие несёт только идентификаторы.
+// Значит текст всплывашки дочитывается здесь, и здесь же ещё раз проверяется
+// участие: даже неверный список получателей содержимого не раскроет.
+
+export type ToastContent = {
+  title: string;
+  text: string;
+  href: string;
+};
+
+export async function readMessageToast(
+  viewerId: string,
+  threadId: string,
+  messageId: string,
+): Promise<ToastContent | null> {
+  const rows = await getDb().select({
+    body: chatMessages.body,
+    senderUserId: chatMessages.senderUserId,
+    ownerUserId: chatThreads.ownerUserId,
+    customerUserId: chatThreads.customerUserId,
+    senderName: users.name,
+  })
+    .from(chatMessages)
+    .innerJoin(chatThreads, eq(chatThreads.id, chatMessages.threadId))
+    .innerJoin(users, eq(users.id, chatMessages.senderUserId))
+    .where(and(eq(chatMessages.id, messageId), eq(chatMessages.threadId, threadId)))
+    .limit(1);
+  const row = rows[0];
+  if (!row || !canReadThread(viewerId, row)) return null;
+  // Своё же сообщение всплывать не должно: эхо приходит и отправителю.
+  if (row.senderUserId === viewerId) return null;
+
+  return {
+    title: row.senderName ?? "Новое сообщение",
+    text: toPreview(row.body),
+    href: `/chat/${threadId}`,
+  };
+}
+
+export async function readRequestToast(
+  viewerId: string,
+  requestId: string,
+  kind: RequestNotificationKind,
+): Promise<ToastContent | null> {
+  const rows = await getDb().select({
+    ownerUserId: bookingRequests.ownerUserId,
+    customerUserId: bookingRequests.customerUserId,
+    listingTitle: listings.title,
+  })
+    .from(bookingRequests)
+    .innerJoin(listings, eq(listings.id, bookingRequests.listingId))
+    .where(eq(bookingRequests.id, requestId))
+    .limit(1);
+  const row = rows[0];
+  // Чужая заявка не показывается даже при неверном списке получателей.
+  if (!row || (row.ownerUserId !== viewerId && row.customerUserId !== viewerId)) return null;
+
+  return {
+    title: content.notifications.kinds[kind],
+    text: row.listingTitle,
+    href: notificationTarget(kind, requestId).href,
+  };
 }

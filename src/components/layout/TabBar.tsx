@@ -7,6 +7,7 @@ import { LayoutGrid, MessageCircle, Plus, User } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
+import { LiveDot } from "@/components/realtime/LiveDot";
 
 /* Мобильная навигация: парящая пилюля внизу экрана — зеркалит стеклянные
  * пилюли шапки. Пять пунктов, как в брендбуке, но на месте «Чатов» — «Заявки»:
@@ -107,11 +108,14 @@ export function TabBar({
           * доступен из кабинета. */}
         {tab("/cabinet", itemClass(cabinet), (
           <>
-            {user ? (
-              <Avatar src={user.image} name={user.name} size={22} />
-            ) : (
-              <User className="h-[22px] w-[22px]" aria-hidden="true" />
-            )}
+            <span className="relative inline-flex">
+              {user ? (
+                <Avatar src={user.image} name={user.name} size={22} />
+              ) : (
+                <User className="h-[22px] w-[22px]" aria-hidden="true" />
+              )}
+              <LiveDot />
+            </span>
             Кабинет
           </>
         ))}

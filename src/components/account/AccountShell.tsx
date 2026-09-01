@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ChevronLeft, ClipboardList, Bell, BellDot, Package, CalendarDays, User, LogOut, Zap,
+  ChevronLeft, ClipboardList, Bell, Package, CalendarDays, User, LogOut, Zap,
   MessageCircle,
 } from "lucide-react";
 import { Brackets } from "@/components/brand/Brackets";
@@ -28,7 +28,6 @@ import type { Counters } from "@/components/realtime/store";
 const ICONS: Record<AccountNavIcon, typeof User> = {
   summary: Zap,
   messages: MessageCircle,
-  notifications: BellDot,
   requests: ClipboardList,
   inbox: Bell,
   listings: Package,
@@ -61,7 +60,6 @@ function Badge({ n }: { n?: number }) {
 // ровно та эвристика, из-за которой «ждут ответа» в герое привязан к "inbox".
 const LIVE_COUNTERS: Record<string, keyof Counters> = {
   "/chat": "messages",
-  "/notifications": "notifications",
   "/cabinet/requests": "requests",
 };
 

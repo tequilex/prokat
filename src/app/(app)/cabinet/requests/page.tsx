@@ -7,6 +7,9 @@ import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/booking/status-labels
 import type { BookingStatus } from "@/lib/catalog/booking-status";
 import { formatDayMonth } from "@/lib/catalog/dates";
 import { RequestActions } from "@/components/cabinet/RequestActions";
+import {
+  markRequestNotificationsSeen, purgeReadNotifications,
+} from "@/server/notifications";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Заявки", robots: { index: false } };
@@ -14,6 +17,10 @@ export const metadata: Metadata = { title: "Заявки", robots: { index: fals
 export default async function CabinetRequestsPage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
+
+  // Зашёл в раздел, куда уведомление и вело, — значит увидел.
+  await markRequestNotificationsSeen(session.user.id, "owner");
+  await purgeReadNotifications();
 
   const rows = await getOwnerRequests(session.user.id);
 

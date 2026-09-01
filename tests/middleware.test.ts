@@ -15,7 +15,7 @@ import { middleware, config } from "@/middleware";
 // ровно тем, что этот модуль и убирает.
 import { SESSION_COOKIE_NAMES } from "@/lib/auth/cookie-name";
 const SESSION_COOKIES = [...SESSION_COOKIE_NAMES];
-const PROTECTED = ["/requests", "/profile", "/cabinet", "/admin", "/chat", "/notifications"];
+const PROTECTED = ["/requests", "/profile", "/cabinet", "/admin", "/chat"];
 
 function request(path: string, cookie?: string): NextRequest {
   return new NextRequest(new URL(`https://inrenta.ru${path}`), {
@@ -64,7 +64,7 @@ describe("middleware access guard", () => {
   // Совпадение по префиксу должно кончаться на границе сегмента: иначе
   // публичный /adminpanel начал бы требовать вход.
   it("does not treat lookalike paths as protected", () => {
-    for (const path of ["/adminpanel", "/profiles", "/requestsomething", "/cabinets", "/chats", "/notificationsomething"]) {
+    for (const path of ["/adminpanel", "/profiles", "/requestsomething", "/cabinets", "/chats"]) {
       const res = middleware(request(path));
       expect(res.status, `${path} must stay public`).toBe(200);
       expect(res.headers.get("location"), `${path} must stay public`).toBeNull();

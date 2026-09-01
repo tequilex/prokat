@@ -10,8 +10,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { CLOSE, isTerminalClose, type ClientFrame } from "@/lib/realtime/events";
-import { fetchCounters } from "@/server/actions/realtime";
+import {
+  CLOSE, isTerminalClose, type ClientFrame, type RequestKind,
+} from "@/lib/realtime/events";
+import { content } from "@theme/content";
+import { toast } from "sonner";
+import { fetchRealtimeUpdate } from "@/server/actions/realtime";
 import { createRealtimeStore } from "@/components/realtime/store";
 import { RealtimeContext } from "@/components/realtime/context";
 
@@ -23,6 +27,10 @@ import { RealtimeContext } from "@/components/realtime/context";
 // В деве Caddy нет: Next на :3000, сокет на :3100. Именно location.hostname, а
 // не localhost, — с телефона страницу открывают по 192.168.x.x.
 const DEV_REALTIME_PORT = 3100;
+
+type RealtimeEvent =
+  | { type: "message"; threadId: string; messageId: string }
+  | { type: "request"; requestId: string; kind: RequestKind };
 
 function socketUrl(): string {
   if (process.env.NODE_ENV === "development") {
@@ -77,13 +85,22 @@ export function RealtimeProvider({
     refreshTimer.current = setTimeout(() => router.refresh(), REFRESH_DEBOUNCE_MS);
   }, [router]);
 
-  const pullCounters = useCallback(async () => {
-    // Событие счётчиков не несёт, поэтому инкрементить нечего: клиент всегда
-    // забирает абсолютные числа. Иначе после ближайшего refresh проп уже
-    // содержал бы ту же дельту, и число удвоилось бы.
-    const res = await fetchCounters();
-    if (res.ok) store.getState().setCounters(res.data);
-  }, [store]);
+  // Один вызов на событие: он же приносит счётчики, он же — текст всплывашки.
+  // Событие несёт только идентификаторы, тела сообщения в нём нет.
+  const pull = useCallback(async (event?: RealtimeEvent) => {
+    const res = await fetchRealtimeUpdate(event);
+    if (!res.ok) return;
+    store.getState().setCounters(res.data.counters);
+    const t = res.data.toast;
+    if (!t) return;
+    // Всплывашка не нужна там, где человек и так смотрит: своя же переписка
+    // открыта — сообщение приедет прямо в ленту.
+    if (pathRef.current === t.href) return;
+    toast(t.title, {
+      description: t.text,
+      action: { label: content.notifications.open, onClick: () => router.push(t.href as never) },
+    });
+  }, [store, router]);
 
   useEffect(() => {
     if (!enabled) {
@@ -108,7 +125,7 @@ export function RealtimeProvider({
       socket.onopen = () => {
         attemptsRef.current = 0;
         store.getState().setStatus("online");
-        void pullCounters();
+        void pull();
       };
 
       socket.onmessage = (event) => {
@@ -121,16 +138,16 @@ export function RealtimeProvider({
         const state = store.getState();
         if (frame.type === "resync") {
           state.markResync();
-          void pullCounters();
+          void pull();
         } else if (frame.type === "message") {
           state.pushMessage(frame.threadId, frame.messageId);
           // Всегда, а не по frame.counters: второе сообщение треда схлопывает
           // уведомление, флаг приходит false — а непрочитанных сообщений при
-          // этом стало больше, и бейдж «Сообщения» замер бы на прежнем числе.
-          // Числа абсолютные, лишний вызов безвреден.
-          void pullCounters();
+          // этом стало больше, и бейдж замер бы на прежнем числе. Числа
+          // абсолютные, лишний вызов безвреден.
+          void pull({ type: "message", threadId: frame.threadId, messageId: frame.messageId });
         } else if (frame.type === "request") {
-          if (frame.counters) void pullCounters();
+          void pull({ type: "request", requestId: frame.requestId, kind: frame.kind });
         }
         scheduleRefresh();
       };
@@ -175,7 +192,7 @@ export function RealtimeProvider({
         connect();
       } else if (socketRef.current?.readyState === WebSocket.OPEN) {
         store.getState().markResync();
-        void pullCounters();
+        void pull();
       }
       // События, пришедшие в скрытую вкладку, refresh не планировали — иначе
       // фоновая вкладка гоняла бы полный SSR. Значит список переписок, галочки
@@ -192,7 +209,7 @@ export function RealtimeProvider({
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [enabled, store, pullCounters, scheduleRefresh]);
+  }, [enabled, store, pull, scheduleRefresh]);
 
   return (
     <RealtimeContext.Provider value={store}>{children}</RealtimeContext.Provider>

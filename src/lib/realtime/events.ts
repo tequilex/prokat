@@ -46,7 +46,7 @@ export type NotifyPayload = z.infer<typeof notifySchema>;
 
 export type ClientFrame =
   | { type: "message"; threadId: string; messageId: string; counters: boolean }
-  | { type: "request"; requestId: string; counters: boolean }
+  | { type: "request"; requestId: string; kind: RequestKind; counters: boolean }
   // Широковещательный: сервер потерял и восстановил LISTEN, всё случившееся в
   // разрыве потеряно безвозвратно — клиент дочитывает дельту сам.
   | { type: "resync" };
@@ -131,5 +131,5 @@ export function toClientFrame(payload: NotifyPayload, forUserId: string): Client
   const counters = payload.countFor === forUserId;
   return payload.kind === "chat_message"
     ? { type: "message", threadId: payload.threadId, messageId: payload.messageId, counters }
-    : { type: "request", requestId: payload.requestId, counters };
+    : { type: "request", requestId: payload.requestId, kind: payload.kind, counters };
 }

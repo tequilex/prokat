@@ -3,7 +3,7 @@ import { SESSION_COOKIE_NAMES } from "@/lib/auth/cookie-name";
 
 // Маршруты, на которые анон не должен попадать вообще (префикс-match).
 const PROTECTED_PREFIXES: string[] = [
-  "/requests", "/profile", "/cabinet", "/admin", "/chat", "/notifications",
+  "/requests", "/profile", "/cabinet", "/admin", "/chat",
 ];
 
 function hasSessionCookie(req: NextRequest): boolean {

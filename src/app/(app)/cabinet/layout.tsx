@@ -29,7 +29,6 @@ export default async function CabinetLayout({ children }: { children: React.Reac
       groups={buildAccountNav({
         newRequestsCount: newCount,
         unreadMessages: unread,
-        unreadNotifications: notifications,
         activeListings: identity?.activeListings,
         upcomingBookings: identity?.upcomingBookings,
         pendingMine: identity?.pendingMine,

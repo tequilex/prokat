@@ -148,27 +148,35 @@ export function ThreadView({
     catchingUp.current = true;
     let cancelled = false;
     void (async () => {
-      // Циклом до конца: при длинном разрыве накопленного может быть больше
-      // страницы, и остановка на первой оставила бы дыру в середине ленты.
-      let cursor = messages.reduce((acc, m) => (m.id > acc ? m.id : acc), "");
-      for (let page = 0; page < CATCH_UP_PAGES; page += 1) {
-        const res = await fetchNewerMessages(threadId, cursor);
-        if (cancelled || !res.ok || res.data.messages.length === 0) break;
-        upsert(res.data.messages);
-        announce(res.data.messages);
-        cursor = res.data.messages[res.data.messages.length - 1].id;
-        if (!res.data.hasMore) break;
-      }
-      if (!cancelled) {
-        catchingUp.current = false;
+      try {
+        // Циклом до конца: при длинном разрыве накопленного может быть больше
+        // страницы, и остановка на первой оставила бы дыру в середине ленты.
+        let cursor = messages.reduce((acc, m) => (m.id > acc ? m.id : acc), "");
+        for (let page = 0; page < CATCH_UP_PAGES; page += 1) {
+          const res = await fetchNewerMessages(threadId, cursor);
+          if (cancelled || !res.ok || res.data.messages.length === 0) break;
+          upsert(res.data.messages);
+          announce(res.data.messages);
+          cursor = res.data.messages[res.data.messages.length - 1].id;
+          if (!res.data.hasMore) break;
+        }
         // Приехавшее в открытую и ВИДИМУЮ ленту прочитано: иначе курсор
         // застрянет на моменте открытия, счётчики вырастут, а при следующем
         // заходе разделитель «непрочитанные» встанет над уже прочитанным.
         // Фоновая вкладка гасить непрочитанное не должна.
-        if (document.visibilityState === "visible") void markThreadRead(threadId);
+        if (!cancelled && document.visibilityState === "visible") {
+          void markThreadRead(threadId);
+        }
+      } finally {
+        // finally, а не хвост try: сеть отвалилась ровно тогда, когда догон и
+        // нужен, и без сброса флаг залипал бы навсегда.
+        catchingUp.current = false;
       }
     })();
-    return () => { cancelled = true; catchingUp.current = false; };
+    // Флаг в cleanup НЕ сбрасывается: React зовёт cleanup перед каждым
+    // повторным прогоном, и сброс там обнулял бы охранник на каждом событии —
+    // то есть охранника бы не было вовсе.
+    return () => { cancelled = true; };
     // messages в зависимостях нет намеренно: догон реагирует на событие, а не на
     // собственный результат — иначе он зациклится сам на себе.
   }, [threadId, liveMessage, resyncAt, loadingOlder, upsert, announce]);

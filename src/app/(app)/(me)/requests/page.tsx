@@ -12,6 +12,9 @@ import { canTransition, type BookingStatus } from "@/lib/catalog/booking-status"
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/booking/status-labels";
 import { formatDayMonth } from "@/lib/catalog/dates";
 import { CancelRequestButton } from "@/components/booking/CancelRequestButton";
+import {
+  markRequestNotificationsSeen, purgeReadNotifications,
+} from "@/server/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +26,10 @@ export const metadata: Metadata = {
 export default async function RequestsPage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/requests");
+
+  // Зашёл в раздел, куда уведомление и вело, — значит увидел.
+  await markRequestNotificationsSeen(session.user.id, "customer");
+  await purgeReadNotifications();
 
   const rows = await getCustomerRequests(session.user.id);
 

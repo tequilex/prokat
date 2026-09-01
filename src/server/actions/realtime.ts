@@ -1,9 +1,13 @@
 "use server";
 
-// Ручки, которыми клиент догоняет состояние после события сокета или разрыва.
+// Единственная ручка, которой клиент реагирует на событие сокета.
 //
-// Обе — чтения, но вызываются с клиента, значит доступны по сети напрямую.
-// Права и лимит проверяются здесь так же, как в любой мутации.
+// Счётчики и содержимое всплывашки берутся ОДНИМ вызовом: событие несёт только
+// идентификаторы (тело сообщения через сокет не возим), а раздельные ручки
+// давали бы два похода к серверу на каждое сообщение.
+//
+// Это чтение, но вызывается с клиента, значит доступно по сети напрямую — права
+// и лимит проверяются здесь так же, как в любой мутации.
 
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -13,9 +17,11 @@ import { auth } from "@/lib/auth";
 import { checkLimit } from "@/lib/rate-limit";
 import { canReadThread } from "@/lib/chat/rules";
 import { cursorSchema, threadIdSchema } from "@/lib/chat/validation";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { getMessagesAfter, getUnreadCount, type ThreadMessage } from "@/server/chat";
 import { countUnreadNotifications } from "@/server/notifications";
 import { countNewRequests } from "@/server/owner";
+import { readMessageToast, readRequestToast, type ToastContent } from "@/server/realtime";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -27,22 +33,48 @@ export type Counters = {
   requests: number;
 };
 
-// Событие счётчиков не несёт, а инкремент от неизвестного значения дал бы
-// расхождение с базой. Поэтому клиент всегда получает абсолютные числа.
-export async function fetchCounters(): Promise<ActionResult<Counters>> {
+const idSchema = z.string().min(1).max(64);
+
+// Событие, на которое реагируем. Необязательное: при подключении и после
+// разрыва счётчики забираются без всякого события.
+const eventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("message"), threadId: idSchema, messageId: idSchema }),
+  z.object({
+    type: z.literal("request"),
+    requestId: idSchema,
+    kind: z.enum(NOTIFICATION_KINDS.filter((k) => k !== "chat_message") as [string, ...string[]]),
+  }),
+]).optional();
+
+export async function fetchRealtimeUpdate(
+  rawEvent?: unknown,
+): Promise<ActionResult<{ counters: Counters; toast: ToastContent | null }>> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "auth_required" };
   const userId = session.user.id;
+  if (session.user.bannedAt) return { ok: false, error: "banned" };
+
+  const parsedEvent = eventSchema.safeParse(rawEvent ?? undefined);
+  if (!parsedEvent.success) return { ok: false, error: "invalid_input" };
 
   const limit = checkLimit(userId, "realtime_sync");
   if (!limit.ok) return { ok: false, error: `rate_limited:${limit.retryAfterSec}` };
 
-  const [messages, notifications, requests] = await Promise.all([
+  const event = parsedEvent.data;
+  // Числа абсолютные, а не дельты: инкремент от неизвестного значения разошёлся
+  // бы с базой, а после ближайшего refresh проп принёс бы ту же дельту второй раз.
+  const [messages, notifications, requests, toast] = await Promise.all([
     getUnreadCount(userId),
     countUnreadNotifications(userId),
     countNewRequests(userId),
+    !event
+      ? Promise.resolve(null)
+      : event.type === "message"
+        ? readMessageToast(userId, event.threadId, event.messageId)
+        : readRequestToast(userId, event.requestId, event.kind as never),
   ]);
-  return { ok: true, data: { messages, notifications, requests } };
+
+  return { ok: true, data: { counters: { messages, notifications, requests }, toast } };
 }
 
 // Догон ленты: всё, что появилось строго после курсора. Отдаётся по

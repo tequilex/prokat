@@ -276,7 +276,7 @@ chmod 600 .env
 ### 7.2. Первый запуск
 
 ```bash
-docker compose up -d --build
+docker compose build app && docker compose build realtime && docker compose up -d
 ```
 
 Первый билд на 1GB VPS — 10–15 минут. Дальше по кешу быстрее (~3–5 мин).
@@ -328,7 +328,7 @@ dev-стека и сыпать "Failed to find Server Action"):
 ```bash
 cd /opt/inrenta
 echo "<INDEXNOW_KEY>" > "public/<INDEXNOW_KEY>.txt"
-docker compose up -d --build app
+docker compose build app && docker compose build realtime && docker compose up -d app
 curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
 ```
 
@@ -338,7 +338,7 @@ curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
 ### 8.2. Yandex.Metrika
 
 1. metrica.yandex.ru → создать счётчик → ID в `.env` (`YANDEX_METRIKA_ID=`)
-2. `docker compose up -d --force-recreate app` (пересоздание, не restart!)
+2. `docker compose up -d --force-recreate app realtime` (пересоздание, не restart!)
 3. Network в DevTools: грузится `mc.yandex.ru/metrika/tag.js`
 
 ### 8.3. Yandex Webmaster / Google Search Console
@@ -373,7 +373,7 @@ docker compose down          # ещё под старым именем прое�
 git pull                     # приезжает name: inrenta
 
 cd /opt && mv prokat inrenta && cd inrenta
-docker compose up -d --build
+docker compose build app && docker compose build realtime && docker compose up -d
 docker compose logs --tail 30 app     # "Running migrations..." → "Starting Next.js..."
 ```
 
@@ -410,7 +410,7 @@ docker compose build realtime && docker compose up -d realtime
 `docker compose restart` **не перечитывает** env_file! Только пересоздание:
 
 ```bash
-docker compose up -d --force-recreate app
+docker compose up -d --force-recreate app realtime
 ```
 
 ### Сиды на проде
@@ -473,12 +473,12 @@ docker compose logs backup --tail=50
 
 | Симптом | Причина | Действие |
 |---|---|---|
-| `[auth][error] UntrustedHost` на все /api/auth/* | Нет `AUTH_TRUST_HOST=true` в `.env` | Добавить + `up -d --force-recreate app` |
+| `[auth][error] UntrustedHost` на все /api/auth/* | Нет `AUTH_TRUST_HOST=true` в `.env` | Добавить + `up -d --force-recreate app realtime` |
 | OAuth-редирект уводит на `http://<container-id>:3000` | Редиректы строились от `req.url` | Исправлено в коде (base = `NEXTAUTH_URL`); проверить, что `NEXTAUTH_URL` = публичный https-URL |
 | Upload фото → 500, в логах `sharp ... ERR_DLOPEN_FAILED libvips` | Версия sharp в package.json ≠ версии, которую Next несёт как optional dep → standalone-трейс не кладёт libvips | Держать sharp той же minor-версии, что у Next (см. `pnpm why sharp`); `.npmrc` с `node-linker=hoisted` — в репо |
 | Картинка `/_next/image?url=...` → 400, хотя прямая ссылка на файл открывается | `STORAGE_PUBLIC_BASE` не был доступен при сборке → S3-хост не в remotePatterns | Заполнить `.env` до сборки; compose прокидывает build arg сам |
 | `app` контейнер `unhealthy`, но сайт работает | Next standalone биндился на `$HOSTNAME` (= container ID), healthcheck по localhost не проходил | Исправлено: `ENV HOSTNAME=0.0.0.0` в Dockerfile |
-| Поменял `.env`, но ничего не изменилось | `restart` не перечитывает env_file | `up -d --force-recreate app` |
+| Поменял `.env`, но ничего не изменилось | `restart` не перечитывает env_file | `up -d --force-recreate app realtime` |
 | `acme: error` в Caddy | DNS ещё не указывает на VPS / 80,443 закрыты | `dig +short example.ru @1.1.1.1`; `ufw status` |
 | `Failed to find Server Action` в браузере | Кеш вкладки от другого билда/стека | Инкогнито или hard reload |
 | Регистрация → «Не удалось отправить письмо», в логах `[mail] send failed ... Connection timeout` | Timeweb режет исходящие 25/465/587/2525 | §6.1 — заявка в поддержку; код и `.env` ни при чём |

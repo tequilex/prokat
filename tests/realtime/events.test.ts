@@ -100,6 +100,8 @@ describe("кадр в браузер", () => {
 
   it("заявка приезжает кадром без треда", () => {
     const p = requestNotify({ kind: "request_created", requestId: "r1", recipientId: "u2" });
-    expect(toClientFrame(p, "u2")).toEqual({ type: "request", requestId: "r1", counters: true });
+    expect(toClientFrame(p, "u2")).toEqual({
+      type: "request", requestId: "r1", kind: "request_created", counters: true,
+    });
   });
 });

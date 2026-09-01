@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Brackets } from "@/components/brand/Brackets";
 import { Avatar } from "@/components/ui/Avatar";
+import { LiveDot } from "@/components/realtime/LiveDot";
 import { ThemeSegmented } from "@/components/providers/ThemeSegmented";
 import { content } from "@theme/content";
 
@@ -69,7 +70,10 @@ export function UserMenu({ email, name, image, isAdmin = false }: Props) {
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => setOpen(false)}
         >
-          <Avatar src={image} name={name} size={32} />
+          <span className="relative inline-flex">
+            <Avatar src={image} name={name} size={32} />
+            <LiveDot />
+          </span>
         </Link>
       </DropdownMenuTrigger>
 

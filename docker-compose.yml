@@ -47,10 +47,11 @@ services:
       context: .
       target: realtime
     restart: unless-stopped
-    env_file: .env
+    # Без env_file: процессу нужны ровно две переменные, а .env несёт секреты
+    # почты, S3 и NEXTAUTH_SECRET — расширять поверхность утечки незачем.
     environment:
-      # Явным override: в .env лежит localhost-вариант, одного env_file мало.
       DATABASE_URL: postgres://app:${DB_PASSWORD}@db:5432/app
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
       NODE_ENV: production
       REALTIME_PORT: 3100
     depends_on:

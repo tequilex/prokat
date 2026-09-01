@@ -192,6 +192,10 @@ export const bookingRequests = pgTable("booking_requests", {
   ownerStatusIdx: index("booking_requests_owner_status_idx").on(t.ownerUserId, t.status, t.createdAt),
   customerIdx: index("booking_requests_customer_idx").on(t.customerUserId, t.createdAt),
   listingIdx: index("booking_requests_listing_idx").on(t.listingId),
+  // Под ленивое протухание: expireStaleRequests фильтрует по (status,
+  // expires_at) и без этого индекса идёт сиквеншл-сканом с записью — а
+  // дёргается он теперь и при каждом обновлении счётчиков по событию сокета.
+  staleIdx: index("booking_requests_stale_idx").on(t.status, t.expiresAt),
 }));
 
 // events — сырые продуктовые события (view_listing, view_phone, submit_request...).
