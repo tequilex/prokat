@@ -2,6 +2,7 @@ import {
   pgTable, text, varchar, integer, bigint, timestamp, pgEnum, jsonb,
   boolean, date, doublePrecision, index, primaryKey, uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const userRole = pgEnum("user_role", ["user", "moderator", "admin"]);
 
@@ -234,6 +235,53 @@ export const chatThreads = pgTable("chat_threads", {
   pairUq: uniqueIndex("chat_threads_listing_customer_uq").on(t.listingId, t.customerUserId),
   ownerIdx: index("chat_threads_owner_idx").on(t.ownerUserId, t.lastMessageAt),
   customerIdx: index("chat_threads_customer_idx").on(t.customerUserId, t.lastMessageAt),
+}));
+
+// notifications — персистентный список получателя: одно место с историей вместо
+// трёх разрозненных бейджей, и точка, куда поедут события сокета.
+//
+// entity_type нет намеренно: kind однозначно задаёт тип сущности, а вторая
+// колонка могла бы с ним разъехаться. Внешнего ключа на entity_id тоже нет —
+// связь полиморфная (тред или заявка). Это отклонение от остальной схемы, где
+// всё связано FK; прецедент — events. Каскад тут не работает, и UI обязан
+// пережить запись, чья сущность недоступна.
+//
+// created_at означает не «когда создано», а «последняя активность»: ON CONFLICT
+// DO UPDATE двигает его. Без бампа схлопнутое уведомление не всплывало бы в
+// списке, а снимок в markThreadRead гасил бы его вместе со свежим сообщением.
+//
+// Список видов продублирован из src/lib/notifications/kinds.ts: слой db не
+// импортирует из lib. От расхождения страхует тест.
+export const notificationKind = pgEnum("notification_kind", [
+  "chat_message",
+  "request_created",
+  "request_cancelled",
+  "request_confirmed",
+  "request_declined",
+  "request_completed",
+  "request_no_show",
+]);
+
+export const notifications = pgTable("notifications", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: notificationKind("kind").notNull(),
+  entityId: text("entity_id").notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  // Дедупликация среди непрочитанных: пятьдесят сообщений треда схлопываются в
+  // одну строку. Он же обслуживает счётчик — отдельный индекс (user_id) where
+  // read_at is null был бы его префиксом и ничего не добавил.
+  unreadUq: uniqueIndex("notifications_unread_uq")
+    .on(t.userId, t.kind, t.entityId)
+    .where(sql`${t.readAt} is null`),
+  listIdx: index("notifications_user_created_idx").on(t.userId, t.createdAt.desc()),
+  // Под ленивую чистку. Критерий именно read_at: по created_at этот индекс не
+  // зайдёт, и удаление пойдёт сиквеншл-сканом.
+  cleanupIdx: index("notifications_cleanup_idx")
+    .on(t.readAt)
+    .where(sql`${t.readAt} is not null`),
 }));
 
 // chat_messages — id это ULID, он лексикографически сортируется по времени.

@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import * as schema from "@db/schema";
-import { users, listings, bookingRequests, listingStatus } from "@db/schema";
+import {
+  users, listings, bookingRequests, listingStatus, notifications, notificationKind,
+} from "@db/schema";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 describe("C2C schema shape", () => {
   it("users has verification columns", () => {
@@ -23,6 +26,22 @@ describe("C2C schema shape", () => {
 
   it("listingStatus enum has no on_moderation", () => {
     expect(listingStatus.enumValues).toEqual(["active", "hidden", "archived"]);
+  });
+
+  it("notifications carries recipient, kind, entity and read cursor", () => {
+    const cols = Object.keys(notifications);
+    expect(cols).toEqual(
+      expect.arrayContaining(["userId", "kind", "entityId", "readAt", "createdAt"]),
+    );
+    // entity_type сознательно не заводится: kind однозначно задаёт тип сущности,
+    // а вторая колонка могла бы с ним разъехаться.
+    expect(cols).not.toContain("entityType");
+  });
+
+  it("notificationKind enum matches the pure list", () => {
+    // Схема и чистый модуль обязаны совпадать: иначе вид, добавленный в одном
+    // месте, молча не доедет до другого.
+    expect(notificationKind.enumValues).toEqual([...NOTIFICATION_KINDS]);
   });
 
   it("dropped provider/monetization tables are gone", () => {
