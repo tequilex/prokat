@@ -29,7 +29,7 @@ export function ThemeSegmented() {
     <div
       role="radiogroup"
       aria-label="Тема"
-      className="relative flex shrink-0 rounded-sm bg-muted p-0.5"
+      className="relative flex shrink-0 rounded-sm border border-border bg-background p-0.5"
     >
       {index >= 0 && (
         <span

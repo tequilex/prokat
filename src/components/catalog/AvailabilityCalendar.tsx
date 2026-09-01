@@ -5,10 +5,17 @@
 import { freeQty, type AvailabilityMap } from "@/lib/catalog/availability";
 import { addDaysStr, dayOfMonth, weekdayShort } from "@/lib/catalog/dates";
 
+// «Свободно» — не состояние, а норма: заливки не получает. Заливкой отмечено
+// только то, что мешает взять вещь. Раньше свободное красилось --color-muted,
+// и на выровненной шкале нейтралей оно сходилось с охряным тинтом в 1.00 —
+// легенда показывала один цвет дважды.
+//
+// Занятое вдобавок зачёркнуто: различать состояния одним цветом нельзя,
+// охра и красный в этих тинтах дают одинаковую светлоту.
 function dayTone(free: number, quantity: number): string {
   if (free <= 0) return "bg-destructive/15 text-muted-foreground line-through";
-  if (free < quantity) return "bg-accent/10 text-foreground";
-  return "bg-muted text-foreground";
+  if (free < quantity) return "bg-accent/[0.18] text-foreground";
+  return "text-foreground";
 }
 
 // Полный календарь на несколько недель для страницы позиции.
@@ -39,9 +46,9 @@ export function FullCalendar({
         })}
       </div>
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-muted" /> свободно</span>
-        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-accent/10" /> частично занято</span>
-        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-destructive/15" /> занято</span>
+        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm border border-muted-foreground" /> свободно</span>
+        <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-accent/[0.18]" /> частично занято</span>
+        <span className="flex items-center gap-1"><i aria-hidden="true" className="inline-flex h-3 w-3 items-center justify-center rounded-sm bg-destructive/15 text-[9px] leading-none text-destructive">×</i> занято</span>
       </div>
     </div>
   );
