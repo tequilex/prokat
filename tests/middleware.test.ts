@@ -12,7 +12,7 @@ import { middleware, config } from "@/middleware";
 // редиректы.
 
 const SESSION_COOKIES = ["authjs.session-token", "__Secure-authjs.session-token"];
-const PROTECTED = ["/requests", "/profile", "/cabinet", "/admin", "/chat"];
+const PROTECTED = ["/requests", "/profile", "/cabinet", "/admin", "/chat", "/notifications"];
 
 function request(path: string, cookie?: string): NextRequest {
   return new NextRequest(new URL(`https://inrenta.ru${path}`), {
@@ -61,7 +61,7 @@ describe("middleware access guard", () => {
   // Совпадение по префиксу должно кончаться на границе сегмента: иначе
   // публичный /adminpanel начал бы требовать вход.
   it("does not treat lookalike paths as protected", () => {
-    for (const path of ["/adminpanel", "/profiles", "/requestsomething", "/cabinets", "/chats"]) {
+    for (const path of ["/adminpanel", "/profiles", "/requestsomething", "/cabinets", "/chats", "/notificationsomething"]) {
       const res = middleware(request(path));
       expect(res.status, `${path} must stay public`).toBe(200);
       expect(res.headers.get("location"), `${path} must stay public`).toBeNull();

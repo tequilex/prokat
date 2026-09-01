@@ -8,11 +8,27 @@ describe("buildAccountNav", () => {
     expect(groups.flatMap((g) => g.items).map((i) => i.href)).toEqual([
       // Переписка идёт и по своим вещам, и по чужим — поэтому в «сейчас»,
       // а не в одной из ролевых групп.
-      "/cabinet", "/chat",
+      "/cabinet", "/chat", "/notifications",
       "/cabinet/requests", "/cabinet/listings", "/cabinet/calendar",
       "/requests",
       "/profile",
     ]);
+  });
+
+  it("badges unread notifications on their own section", () => {
+    const items = buildAccountNav({ newRequestsCount: 0, unreadNotifications: 3 })
+      .flatMap((g) => g.items);
+    expect(items.find((i) => i.href === "/notifications")!.badge).toBe(3);
+  });
+
+  // AccountShell ищет счётчик героя по ключу иконки "inbox". Переиспользуй его
+  // новый пункт — и «ждут ответа» в шапке начнёт показывать уведомления.
+  it("gives notifications an icon key of their own, not the owner inbox", () => {
+    const items = buildAccountNav({ newRequestsCount: 0 }).flatMap((g) => g.items);
+    const item = items.find((i) => i.href === "/notifications")!;
+    expect(item.icon).toBe("notifications");
+    expect(items.filter((i) => i.icon === "inbox").map((i) => i.href))
+      .toEqual(["/cabinet/requests"]);
   });
 
   it("badges unread messages on the chat section", () => {
@@ -38,6 +54,17 @@ describe("buildAccountNav", () => {
     const items = buildAccountNav({ newRequestsCount: 2 }).flatMap((g) => g.items);
     expect(items.find((i) => i.href === "/cabinet/requests")!.badge).toBe(2);
     expect(items.filter((i) => i.badge).length).toBe(1);
+  });
+
+  // Три бейджа считают разное и не должны схлопываться в одно число: сообщения
+  // по штукам, уведомления схлопнуты по сущности, заявки — только входящие.
+  it("keeps the three badges independent", () => {
+    const items = buildAccountNav({
+      newRequestsCount: 2, unreadMessages: 7, unreadNotifications: 3,
+    }).flatMap((g) => g.items);
+    expect(items.find((i) => i.href === "/chat")!.badge).toBe(7);
+    expect(items.find((i) => i.href === "/notifications")!.badge).toBe(3);
+    expect(items.find((i) => i.href === "/cabinet/requests")!.badge).toBe(2);
   });
 
   it("writes hub hints in humane Russian and omits them at zero", () => {

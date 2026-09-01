@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ChevronLeft, ClipboardList, Bell, Package, CalendarDays, User, LogOut, Zap,
+  ChevronLeft, ClipboardList, Bell, BellDot, Package, CalendarDays, User, LogOut, Zap,
   MessageCircle,
 } from "lucide-react";
 import { Brackets } from "@/components/brand/Brackets";
@@ -21,10 +21,12 @@ import { AccountHero } from "@/components/account/AccountHero";
 import { CabinetHub } from "@/components/account/CabinetHub";
 import type { AccountNavGroup, AccountNavIcon } from "@/components/account/accountNav";
 import { ACCOUNT_COVER_HEIGHT, type AccountIdentity } from "@/components/account/identity";
+import { badgeCount } from "@/lib/badge-count";
 
 const ICONS: Record<AccountNavIcon, typeof User> = {
   summary: Zap,
   messages: MessageCircle,
+  notifications: BellDot,
   requests: ClipboardList,
   inbox: Bell,
   listings: Package,
@@ -41,10 +43,14 @@ function isActive(pathname: string, item: { href: string; exact?: boolean }): bo
 }
 
 function Badge({ n }: { n?: number }) {
-  if (!n) return null;
+  const badge = badgeCount(n);
+  if (!badge) return null;
   return (
     <span className="ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-pill bg-accent px-1.5 text-2xs font-bold text-accent-foreground">
-      {n}
+      <span aria-hidden="true">{badge.display}</span>
+      {/* Голое число рядом с названием раздела вслух звучит как часть названия.
+          И при «99+» точный счёт иначе теряется совсем. */}
+      <span className="sr-only">, {badge.label}</span>
     </span>
   );
 }

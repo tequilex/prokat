@@ -1,4 +1,5 @@
 import { ruPlural } from "@/lib/plural";
+import { content } from "@theme/content";
 
 // Единый источник навигации кабинета. Разделы сгруппированы по роли, в которой
 // человек сейчас находится: «я арендую» и «мои вещи». Отдельной сущности
@@ -7,7 +8,9 @@ import { ruPlural } from "@/lib/plural";
 // Иконка передаётся ключом, а не компонентом: навигацию собирает серверный
 // layout, а функции через границу RSC не сериализуются. Словарь ключ → иконка
 // живёт в AccountShell, на клиенте.
-export type AccountNavIcon = "summary" | "messages" | "requests" | "inbox" | "listings" | "calendar" | "profile";
+export type AccountNavIcon =
+  | "summary" | "messages" | "notifications" | "requests" | "inbox"
+  | "listings" | "calendar" | "profile";
 
 export interface AccountNavItem {
   href: string;
@@ -31,6 +34,10 @@ export interface AccountNavCounts {
   newRequestsCount: number;
   /** Непрочитанные сообщения по всем переписками, обе роли сразу. */
   unreadMessages?: number;
+  /** Непрочитанные уведомления. Считает НЕ то же, что unreadMessages:
+   *  сообщения идут по штукам, уведомления схлопнуты по сущности. Рядом
+   *  окажутся «Сообщения 7» и «Уведомления 2» — это не ошибка. */
+  unreadNotifications?: number;
   /** Ниже — только для подписей мобильного хаба; в сайдбаре их не видно. */
   activeListings?: number;
   upcomingBookings?: number;
@@ -38,7 +45,10 @@ export interface AccountNavCounts {
 }
 
 export function buildAccountNav(
-  { newRequestsCount, unreadMessages, activeListings, upcomingBookings, pendingMine }: AccountNavCounts,
+  {
+    newRequestsCount, unreadMessages, unreadNotifications,
+    activeListings, upcomingBookings, pendingMine,
+  }: AccountNavCounts,
 ): AccountNavGroup[] {
   return [
     {
@@ -48,6 +58,14 @@ export function buildAccountNav(
       items: [
         { href: "/cabinet", label: "Сводка", icon: "summary", exact: true },
         { href: "/chat", label: "Сообщения", badge: unreadMessages, icon: "messages" },
+        // Ключ иконки свой, не "inbox": по нему AccountShell ищет счётчик
+        // «ждут ответа» для шапки, и переиспользование увело бы туда уведомления.
+        {
+          href: "/notifications",
+          label: content.notifications.navLabel,
+          badge: unreadNotifications,
+          icon: "notifications",
+        },
       ],
     },
     {

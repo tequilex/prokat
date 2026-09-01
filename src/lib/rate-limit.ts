@@ -7,7 +7,8 @@
 export type LimitKind =
   | "booking" | "login" | "register" | "resend" | "reset"
   | "mail_ip" | "mail_daily" | "password_change"
-  | "chat_message" | "chat_thread" | "chat_read";
+  | "chat_message" | "chat_thread" | "chat_read"
+  | "notification_read";
 
 // Потолок отправки на весь сервис за сутки. Яндекс даёт 300 писем в сутки по
 // SMTP и режет раньше, если письма однотипные, — упереться хочется в свой
@@ -47,6 +48,10 @@ const RULES: Record<LimitKind, Rule> = {
   // стоит несколько запросов к базе, а лимита у них иначе нет вовсе. Потолок
   // высокий: обычной работе с интерфейсом он не мешает.
   chat_read: { windowMs: 60 * 60 * 1000, maxInWindow: 300, gapMs: 0 },
+  // Отметка уведомлений прочитанными. «Отметить все» — это UPDATE по всем
+  // строкам пользователя, то есть дешёвый способ заставить базу работать;
+  // без лимита у него нет никакой цены.
+  notification_read: { windowMs: 60 * 60 * 1000, maxInWindow: 200, gapMs: 0 },
 };
 
 const MAX_KEYS = 10_000;

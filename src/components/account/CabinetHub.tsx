@@ -7,6 +7,7 @@ import { Brackets } from "@/components/brand/Brackets";
 import { ruPlural } from "@/lib/plural";
 import type { AccountNavGroup, AccountNavIcon } from "@/components/account/accountNav";
 import type { AccountIdentity } from "@/components/account/identity";
+import { badgeCount } from "@/lib/badge-count";
 
 /* Мобильный кабинет-хаб: оглавление вместо горизонтальной ленты табов.
  * Профиль сверху (аватар наезжает на обложку), две плитки с итогами, дальше
@@ -43,6 +44,7 @@ export function CabinetHub({
           <div className="surface flex flex-col p-1">
             {group.items.map((it, i) => {
               const Icon = it.icon ? icons[it.icon] : null;
+              const badge = badgeCount(it.badge);
               return (
                 <div key={it.href} className="contents">
                   {i > 0 && <span aria-hidden="true" className="mx-3 h-px bg-border" />}
@@ -52,9 +54,12 @@ export function CabinetHub({
                   >
                     {Icon && <Icon className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />}
                     <span className="min-w-0 flex-1 truncate">{it.label}</span>
-                    {it.badge ? (
+                    {badge ? (
                       <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-pill bg-accent px-1.5 text-[13px] font-bold text-accent-foreground">
-                        {it.badge}
+                        <span aria-hidden="true">{badge.display}</span>
+                        {/* Голое число рядом с названием раздела вслух звучит
+                            как часть названия; при «99+» точный счёт теряется. */}
+                        <span className="sr-only">, {badge.label}</span>
                       </span>
                     ) : it.hint ? (
                       <span className="text-sm text-muted-foreground">{it.hint}</span>
