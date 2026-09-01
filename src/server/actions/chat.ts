@@ -13,7 +13,7 @@
 //   собственное сообщение считалось бы непрочитанным.
 
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb, type Tx } from "@/lib/db";
 import { chatMessages, chatThreads, listings, notifications, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { newId, newSortableId } from "@/lib/id";
@@ -39,8 +39,6 @@ export type SentMessage = {
   body: string;
   createdAt: Date;
 };
-
-type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 
 // Общий путь записи для обоих действий: разъехаться этим двум веткам нельзя.
 //

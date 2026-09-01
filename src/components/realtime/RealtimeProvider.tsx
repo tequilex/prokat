@@ -11,8 +11,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  CLOSE, isTerminalClose, type ClientFrame, type RequestKind,
+  CLOSE, isTerminalClose, type ClientFrame,
 } from "@/lib/realtime/events";
+import type { RequestNotificationKind } from "@/lib/notifications/kinds";
 import { content } from "@theme/content";
 import { toast } from "sonner";
 import { fetchRealtimeUpdate } from "@/server/actions/realtime";
@@ -30,7 +31,7 @@ const DEV_REALTIME_PORT = 3100;
 
 type RealtimeEvent =
   | { type: "message"; threadId: string; messageId: string }
-  | { type: "request"; requestId: string; kind: RequestKind };
+  | { type: "request"; requestId: string; kind: RequestNotificationKind };
 
 function socketUrl(): string {
   if (process.env.NODE_ENV === "development") {

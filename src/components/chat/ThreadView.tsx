@@ -74,7 +74,12 @@ export function ThreadView({
   const nextKey = useRef(0);
   // Отдельный живой регион ВНЕ ленты. Атрибут на самой <ol> объявлял бы и
   // догрузку сорока ранних сообщений тоже — скринридер зачитал бы их все.
-  const [announcement, setAnnouncement] = useState("");
+  // Пара «текст + счётчик»: два одинаковых сообщения подряд не меняют строку,
+  // DOM остаётся прежним, и живой регион молчит. Счётчик делает каждое
+  // объявление новым, не попадая при этом в озвучку.
+  const [announcement, setAnnouncement] = useState<{ text: string; n: number }>(
+    { text: "", n: 0 },
+  );
 
   const threadId = mode.kind === "thread" ? mode.threadId : null;
 
@@ -102,7 +107,10 @@ export function ThreadView({
     const foreign = incoming.filter((m) => m.senderUserId !== viewerId);
     const last = foreign[foreign.length - 1];
     if (!last) return;
-    setAnnouncement(`${counterpartName ?? "Собеседник"}: ${last.body}`);
+    setAnnouncement((prev) => ({
+      text: `${counterpartName ?? "Собеседник"}: ${last.body}`,
+      n: prev.n + 1,
+    }));
   }, [viewerId, counterpartName]);
 
   // Лента — свой скроллер: панель ограничена по высоте на обеих ширинах, и
@@ -247,7 +255,10 @@ export function ThreadView({
       {/* Живой регион вне ленты и с aria-atomic: иначе скринридер зачитывал бы
         * всю историю при догрузке ранних сообщений. */}
       <p aria-live="polite" aria-atomic="true" className="sr-only">
-        {announcement}
+        {announcement.text}
+        {/* Меняется вместе с текстом и не читается вслух: нужен только чтобы
+          * повтор одного и того же сообщения тоже считался изменением. */}
+        <span hidden>{announcement.n}</span>
       </p>
       <ol
         ref={feedRef}

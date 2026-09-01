@@ -9,7 +9,7 @@
 // сообщения в событии нет), а лимит pg_notify — почти 8 КБ.
 
 import { and, eq, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb, type Tx } from "@/lib/db";
 import { bookingRequests, chatMessages, chatThreads, listings, users } from "@db/schema";
 import { canReadThread } from "@/lib/chat/rules";
 import { toPreview } from "@/server/chat";
@@ -19,8 +19,6 @@ import { content } from "@theme/content";
 import {
   REALTIME_CHANNEL, serializeNotify, type NotifyPayload,
 } from "@/lib/realtime/events";
-
-type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 
 export async function publish(tx: Tx, payload: NotifyPayload): Promise<void> {
   await tx.execute(sql`select pg_notify(${REALTIME_CHANNEL}, ${serializeNotify(payload)})`);

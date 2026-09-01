@@ -22,7 +22,6 @@ export const REALTIME_CHANNEL = "inrenta_realtime";
 const REQUEST_KINDS = NOTIFICATION_KINDS.filter(
   (k): k is RequestNotificationKind => k !== "chat_message",
 );
-export type RequestKind = RequestNotificationKind;
 
 const idSchema = z.string().min(1).max(64);
 
@@ -35,7 +34,7 @@ const notifySchema = z.discriminatedUnion("kind", [
     countFor: idSchema.nullable(),
   }),
   z.object({
-    kind: z.enum(REQUEST_KINDS as [RequestKind, ...RequestKind[]]),
+    kind: z.enum(REQUEST_KINDS as [RequestNotificationKind, ...RequestNotificationKind[]]),
     requestId: idSchema,
     recipients: z.array(idSchema).min(1).max(1),
     countFor: idSchema.nullable(),
@@ -46,7 +45,7 @@ export type NotifyPayload = z.infer<typeof notifySchema>;
 
 export type ClientFrame =
   | { type: "message"; threadId: string; messageId: string; counters: boolean }
-  | { type: "request"; requestId: string; kind: RequestKind; counters: boolean }
+  | { type: "request"; requestId: string; kind: RequestNotificationKind; counters: boolean }
   // Широковещательный: сервер потерял и восстановил LISTEN, всё случившееся в
   // разрыве потеряно безвозвратно — клиент дочитывает дельту сам.
   | { type: "resync" };
@@ -97,7 +96,7 @@ export function chatMessageNotify(input: {
 }
 
 export function requestNotify(input: {
-  kind: RequestKind;
+  kind: RequestNotificationKind;
   requestId: string;
   recipientId: string;
 }): NotifyPayload {

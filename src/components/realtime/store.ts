@@ -10,12 +10,11 @@
 // другому.
 
 import { createStore } from "zustand/vanilla";
+import type { Counters } from "@/server/actions/realtime";
 
-export type Counters = {
-  messages: number;
-  notifications: number;
-  requests: number;
-};
+// Тип берётся из ручки, которая эти числа и отдаёт: вторая декларация
+// разошлась бы с ней молча при добавлении счётчика.
+export type { Counters } from "@/server/actions/realtime";
 
 export type ConnectionStatus =
   /** Соединения нет, но оно ожидается. */

@@ -16,3 +16,7 @@ export function getDb(): NodePgDatabase {
   _db = drizzle(getPool());
   return _db;
 }
+
+// Транзакция Drizzle. Тип выводится из самого клиента, поэтому не разъедется с
+// ним при обновлении. Раньше эта же строка была продублирована в трёх модулях.
+export type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];

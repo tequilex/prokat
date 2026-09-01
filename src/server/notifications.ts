@@ -6,12 +6,10 @@
 // дедлок на треде с активной перепиской — это проверено, а не предположено.
 
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb, type Tx } from "@/lib/db";
 import { notifications } from "@db/schema";
 import { newId } from "@/lib/id";
 import { type NotificationKind, notificationRecipient } from "@/lib/notifications/kinds";
-
-type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 
 // Сколько прочитанных строк удаляется за один проход. Крона нет, чистка
 // ленивая — верхняя граница нужна, чтобы редкий заход на страницу не превращался
@@ -20,10 +18,10 @@ const PURGE_BATCH = 200;
 const PURGE_AFTER_DAYS = 30;
 
 export type NotifyResult = {
-  id: string;
   // false означает, что строка схлопнулась с уже существующей непрочитанной.
-  // На этом флаге будет висеть «счётчик +1» при подключении сокета: слать его на
-  // схлопнутое уведомление нельзя, иначе клиентский счётчик уедет от базы.
+  // На этом флаге висит «счётчик +1»: слать его на схлопнутое уведомление
+  // нельзя, иначе клиентский счётчик уедет от базы. id вызывающим не нужен —
+  // при схлопывании RETURNING отдаёт чужой, и пользы от него нет.
   inserted: boolean;
 };
 
@@ -56,7 +54,7 @@ export async function notify(
     })
     // id из RETURNING, а не сгенерированный: при схлопывании возвращается id
     // существующей строки. xmax = 0 отличает настоящую вставку от обновления.
-    .returning({ id: notifications.id, inserted: sql<boolean>`(xmax = 0)` });
+    .returning({ inserted: sql<boolean>`(xmax = 0)` });
 
   return rows[0] ?? null;
 }

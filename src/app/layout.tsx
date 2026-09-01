@@ -13,6 +13,7 @@ import "@theme/typography.css";
 import { headers } from "next/headers";
 import { RealtimeProvider } from "@/components/realtime/RealtimeProvider";
 import { RealtimeToaster } from "@/components/realtime/RealtimeToaster";
+import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
 
 export const metadata: Metadata = {
   title: { default: seo.defaultTitle, template: `%s — ${seo.siteName}` },
@@ -55,6 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
           <MobileNav />
           <RealtimeToaster />
+          <ConnectionStatus />
         </ThemeProvider>
         </RealtimeProvider>
       </body>
