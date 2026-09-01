@@ -23,8 +23,17 @@ describe("theme tokens", () => {
 
   // Хедер стал сплошной панелью: он совпадает с карточкой, а не с холстом,
   // иначе панель сливается с фоном и залитое поле поиска в ней пропадает.
+  //
+  // Проверяется равенство, а не конкретный hex: смысл правила в отношении двух
+  // токенов, и прибитое значение роняло бы тест при каждой смене палитры —
+  // причём с сообщением про хедер, хотя меняли карточку.
   it("keeps header equal to card", () => {
-    expect(block(":root")).toMatch(/--color-header:\s*#FFFFFF/i);
-    expect(block(".dark")).toMatch(/--color-header:\s*#242426/i);
+    for (const theme of [":root", ".dark"]) {
+      const css = block(theme);
+      const header = css.match(/--color-header:\s*(#[0-9A-F]{6})/i)?.[1];
+      const card = css.match(/--color-card:\s*(#[0-9A-F]{6})/i)?.[1];
+      expect(header, `${theme}: --color-header`).toBeDefined();
+      expect(header?.toUpperCase(), theme).toBe(card?.toUpperCase());
+    }
   });
 });

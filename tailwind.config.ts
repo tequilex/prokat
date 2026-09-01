@@ -8,6 +8,9 @@ const c = (name: string) =>
   `color-mix(in srgb, var(${name}) calc(<alpha-value> * 100%), transparent)`;
 
 export default {
+  // На тач-устройствах :hover залипает после тапа до следующего касания.
+  // Чем заметнее ховер, тем заметнее артефакт — а мы его усиливаем.
+  future: { hoverOnlyWhenSupported: true },
   content: ["./src/**/*.{ts,tsx}", "./theme/**/*.{ts,tsx}"],
   darkMode: ["class"],
   theme: {
@@ -47,6 +50,13 @@ export default {
         border: c("--color-border"),
         ring:   c("--color-ring"),
         destructive: c("--color-danger"),
+        // Состояния идут МИМО c(): токен уже полупрозрачный, и обёртка дала бы
+        // вложенный color-mix, где bg-hover/50 значит не то, что читается.
+        hover: "var(--color-hover)",
+        selected: {
+          DEFAULT: "var(--color-selected)",
+          foreground: "var(--color-selected-fg)",
+        },
       },
       fontFamily: {
         display: "var(--font-display)",
@@ -76,6 +86,11 @@ export default {
         display: "var(--tracking-display)",
         mark:    "var(--tracking-mark)",
         mono:    "var(--tracking-mono)",
+      },
+      // Кант выбранного не влезает в форму { DEFAULT, foreground } у цвета,
+      // поэтому регистрируется отдельно — иначе border-selected не появится.
+      borderColor: {
+        selected: "var(--color-selected-border)",
       },
       // Единственная своя анимация в проекте: три точки индикатора «печатает…».
       // Применяется через motion-safe:, поэтому под prefers-reduced-motion гаснет.

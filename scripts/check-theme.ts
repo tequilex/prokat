@@ -13,6 +13,10 @@ export const REQUIRED_TOKENS = [
   "--color-border",
   "--color-ring",
   "--color-danger",
+  "--color-hover",
+  "--color-selected",
+  "--color-selected-fg",
+  "--color-selected-border",
   "--radius-sm",
   "--radius-lg",
   "--radius-pill",
@@ -21,6 +25,13 @@ export const REQUIRED_TOKENS = [
   "--font-mark",
   "--font-mono",
 ] as const;
+
+// Именно объявление, а не подстрока: --color-selected является префиксом
+// --color-selected-fg, и блок, где объявлен только -fg, проходил бы проверку.
+// Заодно не засчитывается упоминание токена в комментарии.
+function declares(block: string, token: string): boolean {
+  return new RegExp(`${token.replace(/-/g, "\\-")}\\s*:`).test(block);
+}
 
 const COLOR_TOKENS = REQUIRED_TOKENS.filter(t => t.startsWith("--color-"));
 
@@ -34,10 +45,10 @@ export function validateTokensCss(css: string): ValidationResult {
   const darkBlock = extractBlock(css, ".dark");
   const missing: string[] = [];
   for (const token of REQUIRED_TOKENS) {
-    if (!rootBlock.includes(token)) missing.push(`:root → ${token}`);
+    if (!declares(rootBlock, token)) missing.push(`:root → ${token}`);
   }
   for (const token of COLOR_TOKENS) {
-    if (!darkBlock.includes(token)) missing.push(`.dark → ${token}`);
+    if (!declares(darkBlock, token)) missing.push(`.dark → ${token}`);
   }
   return { ok: missing.length === 0, missing };
 }

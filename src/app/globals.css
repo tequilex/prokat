@@ -135,6 +135,28 @@
 }
 
 @layer components {
+  /* Наведение. Накладка рисуется ПОВЕРХ собственной заливки элемента, а не
+   * вместо неё: background-image кладётся над background-color.
+   *
+   * hover:bg-* так не умеет — свойство одно, и база исчезает. Элемент с
+   * bg-background на карточке терял заливку и получал 7% чернил по карточке:
+   * заметность 1.005 вместо 1.15, то есть ховера не было вовсе. А элемент с
+   * bg-muted становился под курсором СВЕТЛЕЕ, чем в покое.
+   *
+   * Медиа-запрос — против залипания на тач-устройствах: там :hover держится
+   * после тапа до следующего касания. */
+  .hoverable { transition: background-image 150ms ease; }
+  @media (hover: hover) and (pointer: fine) {
+    .hoverable:hover {
+      background-image: linear-gradient(var(--color-hover), var(--color-hover));
+    }
+    /* На выбранном ховер не рисуется: он спорил бы с заливкой состояния и
+     * делал активный пункт под курсором иным, чем в покое. */
+    .hoverable[aria-current="page"]:hover,
+    .hoverable[aria-pressed="true"]:hover,
+    .hoverable[data-selected]:hover { background-image: none; }
+  }
+
   /* Парящая стеклянная пилюля хедера: полупрозрачный фон размывает контент под
    * собой (backdrop-filter), хайлайт-бордер и мягкая тень дают эффект «парения».
    * Все значения — из токенов (--glass-*), тема переключается автоматически. */
@@ -408,9 +430,12 @@
 .rdp-theme .rdp-range_start .rdp-day_button { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
 .rdp-theme .rdp-range_end .rdp-day_button { border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
 .rdp-theme .rdp-range_start.rdp-range_end .rdp-day_button { border-radius: var(--radius-lg); }
-/* Ховер только по НЕвыбранным дням — чтобы не мутнить зелёную заливку. */
+/* Ховер только по НЕвыбранным дням — чтобы не мутнить зелёную заливку.
+ * Накладка, а не --color-muted: на выровненной шкале нейтралей плашка сошлась
+ * бы с «занято» (1.04), и наведение на свободный день читалось бы как занятый.
+ * Накладка адаптируется к подложке — тот же приём, что у --color-hover. */
 .rdp-theme .rdp-day:not(.rdp-selected) .rdp-day_button:hover:not([disabled]) {
-  background: var(--color-muted);
+  background: var(--color-hover);
 }
 /* «В аренде» — состояние предмета, значит охра. Красный по закону цвета
  * означает отмену и спор, занятость к ним не относится. */

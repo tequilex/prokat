@@ -42,6 +42,7 @@
 - [0005](decisions/0005-booking-as-request-no-payments.md) — бронь как заявка, без платежей внутри
 - [0006](decisions/0006-next-16-upgrade.md) — мажорный скачок на Next 16 и точный пин версии
 - [0007](decisions/0007-chat-thread-per-listing.md) — переписка тредом на объявление, без реального времени
+- [0008](decisions/0008-interaction-states-as-overlays.md) — состояния накладками, охра как «выбрано», перестроенные шкалы нейтралей
 
 ## Где ещё лежит правда
 
