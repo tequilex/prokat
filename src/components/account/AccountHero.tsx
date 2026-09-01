@@ -17,7 +17,7 @@ export function AccountHero({
   pendingCount: number;
 }) {
   return (
-    <div className="relative -mt-10 hidden items-end gap-5 md:flex">
+    <div className="relative -mt-14 hidden items-end gap-5 md:flex">
       {/* Кольцо цвета холста отделяет аватар от фотографии. */}
       <Avatar
         src={me.image}

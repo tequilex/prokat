@@ -26,7 +26,7 @@ export async function Header() {
     // внутри оторвана от краёв, скруглена со всех сторон и непрозрачна. Стекла
     // нет, поэтому подтягивать обложки под хедер отрицательным отступом нельзя:
     // спрятанное под панелью просто не увидят (в зазорах вокруг — увидят).
-    <header className="sticky top-0 z-40 w-full">
+    <header data-site-header className="sticky top-0 z-40 w-full">
       <div className="mx-auto max-w-[1200px] px-4 py-[var(--header-inset)]">
         <div className="flex h-[var(--header-h)] items-center gap-2 rounded-lg border border-border bg-header px-3 md:gap-3 md:px-4">
           {/* Бренд и город. Разделитель и город появляются только с md: на

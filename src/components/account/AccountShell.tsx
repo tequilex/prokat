@@ -74,9 +74,12 @@ export function AccountShell({
   // целиком, а путь к списку даёт кнопка «назад» в шапке переписки. На десктопе
   // заголовок остаётся — там список виден слева и без него.
   const isThread = /^\/chat\/.+/.test(pathname);
+  const isChatList = pathname === "/chat";
+  // Раздел переписок на мобайле идёт во весь экран, без отступов контейнера.
+  const isChat = isChatList || isThread;
 
   return (
-    <div>
+    <div data-account-shell>
       {/* Обложка на всю ширину, уезжает под плавающую панель хедера (она sticky
         * и остаётся сверху) — тем же приёмом, что герой главной. На мобайле
         * показывается только на хабе — в подразделах ей делать нечего.
@@ -90,12 +93,15 @@ export function AccountShell({
           <CoverPickerButton
             me={identity}
             pendingCount={pendingCount}
-            className="absolute bottom-4 right-4 z-10 md:bottom-5 md:right-6"
+            /* md:bottom-9, а не 5: герой наезжает на обложку на 56px, и при
+             * меньшем отступе кнопка упирается в ряд метрик под ней. На мобайле
+             * героя нет — там прежние bottom-4. */
+            className="absolute bottom-4 right-4 z-10 md:bottom-9 md:right-6"
           />
         </ProfileCover>
       )}
 
-      <div className={`mx-auto w-full max-w-6xl px-4 pb-6 ${identity ? "" : "pt-6"}`}>
+      <div className={`mx-auto w-full max-w-6xl px-4 pb-6 ${identity ? "" : "pt-6"} ${identity && !isHub && !isChat ? "max-md:pt-3" : ""} ${isChat ? "max-md:pb-0" : ""}`}>
         {identity && <AccountHero me={identity} pendingCount={pendingCount} />}
         {identity && isHub && (
           <CabinetHub me={identity} groups={groups} icons={ICONS} signOut={signOut} />
@@ -128,7 +134,7 @@ export function AccountShell({
           </nav>
         )}
 
-        <div className={`md:grid md:grid-cols-[250px_1fr] md:items-start md:gap-5 ${identity ? "md:mt-6" : ""}`}>
+        <div className={`md:grid md:grid-cols-[250px_1fr] md:items-start md:gap-5 ${identity ? "md:mt-3" : ""}`}>
           <aside className="hidden md:sticky md:top-20 md:flex md:flex-col md:gap-3.5">
             <nav aria-label="Разделы" className="surface flex flex-col gap-0.5 p-2">
               {groups.map((group) => (
@@ -185,15 +191,31 @@ export function AccountShell({
 
           <div className="min-w-0">
             {currentItem && (
-              <h1 className={`mb-4 flex items-center gap-2.5 font-display text-2xl font-bold ${identity ? "max-md:mt-4" : ""} ${isHub ? "max-md:mt-6" : ""} ${isThread ? "max-md:hidden" : ""}`}>
+              /* На десктопе заголовок скрыт визуально, но остаётся в разметке
+               * (md:sr-only): раздел и так назван подсвеченным пунктом сайдбара,
+               * а страница без единственного h1 — это дыра для скринридера.
+               * На мобайле он виден: сайдбара там нет, и в нём же живёт кнопка
+               * «назад» — единственный путь из подраздела.
+               *
+               * В чате он sr-only на обеих ширинах: панель раздела там fixed и
+               * перекрывает поток, поэтому видимый заголовок с кнопкой «назад»
+               * рисуют сами экраны чата. */
+              <h1 className={`mb-3 flex items-center gap-2.5 font-display text-2xl font-bold ${isChat ? "sr-only" : "md:sr-only"} ${identity ? "max-md:mt-4" : ""} ${isHub ? "max-md:mt-6" : ""}`}>
                 {/* Ленты табов на мобайле больше нет — назад ведёт кнопка у
                   * заголовка: обычно туда, откуда пришли, а без истории (по
-                  * прямой ссылке) — в кабинет. На хабе и десктопе её нет. */}
+                  * прямой ссылке) — в кабинет. На хабе и десктопе её нет.
+                  *
+                  * Список переписок — исключение: оттуда всегда в кабинет, без
+                  * оглядки на историю. Иначе получается качели. Из переписки
+                  * назад ведёт в список, значит запись перед списком в истории
+                  * — почти всегда другая переписка, и «назад» со списка кидало
+                  * бы обратно в чат, из которого только что вышли. */}
                 {identity && !isHub && (
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.history.length > 1) router.back();
+                      if (isChatList) router.push("/cabinet" as never);
+                      else if (window.history.length > 1) router.back();
                       else router.push("/cabinet" as never);
                     }}
                     aria-label="Назад"
