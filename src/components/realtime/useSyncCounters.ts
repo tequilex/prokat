@@ -15,8 +15,14 @@ export function useSyncCounters(): () => void {
   const store = useContext(RealtimeContext);
   return useCallback(() => {
     // Без события: содержимое всплывашки здесь не нужно, только числа.
-    void fetchRealtimeUpdate().then((res) => {
-      if (res.ok) store.getState().setCounters(res.data.counters);
-    });
+    // catch обязателен: при обрыве сети и на вкладке от прошлой сборки вызов
+    // бросает, а не возвращает {ok:false}. Здесь это не критично — счётчики
+    // подтянутся со следующим событием, — но необработанный промис шумит в
+    // консоли и в логах сервера.
+    void fetchRealtimeUpdate()
+      .then((res) => {
+        if (res.ok) store.getState().setCounters(res.data.counters);
+      })
+      .catch(() => {});
   }, [store]);
 }

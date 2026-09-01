@@ -45,4 +45,12 @@ describe("статус связи", () => {
     withStatus("unauthorized");
     expect(screen.getByRole("status")).toHaveTextContent(content.realtime.signedOut);
   });
+
+  // Вкладка от прошлой сборки: действия зовут id, которых на сервере уже нет.
+  // Сама не наладится — единственное лечение перезагрузка, и сказать об этом
+  // надо, иначе интерфейс просто молча перестаёт реагировать.
+  it("устаревшую вкладку просит перезагрузить", () => {
+    withStatus("stale");
+    expect(screen.getByRole("status")).toHaveTextContent(content.realtime.stale);
+  });
 });

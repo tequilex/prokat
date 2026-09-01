@@ -21,15 +21,19 @@ export function ConnectionStatus() {
 
   useEffect(() => {
     if (status === "online") { setVisible(false); return; }
-    // Терминальный отказ ждать незачем: сессии нет, само не починится.
-    if (status === "unauthorized") { setVisible(true); return; }
+    // Терминальные состояния ждать незачем: сессии нет или вкладка от прошлой
+    // сборки — само не починится.
+    if (status === "unauthorized" || status === "stale") { setVisible(true); return; }
     const timer = setTimeout(() => setVisible(true), GRACE_MS);
     return () => clearTimeout(timer);
   }, [status]);
 
   if (!visible) return null;
 
-  const terminal = status === "unauthorized";
+  const terminal = status === "unauthorized" || status === "stale";
+  const text = status === "stale" ? content.realtime.stale
+    : status === "unauthorized" ? content.realtime.signedOut
+      : content.realtime.offline;
   return (
     <div
       role="status"
@@ -51,7 +55,7 @@ export function ConnectionStatus() {
           aria-hidden="true"
           className={`size-2 shrink-0 rounded-pill ${terminal ? "bg-destructive" : "bg-muted-foreground"}`}
         />
-        {terminal ? content.realtime.signedOut : content.realtime.offline}
+        {text}
       </span>
     </div>
   );

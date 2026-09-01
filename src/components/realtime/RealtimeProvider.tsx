@@ -46,6 +46,9 @@ function socketUrl(): string {
 const REFRESH_DEBOUNCE_MS = 400;
 const BACKOFF_BASE_MS = 1000;
 const BACKOFF_MAX_MS = 30_000;
+// Один отказ — обычный сетевой сбой, три подряд — что-то, что само не
+// пройдёт: чаще всего вкладка от прошлой сборки.
+const MAX_PULL_FAILURES = 3;
 
 // Refresh нужен только там, где есть что чинить: список переписок, галочки,
 // серверные бейджи. На каталоге его нет вовсе, а страницы там force-dynamic —
@@ -74,6 +77,7 @@ export function RealtimeProvider({
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
+  const failuresRef = useRef(0);
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
 
@@ -103,7 +107,21 @@ export function RealtimeProvider({
   // Один вызов на событие: он же приносит счётчики, он же — текст всплывашки.
   // Событие несёт только идентификаторы, тела сообщения в нём нет.
   const pull = useCallback(async (event?: RealtimeEvent) => {
-    const res = await fetchRealtimeUpdate(event);
+    let res;
+    try {
+      res = await fetchRealtimeUpdate(event);
+    } catch {
+      // Сюда попадает и обрыв сети, и «Failed to find Server Action» —
+      // вкладка от прошлой сборки, где id действий уже другие. Различить их
+      // по тексту нельзя, но лечение общее: несколько отказов подряд означают,
+      // что само не наладится, и человеку надо сказать про перезагрузку.
+      failuresRef.current += 1;
+      if (failuresRef.current >= MAX_PULL_FAILURES) {
+        store.getState().setStatus("stale");
+      }
+      return;
+    }
+    failuresRef.current = 0;
     if (!res.ok) return;
     store.getState().setCounters(res.data.counters);
     const t = res.data.toast;
