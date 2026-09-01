@@ -27,3 +27,5 @@ dist/
 pg_data/
 caddy_data/
 caddy_config/
+
+design_handoff_chat_redesign/
