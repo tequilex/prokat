@@ -1,6 +1,6 @@
 import {
   pgTable, text, varchar, integer, bigint, timestamp, pgEnum, jsonb,
-  boolean, date, doublePrecision, index, primaryKey,
+  boolean, date, doublePrecision, index, primaryKey, uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const userRole = pgEnum("user_role", ["user", "moderator", "admin"]);
@@ -205,4 +205,50 @@ export const events = pgTable("events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({
   entityIdx: index("events_entity_idx").on(t.entityType, t.entityId, t.createdAt),
+}));
+
+// chat_threads — переписка по конкретному объявлению между его владельцем и
+// одним арендатором. Ключ (listing_id, customer_user_id): у владельца с десятком
+// вещей переписки не смешиваются, а контекст разговора виден без вопросов.
+//
+// owner_user_id денормализован из listings по той же причине, что и в
+// booking_requests: список «мои переписки» читается по индексу без join.
+// Владелец объявления неизменен — рассинхрона не будет.
+//
+// Превью последнего сообщения намеренно НЕ денормализовано: колонка под него
+// породила бы гонку записи при двух почти одновременных сообщениях, а на
+// текущих объёмах LATERAL-джойн к chat_messages ничего не стоит. last_message_at
+// остаётся — по нему сортируется список, и без колонки в индексе сортировать нечем.
+export const chatThreads = pgTable("chat_threads", {
+  id: text("id").primaryKey(),
+  listingId: text("listing_id").notNull().references(() => listings.id, { onDelete: "cascade" }),
+  customerUserId: text("customer_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  lastMessageAt: timestamp("last_message_at").defaultNow().notNull(),
+  // Курсоры прочтения — id последнего прочитанного сообщения, а не timestamp:
+  // индекс chat_messages идёт по id (ULID), и timestamp с ним не сравнить.
+  ownerLastReadMessageId: text("owner_last_read_message_id"),
+  customerLastReadMessageId: text("customer_last_read_message_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  pairUq: uniqueIndex("chat_threads_listing_customer_uq").on(t.listingId, t.customerUserId),
+  ownerIdx: index("chat_threads_owner_idx").on(t.ownerUserId, t.lastMessageAt),
+  customerIdx: index("chat_threads_customer_idx").on(t.customerUserId, t.lastMessageAt),
+}));
+
+// chat_messages — id это ULID, он лексикографически сортируется по времени.
+// Поэтому история листается курсором (WHERE thread_id = ? AND id < ?), без
+// OFFSET, который деградирует на длинных переписках.
+export const chatMessages = pgTable("chat_messages", {
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull().references(() => chatThreads.id, { onDelete: "cascade" }),
+  senderUserId: text("sender_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // Предел длины держит zod в lib/chat/validation, а не БД: сообщение приходит
+  // извне, и отказать надо до похода в базу.
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  threadIdx: index("chat_messages_thread_idx").on(t.threadId, t.id),
+  // Без него каскад при удалении пользователя пойдёт сиквеншл-сканом.
+  senderIdx: index("chat_messages_sender_idx").on(t.senderUserId),
 }));

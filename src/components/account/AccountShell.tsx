@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronLeft, ClipboardList, Bell, Package, CalendarDays, User, LogOut, Zap,
+  MessageCircle,
 } from "lucide-react";
 import { Brackets } from "@/components/brand/Brackets";
 import { useSignOut } from "@/components/auth/useSignOut";
@@ -23,6 +24,7 @@ import { ACCOUNT_COVER_HEIGHT, type AccountIdentity } from "@/components/account
 
 const ICONS: Record<AccountNavIcon, typeof User> = {
   summary: Zap,
+  messages: MessageCircle,
   requests: ClipboardList,
   inbox: Bell,
   listings: Package,
@@ -68,6 +70,10 @@ export function AccountShell({
   const pendingCount = flat.find((it) => it.icon === "inbox")?.badge ?? 0;
   // Мобильный хаб живёт только на «Сводке»; в подразделах — кнопка назад.
   const isHub = identity != null && pathname === "/cabinet";
+  // На мобильной переписке заголовок раздела скрыт: экран занимает вьюпорт
+  // целиком, а путь к списку даёт кнопка «назад» в шапке переписки. На десктопе
+  // заголовок остаётся — там список виден слева и без него.
+  const isThread = /^\/chat\/.+/.test(pathname);
 
   return (
     <div>
@@ -179,7 +185,7 @@ export function AccountShell({
 
           <div className="min-w-0">
             {currentItem && (
-              <h1 className={`mb-4 flex items-center gap-2.5 font-display text-2xl font-bold ${identity ? "max-md:mt-4" : ""} ${isHub ? "max-md:mt-6" : ""}`}>
+              <h1 className={`mb-4 flex items-center gap-2.5 font-display text-2xl font-bold ${identity ? "max-md:mt-4" : ""} ${isHub ? "max-md:mt-6" : ""} ${isThread ? "max-md:hidden" : ""}`}>
                 {/* Ленты табов на мобайле больше нет — назад ведёт кнопка у
                   * заголовка: обычно туда, откуда пришли, а без истории (по
                   * прямой ссылке) — в кабинет. На хабе и десктопе её нет. */}

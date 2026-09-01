@@ -77,6 +77,17 @@ export default {
         mark:    "var(--tracking-mark)",
         mono:    "var(--tracking-mono)",
       },
+      // Единственная своя анимация в проекте: три точки индикатора «печатает…».
+      // Применяется через motion-safe:, поэтому под prefers-reduced-motion гаснет.
+      keyframes: {
+        "chat-dot": {
+          "0%, 60%, 100%": { opacity: ".25", transform: "translateY(0)" },
+          "30%": { opacity: "1", transform: "translateY(-2px)" },
+        },
+      },
+      animation: {
+        "chat-dot": "chat-dot 1.2s infinite",
+      },
     },
   },
   plugins: [animate, typography],

@@ -1,0 +1,335 @@
+// Read-слой переписки.
+//
+// Список диалогов собирается двумя отдельными запросами — «где я владелец» и
+// «где я арендатор», — а не одним с `OR`. Причина в индексах: у chat_threads их
+// два, (owner_user_id, last_message_at) и (customer_user_id, last_message_at), и
+// условие `owner = me OR customer = me` не даёт использовать ни один как есть —
+// планировщик возьмёт BitmapOr и отсортирует весь набор. Две ветки с LIMIT в
+// каждой дают два индексных прохода; слияние по last_message_at доделывается в
+// JS и на размере страницы стоит ничего.
+
+import { and, desc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { categories, chatMessages, chatThreads, cities, listings, users } from "@db/schema";
+import { canReadThread } from "@/lib/chat/rules";
+
+export const MESSAGES_PAGE_SIZE = 40;
+const THREADS_PAGE_SIZE = 50;
+const PREVIEW_LENGTH = 200;
+
+export type ThreadListItem = {
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  listingSlug: string;
+  /** Первый кадр объявления — миниатюра в строке списка. */
+  listingImage: string | null;
+  counterpartId: string;
+  counterpartName: string | null;
+  counterpartImage: string | null;
+  lastMessageAt: Date;
+  preview: string;
+  lastMessageMine: boolean;
+  /** С какой стороны человек в этой переписке — нужно фильтру «Мои вещи». */
+  iAmOwner: boolean;
+  /** Моё последнее сообщение уже прочитано собеседником: галочка вместо одной. */
+  lastMessageReadByCounterpart: boolean;
+  unread: number;
+};
+
+export type ThreadMessage = {
+  id: string;
+  senderUserId: string;
+  body: string;
+  createdAt: Date;
+};
+
+export type ThreadHeader = {
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  listingSlug: string;
+  listingCitySlug: string;
+  listingCategorySlug: string;
+  listingStatus: "active" | "hidden" | "archived";
+  /** Для чипа объявления в шапке переписки. Строку цены и залога собирают
+   *  formatPrice/formatDeposit из lib/catalog/format — второй реализации
+   *  денежного формата в проекте быть не должно. */
+  listingImage: string | null;
+  listingPriceDay: number | null;
+  listingDepositType: "money" | "document" | "none";
+  listingDepositAmount: number | null;
+  ownerUserId: string;
+  customerUserId: string;
+  counterpartId: string;
+  counterpartName: string | null;
+  counterpartImage: string | null;
+  counterpartBannedAt: Date | null;
+  /** Курсор читателя — по нему считается разделитель непрочитанного. Снимается
+   *  до markThreadRead, иначе разделитель исчезнет сразу после открытия. */
+  viewerLastReadMessageId: string | null;
+  /** Курсор собеседника — по нему рисуются галочки прочтения. Это снимок на
+   *  момент рендера: до задачи 2 сигнала о его сдвиге нет, поэтому «прочитано»
+   *  появляется с задержкой, на следующем обновлении страницы. */
+  counterpartLastReadMessageId: string | null;
+};
+
+// Курсор непрочитанного зависит от того, с какой стороны смотрит человек.
+// COALESCE к пустой строке: NULL означает «не читал ничего», и тогда непрочитано
+// всё — ULID лексикографически больше пустой строки всегда.
+function unreadCursor(userId: string) {
+  return sql`coalesce(case when ${chatThreads.ownerUserId} = ${userId}
+    then ${chatThreads.ownerLastReadMessageId}
+    else ${chatThreads.customerLastReadMessageId} end, '')`;
+}
+
+// Экспортируется ради тестов: функция чистая, а превью — то, что человек видит
+// в списке чаще самого сообщения.
+export function toPreview(body: string): string {
+  const flat = body.replace(/\s+/g, " ").trim();
+  return flat.length > PREVIEW_LENGTH ? `${flat.slice(0, PREVIEW_LENGTH)}…` : flat;
+}
+
+export async function getThreadList(userId: string): Promise<ThreadListItem[]> {
+  const db = getDb();
+
+  const columns = {
+    id: chatThreads.id,
+    listingId: chatThreads.listingId,
+    ownerUserId: chatThreads.ownerUserId,
+    customerUserId: chatThreads.customerUserId,
+    lastMessageAt: chatThreads.lastMessageAt,
+    ownerLastReadMessageId: chatThreads.ownerLastReadMessageId,
+    customerLastReadMessageId: chatThreads.customerLastReadMessageId,
+  };
+
+  const [asOwner, asCustomer] = await Promise.all([
+    db.select(columns).from(chatThreads)
+      .where(eq(chatThreads.ownerUserId, userId))
+      .orderBy(desc(chatThreads.lastMessageAt))
+      .limit(THREADS_PAGE_SIZE),
+    db.select(columns).from(chatThreads)
+      .where(eq(chatThreads.customerUserId, userId))
+      .orderBy(desc(chatThreads.lastMessageAt))
+      .limit(THREADS_PAGE_SIZE),
+  ]);
+
+  const threads = [...asOwner, ...asCustomer]
+    .sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime())
+    .slice(0, THREADS_PAGE_SIZE);
+
+  if (threads.length === 0) return [];
+
+  const threadIds = threads.map((t) => t.id);
+  const counterpartIds = threads.map((t) => (t.ownerUserId === userId ? t.customerUserId : t.ownerUserId));
+  const listingIds = threads.map((t) => t.listingId);
+
+  const [lastMessages, unreadRows, listingRows, counterpartRows] = await Promise.all([
+    // DISTINCT ON по треду с сортировкой по id DESC — идёт по индексу
+    // (thread_id, id) и берёт последнее сообщение каждого треда одним проходом.
+    db.selectDistinctOn([chatMessages.threadId], {
+      threadId: chatMessages.threadId,
+      id: chatMessages.id,
+      senderUserId: chatMessages.senderUserId,
+      body: chatMessages.body,
+    })
+      .from(chatMessages)
+      .where(inArray(chatMessages.threadId, threadIds))
+      .orderBy(chatMessages.threadId, desc(chatMessages.id)),
+    db.select({
+      threadId: chatMessages.threadId,
+      cnt: sql<number>`count(*)::int`,
+    })
+      .from(chatMessages)
+      .innerJoin(chatThreads, eq(chatThreads.id, chatMessages.threadId))
+      .where(and(
+        inArray(chatMessages.threadId, threadIds),
+        ne(chatMessages.senderUserId, userId),
+        gt(chatMessages.id, unreadCursor(userId)),
+      ))
+      .groupBy(chatMessages.threadId),
+    db.select({
+      id: listings.id,
+      title: listings.title,
+      slug: listings.slug,
+      // Первый кадр — обложка объявления (то же соглашение, что в ListingCard).
+      // Достаём его в SQL: тянуть весь photos_json на полсотни объявлений ради
+      // миниатюры 14×14 незачем.
+      image: sql<string | null>`${listings.photosJson}->0->>'url'`,
+    })
+      .from(listings)
+      .where(inArray(listings.id, listingIds)),
+    db.select({ id: users.id, name: users.name, image: users.image })
+      .from(users)
+      .where(inArray(users.id, counterpartIds)),
+  ]);
+
+  const lastById = new Map(lastMessages.map((m) => [m.threadId, m]));
+  const unreadById = new Map(unreadRows.map((r) => [r.threadId, r.cnt]));
+  const listingById = new Map(listingRows.map((l) => [l.id, l]));
+  const userById = new Map(counterpartRows.map((u) => [u.id, u]));
+
+  return threads.map((t) => {
+    const iAmOwner = t.ownerUserId === userId;
+    const counterpartId = iAmOwner ? t.customerUserId : t.ownerUserId;
+    const last = lastById.get(t.id);
+    const listing = listingById.get(t.listingId);
+    const counterpart = userById.get(counterpartId);
+    // Курсор той стороны, что напротив: моё сообщение прочитано, если оно не
+    // новее его отметки. ULID сравнивается лексикографически.
+    const counterpartCursor = iAmOwner ? t.customerLastReadMessageId : t.ownerLastReadMessageId;
+    const lastMessageMine = last?.senderUserId === userId;
+    return {
+      id: t.id,
+      listingId: t.listingId,
+      listingTitle: listing?.title ?? "",
+      listingSlug: listing?.slug ?? "",
+      listingImage: listing?.image ?? null,
+      counterpartId,
+      counterpartName: counterpart?.name ?? null,
+      counterpartImage: counterpart?.image ?? null,
+      lastMessageAt: t.lastMessageAt,
+      preview: last ? toPreview(last.body) : "",
+      lastMessageMine,
+      iAmOwner,
+      lastMessageReadByCounterpart: Boolean(
+        lastMessageMine && last && counterpartCursor && last.id <= counterpartCursor,
+      ),
+      unread: unreadById.get(t.id) ?? 0,
+    };
+  });
+}
+
+// Шапка треда. Возвращает null и для несуществующего треда, и для чужого:
+// снаружи эти случаи неразличимы намеренно.
+export async function getThreadHeader(threadId: string, userId: string): Promise<ThreadHeader | null> {
+  const db = getDb();
+  const rows = await db.select({
+    id: chatThreads.id,
+    listingId: chatThreads.listingId,
+    ownerUserId: chatThreads.ownerUserId,
+    customerUserId: chatThreads.customerUserId,
+    ownerLastReadMessageId: chatThreads.ownerLastReadMessageId,
+    customerLastReadMessageId: chatThreads.customerLastReadMessageId,
+    listingTitle: listings.title,
+    listingSlug: listings.slug,
+    listingCitySlug: cities.slug,
+    listingCategorySlug: categories.slug,
+    listingStatus: listings.status,
+    listingImage: sql<string | null>`${listings.photosJson}->0->>'url'`,
+    listingPriceDay: listings.priceDay,
+    listingDepositType: listings.depositType,
+    listingDepositAmount: listings.depositAmount,
+  })
+    .from(chatThreads)
+    .innerJoin(listings, eq(listings.id, chatThreads.listingId))
+    .innerJoin(cities, eq(cities.id, listings.cityId))
+    .innerJoin(categories, eq(categories.id, listings.categoryId))
+    .where(eq(chatThreads.id, threadId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  if (!canReadThread(userId, row)) return null;
+
+  const counterpartId = row.ownerUserId === userId ? row.customerUserId : row.ownerUserId;
+  const counterpartRows = await db.select({
+    name: users.name,
+    image: users.image,
+    bannedAt: users.bannedAt,
+  })
+    .from(users)
+    .where(eq(users.id, counterpartId))
+    .limit(1);
+  const counterpart = counterpartRows[0];
+
+  const iAmOwner = row.ownerUserId === userId;
+
+  return {
+    id: row.id,
+    listingId: row.listingId,
+    listingTitle: row.listingTitle,
+    listingSlug: row.listingSlug,
+    listingCitySlug: row.listingCitySlug,
+    listingCategorySlug: row.listingCategorySlug,
+    listingStatus: row.listingStatus,
+    listingImage: row.listingImage,
+    listingPriceDay: row.listingPriceDay,
+    listingDepositType: row.listingDepositType,
+    listingDepositAmount: row.listingDepositAmount,
+    ownerUserId: row.ownerUserId,
+    customerUserId: row.customerUserId,
+    counterpartId,
+    counterpartName: counterpart?.name ?? null,
+    counterpartImage: counterpart?.image ?? null,
+    counterpartBannedAt: counterpart?.bannedAt ?? null,
+    viewerLastReadMessageId: iAmOwner ? row.ownerLastReadMessageId : row.customerLastReadMessageId,
+    counterpartLastReadMessageId: iAmOwner
+      ? row.customerLastReadMessageId
+      : row.ownerLastReadMessageId,
+  };
+}
+
+// Страница истории. Курсор — id сообщения (ULID сортируется по времени), а не
+// OFFSET: он деградирует тем сильнее, чем длиннее переписка.
+// Отдаётся в хронологическом порядке — так его и рисует лента.
+export async function getMessages(
+  threadId: string,
+  before?: string,
+): Promise<{ messages: ThreadMessage[]; hasMore: boolean }> {
+  const db = getDb();
+  const rows = await db.select({
+    id: chatMessages.id,
+    senderUserId: chatMessages.senderUserId,
+    body: chatMessages.body,
+    createdAt: chatMessages.createdAt,
+  })
+    .from(chatMessages)
+    .where(before
+      ? and(eq(chatMessages.threadId, threadId), lt(chatMessages.id, before))
+      : eq(chatMessages.threadId, threadId))
+    .orderBy(desc(chatMessages.id))
+    .limit(MESSAGES_PAGE_SIZE + 1);
+
+  const hasMore = rows.length > MESSAGES_PAGE_SIZE;
+  const page = hasMore ? rows.slice(0, MESSAGES_PAGE_SIZE) : rows;
+  return { messages: page.reverse(), hasMore };
+}
+
+// Бейдж в личной навигации. Считается рядом с newRequestsCount, поэтому запрос
+// один и без обращения к списку тредов.
+export async function getUnreadCount(userId: string): Promise<number> {
+  const db = getDb();
+  const rows = await db.select({ cnt: sql<number>`count(*)::int` })
+    .from(chatMessages)
+    .innerJoin(chatThreads, eq(chatThreads.id, chatMessages.threadId))
+    .where(and(
+      or(eq(chatThreads.ownerUserId, userId), eq(chatThreads.customerUserId, userId)),
+      ne(chatMessages.senderUserId, userId),
+      gt(chatMessages.id, unreadCursor(userId)),
+    ));
+  return rows[0]?.cnt ?? 0;
+}
+
+// Есть ли у человека переписки вообще. Нужно заглушке на /chat: «переписок нет»
+// и «выберите переписку слева» — разные сообщения, и путать их нельзя.
+export async function countThreads(userId: string): Promise<number> {
+  const rows = await getDb().select({ cnt: sql<number>`count(*)::int` })
+    .from(chatThreads)
+    .where(or(eq(chatThreads.ownerUserId, userId), eq(chatThreads.customerUserId, userId)));
+  return rows[0]?.cnt ?? 0;
+}
+
+// Тред по объявлению для конкретного арендатора: нужен, чтобы кнопка «Написать»
+// вела в существующую переписку, а не заводила вторую.
+export async function findThreadByListing(listingId: string, customerUserId: string) {
+  const db = getDb();
+  const rows = await db.select({ id: chatThreads.id })
+    .from(chatThreads)
+    .where(and(
+      eq(chatThreads.listingId, listingId),
+      eq(chatThreads.customerUserId, customerUserId),
+    ))
+    .limit(1);
+  return rows[0]?.id ?? null;
+}

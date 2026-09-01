@@ -5,7 +5,7 @@ import { ThemeSegmented } from "@/components/providers/ThemeSegmented";
 
 export function Footer() {
   return (
-    <footer className="mx-auto mt-10 w-full max-w-[1200px] px-4 pb-6">
+    <footer data-site-footer className="mx-auto mt-10 w-full max-w-[1200px] px-4 pb-6">
       <div className="surface p-6 sm:p-8">
         {/* Сетка, а не space-between: колонки разной длины иначе расползаются по
          * краям. На мобайле два столбца, знак над ними во всю ширину. */}

@@ -6,7 +6,8 @@
 
 export type LimitKind =
   | "booking" | "login" | "register" | "resend" | "reset"
-  | "mail_ip" | "mail_daily" | "password_change";
+  | "mail_ip" | "mail_daily" | "password_change"
+  | "chat_message" | "chat_thread" | "chat_read";
 
 // Потолок отправки на весь сервис за сутки. Яндекс даёт 300 писем в сутки по
 // SMTP и режет раньше, если письма однотипные, — упереться хочется в свой
@@ -36,6 +37,16 @@ const RULES: Record<LimitKind, Rule> = {
   mail_daily: { windowMs: 24 * 60 * 60 * 1000, maxInWindow: MAIL_DAILY_CAP, gapMs: 0 },
   // Ключ — userId. Без лимита поле «текущий пароль» — оракул для перебора.
   password_change: { windowMs: 15 * 60 * 1000, maxInWindow: 5, gapMs: 0 },
+  // Переписка идёт очередями коротких реплик, поэтому паузы нет — как у login,
+  // работу делает счётчик. Пауза booking (30с) здесь резала бы живой разговор.
+  chat_message: { windowMs: 60 * 60 * 1000, maxInWindow: 60, gapMs: 0 },
+  // Второй контур: бот, пишущий первым сотне владельцев, потолок сообщений
+  // прошёл бы — по одному в каждый тред. Считается заведение новых тредов.
+  chat_thread: { windowMs: 60 * 60 * 1000, maxInWindow: 10, gapMs: 0 },
+  // Чтения, вызываемые с клиента (отметка прочтения, догрузка истории). Каждое
+  // стоит несколько запросов к базе, а лимита у них иначе нет вовсе. Потолок
+  // высокий: обычной работе с интерфейсом он не мешает.
+  chat_read: { windowMs: 60 * 60 * 1000, maxInWindow: 300, gapMs: 0 },
 };
 
 const MAX_KEYS = 10_000;

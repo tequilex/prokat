@@ -7,7 +7,7 @@ import { ruPlural } from "@/lib/plural";
 // Иконка передаётся ключом, а не компонентом: навигацию собирает серверный
 // layout, а функции через границу RSC не сериализуются. Словарь ключ → иконка
 // живёт в AccountShell, на клиенте.
-export type AccountNavIcon = "summary" | "requests" | "inbox" | "listings" | "calendar" | "profile";
+export type AccountNavIcon = "summary" | "messages" | "requests" | "inbox" | "listings" | "calendar" | "profile";
 
 export interface AccountNavItem {
   href: string;
@@ -29,6 +29,8 @@ export interface AccountNavGroup {
 
 export interface AccountNavCounts {
   newRequestsCount: number;
+  /** Непрочитанные сообщения по всем переписками, обе роли сразу. */
+  unreadMessages?: number;
   /** Ниже — только для подписей мобильного хаба; в сайдбаре их не видно. */
   activeListings?: number;
   upcomingBookings?: number;
@@ -36,12 +38,17 @@ export interface AccountNavCounts {
 }
 
 export function buildAccountNav(
-  { newRequestsCount, activeListings, upcomingBookings, pendingMine }: AccountNavCounts,
+  { newRequestsCount, unreadMessages, activeListings, upcomingBookings, pendingMine }: AccountNavCounts,
 ): AccountNavGroup[] {
   return [
     {
+      // Переписка стоит здесь, а не в одной из ролевых групп: она идёт и по
+      // своим вещам, и по чужим, делить её между «я арендую» и «мои вещи» нечем.
       title: "сейчас",
-      items: [{ href: "/cabinet", label: "Сводка", icon: "summary", exact: true }],
+      items: [
+        { href: "/cabinet", label: "Сводка", icon: "summary", exact: true },
+        { href: "/chat", label: "Сообщения", badge: unreadMessages, icon: "messages" },
+      ],
     },
     {
       title: "мои вещи",

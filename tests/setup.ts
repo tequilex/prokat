@@ -28,3 +28,12 @@ class ResizeObserverStub {
   disconnect() {}
 }
 globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+
+// Ровно та же история со scrollIntoView: в браузерах он есть, в jsdom его нет.
+// На нём держится доводка ленты переписки до конца там, где у неё нет
+// собственного скролла (мобильная раскладка чата).
+// Проверка на существование обязательна: часть файлов (роут-хендлеры, storage)
+// объявляет окружение node, и DOM-глобалей там нет вовсе.
+if (typeof Element !== "undefined") {
+  Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+}

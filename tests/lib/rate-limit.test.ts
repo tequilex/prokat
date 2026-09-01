@@ -61,6 +61,40 @@ describe("rate limit: письма", () => {
   });
 });
 
+describe("rate limit: чат", () => {
+  // Паузы booking (30с) здесь быть не должно: живая переписка идёт очередями
+  // коротких реплик, и лимитер не имеет права их резать.
+  it("пропускает несколько сообщений подряд без паузы", () => {
+    for (let i = 0; i < 5; i++) {
+      expect(checkLimit("user-1", "chat_message")).toEqual({ ok: true });
+    }
+  });
+
+  it("упирается в часовой потолок сообщений", () => {
+    let refused = false;
+    for (let i = 0; i < 200 && !refused; i++) {
+      refused = !checkLimit("user-1", "chat_message").ok;
+    }
+    expect(refused).toBe(true);
+  });
+
+  // Отдельный контур против бота, который пишет первым сотне владельцев:
+  // потолок сообщений он бы прошёл, рассылая по одному в разные треды.
+  it("ограничивает заведение новых тредов жёстче, чем сообщения", () => {
+    let threads = 0;
+    while (checkLimit("user-2", "chat_thread").ok) threads++;
+    let messages = 0;
+    while (checkLimit("user-3", "chat_message").ok) messages++;
+    expect(threads).toBeGreaterThan(0);
+    expect(threads).toBeLessThan(messages);
+  });
+
+  it("считает лимиты по каждому пользователю отдельно", () => {
+    while (checkLimit("user-4", "chat_thread").ok);
+    expect(checkLimit("user-5", "chat_thread")).toEqual({ ok: true });
+  });
+});
+
 describe("rate limit: существующие виды", () => {
   it("still limits bookings after the key rename", () => {
     expect(checkLimit("user-1", "booking")).toEqual({ ok: true });

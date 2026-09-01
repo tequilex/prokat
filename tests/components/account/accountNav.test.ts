@@ -6,11 +6,25 @@ describe("buildAccountNav", () => {
     const groups = buildAccountNav({ newRequestsCount: 2 });
     expect(groups.map((g) => g.title)).toEqual(["сейчас", "мои вещи", "я арендую", "аккаунт"]);
     expect(groups.flatMap((g) => g.items).map((i) => i.href)).toEqual([
-      "/cabinet",
+      // Переписка идёт и по своим вещам, и по чужим — поэтому в «сейчас»,
+      // а не в одной из ролевых групп.
+      "/cabinet", "/chat",
       "/cabinet/requests", "/cabinet/listings", "/cabinet/calendar",
       "/requests",
       "/profile",
     ]);
+  });
+
+  it("badges unread messages on the chat section", () => {
+    const items = buildAccountNav({ newRequestsCount: 0, unreadMessages: 4 })
+      .flatMap((g) => g.items);
+    expect(items.find((i) => i.href === "/chat")!.badge).toBe(4);
+  });
+
+  it("omits the chat badge when everything is read", () => {
+    const items = buildAccountNav({ newRequestsCount: 0, unreadMessages: 0 })
+      .flatMap((g) => g.items);
+    expect(items.find((i) => i.href === "/chat")!.badge).toBeFalsy();
   });
 
   it("matches the summary exactly — /cabinet prefixes every other section", () => {

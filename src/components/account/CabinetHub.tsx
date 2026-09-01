@@ -25,7 +25,11 @@ export function CabinetHub({
   signOut: { pending: boolean; run: () => void };
 }) {
   // «Сводка» — это сам хаб: строка «вы находитесь здесь» была бы шумом.
-  const sections = groups.filter((g) => g.title !== "сейчас");
+  // Убираем именно её, а не всю группу «сейчас»: рядом в ней живут «Сообщения»,
+  // и вместе с группой они пропадали бы из мобильного хаба.
+  const sections = groups
+    .map((g) => ({ ...g, items: g.items.filter((it) => it.href !== "/cabinet") }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <div className="flex flex-col gap-4 md:hidden">

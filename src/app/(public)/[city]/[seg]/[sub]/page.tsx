@@ -256,6 +256,10 @@ async function ListingPage({
               location={listing.location}
               cityName={city.name}
               createdAt={seller.createdAt}
+              chatHref={`/chat?listing=${listing.id}`}
+              isAuthed={isAuthed}
+              isOwn={session?.user?.id === listing.ownerUserId}
+              authProps={authProps}
             />
           </div>
 
