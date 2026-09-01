@@ -74,7 +74,7 @@ export function DateRangeFilter({
           type="button"
           className={`inline-flex h-8 items-center gap-2 rounded-sm border px-3 text-sm transition-colors ${
             active
-              ? "border-accent bg-accent/10 text-accent"
+              ? "border-selected bg-selected text-selected-foreground"
               : "border-border bg-background text-muted-foreground hover:text-foreground"
           }`}
         >

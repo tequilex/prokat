@@ -119,7 +119,7 @@ export function AccountShell({
                 href={it.href as never}
                 className={`flex items-center gap-1.5 whitespace-nowrap rounded-sm px-3 py-2 text-sm ${
                   isActive(pathname, it)
-                    ? "bg-muted font-medium text-foreground"
+                    ? "bg-selected font-medium text-selected-foreground"
                     : "text-muted-foreground"
                 }`}
               >
@@ -151,8 +151,8 @@ export function AccountShell({
                         href={it.href as never}
                         className={`flex items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors ${
                           active
-                            ? "bg-muted font-medium text-foreground"
-                            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                            ? "bg-selected font-medium text-selected-foreground"
+                            : "text-muted-foreground hoverable hover:text-foreground"
                         }`}
                       >
                         {Icon && (
@@ -174,7 +174,7 @@ export function AccountShell({
                   type="button"
                   disabled={signOut.pending}
                   onClick={signOut.run}
-                  className="flex items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-60"
+                  className="flex items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-muted-foreground transition-colors hoverable hover:text-foreground disabled:opacity-60"
                 >
                   <span className="flex w-4 shrink-0 justify-center">
                     {signOut.pending

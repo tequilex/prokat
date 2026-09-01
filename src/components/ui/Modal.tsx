@@ -98,7 +98,7 @@ export const ModalContent = React.forwardRef<
       {showClose && (
         <Dialog.Close
           aria-label="Закрыть"
-          className="absolute right-3 top-3 rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute right-3 top-3 rounded-sm p-1.5 text-muted-foreground transition-colors hoverable hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </Dialog.Close>

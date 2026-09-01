@@ -127,7 +127,7 @@ export function CoverChoiceGrid({
           type="button"
           disabled={busy}
           onClick={() => fileRef.current?.click()}
-          className="flex aspect-[3/1] flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-accent text-sm text-muted-foreground transition-colors hover:bg-accent/5 disabled:opacity-60"
+          className="flex aspect-[3/1] flex-col items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-accent text-sm text-muted-foreground transition-colors hoverable disabled:opacity-60"
         >
           <Brackets size={16} running={uploading} />
           {uploading ? "Загружаем…" : ownUrl ? "Другое фото" : "Загрузить своё"}

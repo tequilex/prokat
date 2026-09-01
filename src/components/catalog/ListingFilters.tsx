@@ -45,7 +45,7 @@ function Chip({
       className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-xs transition-colors
         ${disabled
           ? "cursor-not-allowed border-border bg-background text-muted-foreground opacity-50"
-          : "cursor-pointer border-border bg-background text-muted-foreground hover:text-foreground has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:checked]:text-accent"}`}
+          : "cursor-pointer border-border bg-background text-muted-foreground hover:text-foreground has-[:checked]:border-accent has-[:checked]:bg-selected has-[:checked]:text-selected-foreground"}`}
     >
       <input
         type="radio" name={name} value={value} defaultChecked={checked} disabled={disabled}

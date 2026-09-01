@@ -71,7 +71,7 @@ export function ThreadTopBar({ header, viewerId }: { header: ThreadHeader; viewe
       {header.listingStatus === "active" ? (
         <Link
           href={href as never}
-          className="hidden items-center gap-2.5 rounded-sm bg-muted py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-muted/70 sm:flex"
+          className="hidden items-center gap-2.5 rounded-sm bg-muted py-1.5 pl-1.5 pr-2.5 transition-colors hoverable sm:flex"
         >
           {chipInner}
         </Link>

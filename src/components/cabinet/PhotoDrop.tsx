@@ -56,7 +56,7 @@ export function PhotoDrop({
               type="button"
               aria-label={`Удалить фото ${i + 1}`}
               onClick={() => onRemove(p.url)}
-              className="absolute right-1 top-1 rounded-full bg-background/80 p-1 hover:bg-background"
+              className="absolute right-1 top-1 rounded-full bg-background/80 p-1 hoverable"
             >
               <X className="h-3.5 w-3.5" />
             </button>

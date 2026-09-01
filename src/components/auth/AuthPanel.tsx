@@ -15,7 +15,7 @@ import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
 import { ProviderButtons } from "@/components/auth/ProviderButtons";
 import { AutoHeight } from "@/components/ui/AutoHeight";
 
-const ARROW = "absolute left-0 top-1/2 -translate-y-1/2 rounded-sm p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+const ARROW = "absolute left-0 top-1/2 -translate-y-1/2 rounded-sm p-1.5 text-muted-foreground transition-colors hoverable hover:text-foreground";
 
 export function AuthPanel({
   nextAuthProviders,
@@ -107,7 +107,7 @@ export function AuthPanel({
             <a
               key={item.label}
               href={item.href}
-              className="rounded-lg border border-border bg-muted/50 px-4 py-2 text-center text-sm font-medium transition-colors hover:bg-muted"
+              className="rounded-lg border border-border bg-muted/50 px-4 py-2 text-center text-sm font-medium transition-colors hoverable"
             >
               {item.label}
             </a>

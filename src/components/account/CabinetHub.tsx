@@ -48,7 +48,7 @@ export function CabinetHub({
                   {i > 0 && <span aria-hidden="true" className="mx-3 h-px bg-border" />}
                   <Link
                     href={it.href as never}
-                    className="flex min-h-[52px] items-center gap-3 rounded-sm px-3 transition-colors hover:bg-muted"
+                    className="flex min-h-[52px] items-center gap-3 rounded-sm px-3 transition-colors hoverable"
                   >
                     {Icon && <Icon className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />}
                     <span className="min-w-0 flex-1 truncate">{it.label}</span>

@@ -90,7 +90,7 @@ export function Hero({
                   <Link
                     key={c.slug}
                     href={`/${citySlug}/${c.slug}` as never}
-                    className="rounded-sm border border-primary/40 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/10"
+                    className="rounded-sm border border-primary/40 px-3 py-1.5 text-sm text-primary transition-colors hoverable"
                   >
                     {c.name}
                   </Link>
@@ -98,7 +98,7 @@ export function Hero({
               </div>
               <Link
                 href={`/${citySlug}` as never}
-                className="mt-5 inline-flex w-fit items-center rounded-lg border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                className="mt-5 inline-flex w-fit items-center rounded-lg border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition-colors hoverable"
               >
                 Все категории →
               </Link>

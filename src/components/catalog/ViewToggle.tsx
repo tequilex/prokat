@@ -22,7 +22,7 @@ export function ViewToggle({
 }) {
   const item = (active: boolean) =>
     `flex h-7 w-7 items-center justify-center rounded-sm transition-colors ${
-      active ? "bg-accent/10 text-accent" : "text-muted-foreground hover:text-foreground"
+      active ? "bg-selected text-selected-foreground" : "text-muted-foreground hover:text-foreground"
     }`;
 
   return (

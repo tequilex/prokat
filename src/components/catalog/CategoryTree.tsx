@@ -32,10 +32,10 @@ function Row({
       // действие, а «где я сейчас» — состояние, а не кнопка.
       className={`flex items-center justify-between gap-2 rounded-sm px-3 py-1.5 text-sm transition-colors ${
         active
-          ? "bg-accent/10 text-accent"
+          ? "bg-selected text-selected-foreground"
           : bold
-            ? "font-semibold text-foreground hover:bg-muted"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "font-semibold text-foreground hoverable"
+            : "text-muted-foreground hoverable hover:text-foreground"
       }`}
       aria-current={active ? "page" : undefined}
     >
@@ -106,7 +106,7 @@ export function CategoryTree({
             // клиентского JS, а активная подкатегория из хвоста открывает
             // список сама через open.
             <details open={hidden.some((c) => c.slug === activeSubSlug)}>
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-sm px-3 py-1.5 text-sm text-accent transition-colors hover:bg-muted [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-sm px-3 py-1.5 text-sm text-accent transition-colors hoverable [&::-webkit-details-marker]:hidden">
                 Ещё {hidden.length}
                 <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               </summary>

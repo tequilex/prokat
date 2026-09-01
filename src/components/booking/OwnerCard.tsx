@@ -74,7 +74,7 @@ export function OwnerCard({
           <Button
             asChild
             variant="outline"
-            className="h-11 flex-1 border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary"
+            className="h-11 flex-1 border-primary bg-transparent text-primary hoverable hover:text-primary"
           >
             <Link href={href as never}>Профиль продавца</Link>
           </Button>

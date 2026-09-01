@@ -29,8 +29,8 @@ export function CategoryFacets({
       href={href as never}
       className={`flex items-center justify-between gap-2 rounded-sm px-3 py-1.5 text-sm transition-colors ${
         active
-          ? "bg-accent/10 text-accent"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          ? "bg-selected text-selected-foreground"
+          : "text-muted-foreground hoverable hover:text-foreground"
       }`}
       aria-current={active ? "page" : undefined}
     >
