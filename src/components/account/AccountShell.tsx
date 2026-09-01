@@ -22,6 +22,8 @@ import { CabinetHub } from "@/components/account/CabinetHub";
 import type { AccountNavGroup, AccountNavIcon } from "@/components/account/accountNav";
 import { ACCOUNT_COVER_HEIGHT, type AccountIdentity } from "@/components/account/identity";
 import { badgeCount } from "@/lib/badge-count";
+import { useRealtime } from "@/components/realtime/context";
+import type { Counters } from "@/components/realtime/store";
 
 const ICONS: Record<AccountNavIcon, typeof User> = {
   summary: Zap,
@@ -55,6 +57,14 @@ function Badge({ n }: { n?: number }) {
   );
 }
 
+// Какому пункту какой счётчик из стора. По ключу иконки искать нельзя — это
+// ровно та эвристика, из-за которой «ждут ответа» в герое привязан к "inbox".
+const LIVE_COUNTERS: Record<string, keyof Counters> = {
+  "/chat": "messages",
+  "/notifications": "notifications",
+  "/cabinet/requests": "requests",
+};
+
 export function AccountShell({
   groups, identity, children,
 }: {
@@ -64,7 +74,27 @@ export function AccountShell({
 }) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const flat = groups.flatMap((g) => g.items);
+
+  // Стор, пока он есть; серверный проп, когда его нет. Числа подставляются
+  // здесь, при сборке groups, а НЕ внутри бейджа: то же число читают
+  // pendingCount, герой и мобильный хаб, и подстановка на уровне бейджа
+  // оставила бы им серверное значение.
+  //
+  // counters === null означает «неизвестно»: соединения нет либо оно только что
+  // оборвалось. Без возврата к пропу умерший realtime заморозил бы бейдж на
+  // последнем известном числе, и это было бы хуже сегодняшнего поведения.
+  const live = useRealtime((s) => s.counters);
+  const groupsWithLive = live
+    ? groups.map((g) => ({
+      ...g,
+      items: g.items.map((it) => {
+        const key = LIVE_COUNTERS[it.href];
+        return key ? { ...it, badge: live[key] } : it;
+      }),
+    }))
+    : groups;
+
+  const flat = groupsWithLive.flatMap((g) => g.items);
   // Заголовок — это раздел, в котором стоишь. Отдельное слово «Кабинет» ничего
   // не добавляло: и так видно, где ты, по подсвеченному пункту сайдбара.
   const currentItem = flat.find((it) => isActive(pathname, it));
@@ -110,7 +140,7 @@ export function AccountShell({
       <div className={`mx-auto w-full max-w-6xl px-4 pb-6 ${identity ? "" : "pt-6"} ${identity && !isHub && !isChat ? "max-md:pt-3" : ""} ${isChat ? "max-md:pb-0" : ""}`}>
         {identity && <AccountHero me={identity} pendingCount={pendingCount} />}
         {identity && isHub && (
-          <CabinetHub me={identity} groups={groups} icons={ICONS} signOut={signOut} />
+          <CabinetHub me={identity} groups={groupsWithLive} icons={ICONS} signOut={signOut} />
         )}
 
         {/* Без identity (админка) разделы на мобайле по-прежнему едут лентой. */}
@@ -143,7 +173,7 @@ export function AccountShell({
         <div className={`md:grid md:grid-cols-[250px_1fr] md:items-start md:gap-5 ${identity ? "md:mt-3" : ""}`}>
           <aside className="hidden md:sticky md:top-20 md:flex md:flex-col md:gap-3.5">
             <nav aria-label="Разделы" className="surface flex flex-col gap-0.5 p-2">
-              {groups.map((group) => (
+              {groupsWithLive.map((group) => (
                 <div key={group.title} className="flex flex-col gap-0.5">
                   <span className="px-3 pb-1 pt-2.5 font-mono text-2xs uppercase tracking-mono text-muted-foreground">
                     {group.title}

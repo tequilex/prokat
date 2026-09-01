@@ -10,13 +10,19 @@ import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import "./globals.css";
 import "@theme/tokens.css";
 import "@theme/typography.css";
+import { headers } from "next/headers";
+import { RealtimeProvider } from "@/components/realtime/RealtimeProvider";
 
 export const metadata: Metadata = {
   title: { default: seo.defaultTitle, template: `%s — ${seo.siteName}` },
   description: seo.defaultDescription,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// Флаг из middleware, а не auth(): Header и MobileNav и так зовут auth() каждый
+// на своей стороне, и третий поход в базу на каждой публичной странице был бы
+// платой ровно за то, чтобы решить, поднимать ли сокет анониму.
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const hasSession = (await headers()).get("x-has-session") === "1";
 
   return (
     <html
@@ -28,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {process.env.NODE_ENV === "production" && process.env.YANDEX_METRIKA_ID && (
           <YandexMetrika counterId={process.env.YANDEX_METRIKA_ID} />
         )}
+        <RealtimeProvider enabled={hasSession}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {/* Глобальный progress-bar поверх <html>: даёт моментальный visual
            * feedback на любой client-side навигации (Link/router.push), пока
@@ -47,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           <MobileNav />
         </ThemeProvider>
+        </RealtimeProvider>
       </body>
     </html>
   );

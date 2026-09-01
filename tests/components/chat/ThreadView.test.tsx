@@ -13,6 +13,12 @@ vi.mock("@/server/actions/chat", () => ({
   startThread: vi.fn(),
 }));
 
+// Догон дельты после события сокета. Мок обязателен: цепочка auth() →
+// next-auth → next/server в jsdom не разрешается.
+vi.mock("@/server/actions/realtime", () => ({
+  fetchNewerMessages: vi.fn(async () => ({ ok: true, data: { messages: [], hasMore: false } })),
+}));
+
 const { ThreadView } = await import("@/components/chat/ThreadView");
 const { ChatPanes } = await import("@/components/chat/ChatPanes");
 const { content } = await import("@theme/content");

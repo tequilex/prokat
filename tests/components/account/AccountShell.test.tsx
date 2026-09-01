@@ -13,6 +13,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/server/actions/profile", () => ({ updateCover: vi.fn() }));
 
 import { AccountShell } from "@/components/account/AccountShell";
+import { RealtimeContext } from "@/components/realtime/context";
+import { createRealtimeStore } from "@/components/realtime/store";
 
 const groups = [
   { title: "я арендую", items: [{ href: "/requests", label: "Мои заявки" }] },
@@ -105,3 +107,42 @@ describe("AccountShell", () => {
     expect(screen.queryByRole("button", { name: "Назад" })).toBeNull();
   });
 });
+
+// Правило «стор ?? проп». Оно новое и самое хрупкое из клиентских: при живом
+// соединении число берётся из стора, при потерянном — снова из серверного
+// пропа. Без возврата к пропу умерший realtime заморозил бы бейдж навсегда.
+describe("AccountShell: живой счётчик", () => {
+  const withChat = [{
+    title: "сейчас",
+    items: [{ href: "/chat", label: "Сообщения", badge: 2, icon: "messages" as const }],
+  }];
+
+  const renderWith = (store: ReturnType<typeof createRealtimeStore>) => render(
+    <RealtimeContext.Provider value={store}>
+      <AccountShell groups={withChat} identity={identity}>x</AccountShell>
+    </RealtimeContext.Provider>,
+  );
+
+  it("пока стор пуст, показывает серверное число", () => {
+    renderWith(createRealtimeStore());
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+  });
+
+  it("со стором показывает его число, а не серверное", () => {
+    const store = createRealtimeStore();
+    store.getState().setCounters({ messages: 9, notifications: 0, requests: 0 });
+    renderWith(store);
+    expect(screen.getAllByText("9").length).toBeGreaterThan(0);
+    expect(screen.queryByText("2")).toBeNull();
+  });
+
+  it("после потери соединения возвращается к серверному числу", () => {
+    const store = createRealtimeStore();
+    store.getState().setCounters({ messages: 9, notifications: 0, requests: 0 });
+    store.getState().forgetCounters();
+    renderWith(store);
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+    expect(screen.queryByText("9")).toBeNull();
+  });
+});
+

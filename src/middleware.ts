@@ -31,6 +31,12 @@ export function middleware(req: NextRequest) {
 
   const headers = new Headers(req.headers);
   headers.set("x-pathname", pathname);
+  // Корневой layout по этому флагу решает, поднимать ли сокет. Наличие cookie
+  // не означает живую сессию — валидность проверит сам сокет на рукопожатии;
+  // здесь важно лишь не открывать соединение анонимам. Альтернативой был бы
+  // третий auth() на каждой публичной странице (два уже делают Header и
+  // MobileNav), то есть лишний поход в базу на весь каталог.
+  headers.set("x-has-session", hasSessionCookie(req) ? "1" : "0");
   return NextResponse.next({ request: { headers } });
 }
 

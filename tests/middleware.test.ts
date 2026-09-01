@@ -80,6 +80,25 @@ describe("middleware access guard", () => {
   });
 });
 
+describe("middleware session flag", () => {
+  // По этому заголовку корневой layout решает, поднимать ли сокет. Под своим
+  // именем в ответе он не лежит: NextResponse.next({ request: { headers } })
+  // кодирует переопределения через x-middleware-request-*.
+  const flagOf = (path: string, cookie?: string) =>
+    middleware(request(path, cookie)).headers.get("x-middleware-request-x-has-session");
+
+  it("marks visitors with a session cookie", () => {
+    for (const cookie of SESSION_COOKIES) {
+      expect(flagOf("/", cookie), cookie).toBe("1");
+    }
+  });
+
+  it("marks anonymous visitors on public routes", () => {
+    expect(flagOf("/")).toBe("0");
+    expect(flagOf("/kazan")).toBe("0");
+  });
+});
+
 describe("middleware matcher", () => {
   // Матчер применяет Next, здесь проверяется само выражение: что оно
   // пропускает статику мимо гарды и накрывает страницы приложения.

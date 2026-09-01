@@ -48,10 +48,18 @@ const PORT = Number(process.env.REALTIME_PORT ?? 3100);
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 // В деве сайт открывают с телефона по 192.168.x.x — те же адреса, что разрешает
-// allowedDevOrigins в next.config.ts. Порт нужен обязательно: browser шлёт
+// allowedDevOrigins в next.config.ts. Порт нужен обязательно: браузер шлёт
 // Origin со схемой и портом, а lanAddresses() отдаёт голые IP.
+//
+// DEV_ORIGINS — та же переменная, что уже читает next.config.ts. Нужна, когда
+// процесс запущен в контейнере: изнутри него networkInterfaces() показывает
+// адреса docker-моста, а не сети, в которой стоит телефон, и проверка с
+// телефона молча провалилась бы по Origin.
 const ALLOWED_ORIGINS = IS_DEV
-  ? devOrigins(lanAddresses(), Number(process.env.PORT ?? 3000))
+  ? [
+    ...devOrigins(lanAddresses(), Number(process.env.PORT ?? 3000)),
+    ...(process.env.DEV_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  ]
   : [NEXTAUTH_URL.replace(/\/$/, "")];
 
 // ============================== Пределы ==============================

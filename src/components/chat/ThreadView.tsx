@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat/validation";
 import { field } from "@/components/ui/field";
 import { chatErrorText } from "@/lib/chat/errors";
+import { useRealtime } from "@/components/realtime/context";
+import { fetchNewerMessages } from "@/server/actions/realtime";
 import { buildFeed, unreadAnchor } from "@/lib/chat/grouping";
 import { fetchOlderMessages, postMessage, startThread, markThreadRead } from "@/server/actions/chat";
 import { DateDivider, UnreadDivider } from "@/components/chat/FeedDividers";
@@ -32,6 +34,10 @@ export type ComposerMode =
 /** Сообщение в полёте: ключ свой, потому что одинаковый текст можно отправить
  *  дважды подряд, и по тексту такие пузыри неразличимы. */
 type Pending = { key: number; body: string };
+
+// Потолок цикла догона: страница по 40 сообщений, то есть до 400 за раз.
+// Дальше проще перезагрузить тред, чем тянуть историю по сокету.
+const CATCH_UP_PAGES = 10;
 
 export function ThreadView({
   mode, viewerId, initialMessages, initialHasMore, blockedReason,
@@ -64,6 +70,9 @@ export function ThreadView({
   const feedRef = useRef<HTMLOListElement>(null);
   const endRef = useRef<HTMLLIElement>(null);
   const nextKey = useRef(0);
+  // Отдельный живой регион ВНЕ ленты. Атрибут на самой <ol> объявлял бы и
+  // догрузку сорока ранних сообщений тоже — скринридер зачитал бы их все.
+  const [announcement, setAnnouncement] = useState("");
 
   const threadId = mode.kind === "thread" ? mode.threadId : null;
 
@@ -83,6 +92,16 @@ export function ThreadView({
       return [...byId.values()];
     });
   }, []);
+
+  // Объявляется только ЧУЖОЕ сообщение и только при видимой вкладке: своё
+  // человек и так только что отправил, а фоновой вкладке зачитывать нечего.
+  const announce = useCallback((incoming: ThreadMessage[]) => {
+    if (document.visibilityState !== "visible") return;
+    const foreign = incoming.filter((m) => m.senderUserId !== viewerId);
+    const last = foreign[foreign.length - 1];
+    if (!last) return;
+    setAnnouncement(`${counterpartName ?? "Собеседник"}: ${last.body}`);
+  }, [viewerId, counterpartName]);
 
   // Лента — свой скроллер: панель ограничена по высоте на обеих ширинах, и
   // двигать надо её scrollTop, а не страницу, иначе уедет вся панель. Запасная
@@ -105,6 +124,54 @@ export function ThreadView({
     });
     return () => { cancelled = true; };
   }, [threadId, router]);
+
+  // Событие сокета тела сообщения не несёт — его надо дочитать. Курсор берётся
+  // по максимальному id, а не по хвосту массива: «показать более ранние»
+  // дописывает в него СТАРЫЕ сообщения.
+  const liveMessage = useRealtime((s) => s.lastMessage);
+  const resyncAt = useRealtime((s) => s.resyncAt);
+  const catchingUp = useRef(false);
+
+  useEffect(() => {
+    if (!threadId) return;
+    // Догон нужен только этому треду. Событие по чужому обновит список слева —
+    // этим занимается дебаунсенный refresh в провайдере.
+    if (liveMessage && liveMessage.threadId !== threadId) return;
+    if (!liveMessage && resyncAt === null) return;
+    // Эхо собственного сообщения уже лежит в состоянии: без этой проверки
+    // каждая отправка стоила бы лишнего раунда к серверу.
+    if (liveMessage && messages.some((m) => m.id === liveMessage.messageId)) return;
+    // Пачка событий коалесцируется в один догон, и он не стартует поверх
+    // идущего loadOlder — иначе два ответа перетасуют ленту.
+    if (catchingUp.current || loadingOlder) return;
+
+    catchingUp.current = true;
+    let cancelled = false;
+    void (async () => {
+      // Циклом до конца: при длинном разрыве накопленного может быть больше
+      // страницы, и остановка на первой оставила бы дыру в середине ленты.
+      let cursor = messages.reduce((acc, m) => (m.id > acc ? m.id : acc), "");
+      for (let page = 0; page < CATCH_UP_PAGES; page += 1) {
+        const res = await fetchNewerMessages(threadId, cursor);
+        if (cancelled || !res.ok || res.data.messages.length === 0) break;
+        upsert(res.data.messages);
+        announce(res.data.messages);
+        cursor = res.data.messages[res.data.messages.length - 1].id;
+        if (!res.data.hasMore) break;
+      }
+      if (!cancelled) {
+        catchingUp.current = false;
+        // Приехавшее в открытую и ВИДИМУЮ ленту прочитано: иначе курсор
+        // застрянет на моменте открытия, счётчики вырастут, а при следующем
+        // заходе разделитель «непрочитанные» встанет над уже прочитанным.
+        // Фоновая вкладка гасить непрочитанное не должна.
+        if (document.visibilityState === "visible") void markThreadRead(threadId);
+      }
+    })();
+    return () => { cancelled = true; catchingUp.current = false; };
+    // messages в зависимостях нет намеренно: догон реагирует на событие, а не на
+    // собственный результат — иначе он зациклится сам на себе.
+  }, [threadId, liveMessage, resyncAt, loadingOlder, upsert, announce]);
 
   async function loadOlder() {
     if (!threadId || loadingOlder || messages.length === 0) return;
@@ -163,6 +230,11 @@ export function ThreadView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {/* Живой регион вне ленты и с aria-atomic: иначе скринридер зачитывал бы
+        * всю историю при догрузке ранних сообщений. */}
+      <p aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </p>
       <ol
         ref={feedRef}
         tabIndex={0}
