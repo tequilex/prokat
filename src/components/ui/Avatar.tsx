@@ -35,7 +35,16 @@ export function Avatar({ src, name, size, className = "" }: AvatarProps) {
         alt=""
         width={size}
         height={size}
-        className={`rounded-full shrink-0 ${className}`}
+        // Размер задаётся ещё и стилем, а не только атрибутами. Атрибуты дают
+        // пропорцию, но не мешают флекс-родителю растянуть картинку по высоте:
+        // align-items по умолчанию stretch, а shrink-0 держит только ширину.
+        // В списке переписок строка стала в три этажа — и круглая аватарка
+        // превратилась в овал.
+        //
+        // object-cover рядом: аватарка не обязана быть квадратной, а без него
+        // неквадратную расплющивало бы в этот же бокс.
+        style={{ width: size, height: size }}
+        className={`rounded-full shrink-0 object-cover ${className}`}
       />
     );
   }
