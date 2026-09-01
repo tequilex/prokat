@@ -2,7 +2,7 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Package, ClipboardList, CalendarDays, Settings, ShieldCheck, LogOut, Palette } from "lucide-react";
+import { Package, ClipboardList, CalendarDays, Settings, ShieldCheck, LogOut, Palette, MessageCircle } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
@@ -25,6 +25,7 @@ const CLOSE_DELAY_MS = 160;
 // Иконки нейтральные: скобки остаются пиктограммой только в таб-баре, чтобы
 // бренд не спорил с навигацией.
 const LINKS = [
+  { href: "/chat", label: "Сообщения", Icon: MessageCircle },
   { href: "/cabinet/listings", label: "Мои товары", Icon: Package },
   { href: "/requests", label: "Мои заявки", Icon: ClipboardList },
   { href: "/cabinet/calendar", label: "Календарь", Icon: CalendarDays },

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LoginTrigger } from "@/components/auth/LoginTrigger";
-import { LayoutGrid, ClipboardList, Plus, User } from "lucide-react";
+import { LayoutGrid, MessageCircle, Plus, User } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,7 @@ export function TabBar({
     );
 
   const myItems = isOn("/cabinet/listings");
-  const requests = isOn("/requests");
+  const messages = isOn("/chat");
   // Весь кабинет, кроме «Моих вещей» (у них своя вкладка), плюс профиль:
   // он живёт на отдельном /profile, но открывается из кабинета и часть его.
   const cabinet = (isOn("/cabinet") && !myItems) || isOn("/profile");
@@ -95,10 +95,10 @@ export function TabBar({
           </>
         ))}
 
-        {tab("/requests", itemClass(requests), (
+        {tab("/chat", itemClass(messages), (
           <>
-            <ClipboardList className="h-[22px] w-[22px]" aria-hidden="true" />
-            Заявки
+            <MessageCircle className="h-[22px] w-[22px]" aria-hidden="true" />
+            Чаты
           </>
         ))}
 

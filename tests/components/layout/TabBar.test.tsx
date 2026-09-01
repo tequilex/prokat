@@ -13,7 +13,7 @@ describe("TabBar", () => {
   it("renders all five destinations", () => {
     pathname.current = "/";
     render(<TabBar authProps={AUTH} placeHref="/cabinet/listings/new" catalogHref="/kazan" user={user} />);
-    for (const label of ["Каталог", "Мои вещи", "Сдать", "Заявки", "Кабинет"]) {
+    for (const label of ["Каталог", "Мои вещи", "Сдать", "Чаты", "Кабинет"]) {
       expect(screen.getByRole("link", { name: new RegExp(label) })).toBeInTheDocument();
     }
     // Каталог — это витрина города, а не пустой /search.
@@ -26,7 +26,7 @@ describe("TabBar", () => {
     pathname.current = "/";
     render(<TabBar authProps={AUTH} placeHref="/login" catalogHref="/kazan" user={null} />);
     expect(screen.getByRole("link", { name: /Кабинет/ })).toHaveAttribute("href", "/login?from=%2Fcabinet");
-    expect(screen.getByRole("link", { name: /Заявки/ })).toHaveAttribute("href", "/login?from=%2Frequests");
+    expect(screen.getByRole("link", { name: /Чаты/ })).toHaveAttribute("href", "/login?from=%2Fchat");
     expect(screen.getByRole("link", { name: /Мои вещи/ })).toHaveAttribute("href", "/login?from=%2Fcabinet%2Flistings");
   });
 
@@ -34,7 +34,7 @@ describe("TabBar", () => {
     pathname.current = "/cabinet/listings/new";
     render(<TabBar authProps={AUTH} placeHref="/cabinet/listings/new" catalogHref="/kazan" user={user} />);
     expect(screen.getByRole("link", { name: /Мои вещи/ })).toHaveClass("text-primary");
-    expect(screen.getByRole("link", { name: /Заявки/ })).toHaveClass("text-muted-foreground");
+    expect(screen.getByRole("link", { name: /Чаты/ })).toHaveClass("text-muted-foreground");
     // «Мои вещи» лежат внутри /cabinet — «Кабинет» не должен подсвечиваться заодно.
     expect(screen.getByRole("link", { name: /Кабинет/ })).toHaveClass("text-muted-foreground");
   });
