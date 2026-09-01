@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { Check, CheckCheck, SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat/validation";
+import { field } from "@/components/ui/field";
 import { chatErrorText } from "@/lib/chat/errors";
 import { buildFeed, unreadAnchor } from "@/lib/chat/grouping";
 import { fetchOlderMessages, postMessage, startThread, markThreadRead } from "@/server/actions/chat";
@@ -244,7 +245,7 @@ export function ThreadView({
               maxLength={MAX_MESSAGE_LENGTH}
               placeholder={t.composerPlaceholder}
               aria-label={t.composerLabel}
-              className="max-h-32 min-h-[44px] flex-1 resize-none rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-muted-foreground md:min-h-[40px]"
+              className={`${field} max-h-32 min-h-[44px] flex-1 resize-none px-3 py-2.5 text-sm md:min-h-[40px]`}
             />
             <Button
               onClick={send}

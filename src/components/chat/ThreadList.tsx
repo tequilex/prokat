@@ -13,6 +13,7 @@ import Image from "next/image";
 import { useRouter, useSelectedLayoutSegment } from "next/navigation";
 import { Check, CheckCheck, ChevronLeft, MessageCircle, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { fieldWithin } from "@/components/ui/field";
 import { filterThreads, type ThreadFilter } from "@/lib/chat/grouping";
 import { content } from "@theme/content";
 import type { ThreadListItem } from "@/server/chat";
@@ -48,10 +49,12 @@ export function ThreadList({ threads }: { threads: ThreadListItem[] }) {
       type="button"
       aria-pressed={filter === value}
       onClick={() => setFilter(value)}
-      className={`shrink-0 rounded-sm px-2.5 py-1 text-xs transition-colors ${
+      className={`shrink-0 rounded-sm border px-2.5 py-1 text-xs transition-colors ${
         filter === value
-          ? "bg-foreground text-background"
-          : "bg-muted text-muted-foreground hover:text-foreground"
+          // Выбранное среди плашек: заливки мало (1.16 против соседа), поэтому
+          // кант. Текст обычный — охряный на плашке норму не берёт.
+          ? "border-selected bg-selected text-foreground"
+          : "border-transparent bg-muted text-muted-foreground hoverable hover:text-foreground"
       }`}
     >
       {label}
@@ -84,7 +87,7 @@ export function ThreadList({ threads }: { threads: ThreadListItem[] }) {
 
       {/* Шапка колонки вне <nav>: поиск и фильтры навигацией не являются. */}
       <div className="flex shrink-0 flex-col gap-2.5 border-b border-border p-3">
-        <div className="flex h-9 items-center gap-2 rounded-sm bg-muted px-3">
+        <div className={`${fieldWithin} flex h-9 items-center gap-2 px-3`}>
           <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <input
             value={query}
@@ -128,8 +131,8 @@ function ThreadRow({ item, active }: { item: ThreadListItem; active: boolean }) 
     <Link
       href={`/chat/${item.id}` as never}
       aria-current={active ? "page" : undefined}
-      className={`relative flex gap-2.5 rounded-sm p-2.5 transition-colors hover:bg-muted/60 ${
-        active ? "bg-muted" : ""
+      className={`relative flex gap-2.5 rounded-sm p-2.5 transition-colors ${
+        active ? "bg-selected" : "hoverable"
       }`}
     >
       {active && (

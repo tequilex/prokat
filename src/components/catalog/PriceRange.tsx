@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { field } from "@/components/ui/field";
+import { fieldWithin } from "@/components/ui/field";
 
 // Двуручный слайдер цены. Единственный кусок фильтров, которому нужен
 // клиентский JS: два <input type="range"> лежат друг на друге, и без скрипта
@@ -60,7 +60,7 @@ export function PriceRange({
 
       <div className="flex items-center gap-2">
         <label className="sr-only" htmlFor={`${id}-min`}>Цена от</label>
-        <div className={`${field} flex h-9 min-w-0 flex-1 items-center gap-1 px-3`}>
+        <div className={`${fieldWithin} flex h-9 min-w-0 flex-1 items-center gap-1 px-3`}>
           <span className="shrink-0 text-xs text-muted-foreground">от</span>
           <input
             id={`${id}-min`} name="price_min" type="number" min={min} inputMode="numeric"
@@ -70,7 +70,7 @@ export function PriceRange({
           <span className="shrink-0 text-xs text-muted-foreground">₽</span>
         </div>
         <label className="sr-only" htmlFor={`${id}-max`}>Цена до</label>
-        <div className={`${field} flex h-9 min-w-0 flex-1 items-center gap-1 px-3`}>
+        <div className={`${fieldWithin} flex h-9 min-w-0 flex-1 items-center gap-1 px-3`}>
           <span className="shrink-0 text-xs text-muted-foreground">до</span>
           <input
             id={`${id}-max`} name="price_max" type="number" min={min} inputMode="numeric"
