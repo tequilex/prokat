@@ -4,12 +4,17 @@
 import { ruPlural } from "@/lib/plural";
 import { content } from "@theme/content";
 
+// Линии по бокам, а не одна капсула: без них подпись висит в воздухе и не
+// читается как граница дня. Handoff описывал только капсулу — отклонение
+// сознательное, по просьбе заказчика.
 export function DateDivider({ label }: { label: string }) {
   return (
-    <li className="my-1 flex justify-center">
+    <li className="my-2 flex items-center gap-3">
+      <span aria-hidden="true" className="h-px flex-1 bg-border" />
       <span className="rounded-pill bg-muted px-3 py-1 font-mono text-micro uppercase tracking-mono text-muted-foreground">
         {label}
       </span>
+      <span aria-hidden="true" className="h-px flex-1 bg-border" />
     </li>
   );
 }
