@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { countNewRequests } from "@/server/owner";
 import { getCabinetIdentity } from "@/server/me";
 import { getUnreadCount } from "@/server/chat";
-import { countUnreadNotifications } from "@/server/notifications";
+import { countUnseenNonChatEvents } from "@/server/notifications";
 import { AccountShell } from "@/components/account/AccountShell";
 import { buildAccountNav } from "@/components/account/accountNav";
 
@@ -20,7 +20,7 @@ export default async function CabinetLayout({ children }: { children: React.Reac
   const [newCount, unread, notifications, identity] = await Promise.all([
     countNewRequests(session.user.id),
     getUnreadCount(session.user.id),
-    countUnreadNotifications(session.user.id),
+    countUnseenNonChatEvents(session.user.id),
     getCabinetIdentity(session.user.id),
   ]);
 

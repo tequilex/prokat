@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Brackets } from "@/components/brand/Brackets";
 import { Avatar } from "@/components/ui/Avatar";
-import { LiveDot } from "@/components/realtime/LiveDot";
+import { LiveDot, LiveCount } from "@/components/realtime/LiveDot";
 import { ThemeSegmented } from "@/components/providers/ThemeSegmented";
 import { content } from "@theme/content";
 
@@ -106,6 +106,7 @@ export function UserMenu({ email, name, image, isAdmin = false }: Props) {
                 <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </span>
               {label}
+              {href === "/chat" && <LiveCount scope="messages" />}
             </Link>
           </DropdownMenuItem>
         ))}

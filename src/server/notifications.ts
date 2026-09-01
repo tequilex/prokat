@@ -5,7 +5,7 @@
 // или booking_requests, только потом notifications. Встречный порядок даёт живой
 // дедлок на треде с активной перепиской — это проверено, а не предположено.
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { notifications } from "@db/schema";
 import { newId } from "@/lib/id";
@@ -63,12 +63,20 @@ export async function notify(
 
 // ============================== Чтение ==============================
 
-// Питает кружок «есть новое» на аватарке. Идёт по префиксу частичного UNIQUE —
-// отдельный индекс под счётчик не нужен.
-export async function countUnreadNotifications(userId: string): Promise<number> {
+// Непрочитанные события КРОМЕ переписки. Сообщения исключены намеренно: у них
+// свой счётчик, и без этого условия кружок на кабинете показывал бы ровно то
+// же, что кружок на чатах, — то есть дублировал бы его.
+//
+// Идёт по префиксу частичного UNIQUE; kind в него входит третьей колонкой,
+// отдельный индекс не нужен.
+export async function countUnseenNonChatEvents(userId: string): Promise<number> {
   const rows = await getDb().select({ n: sql<number>`count(*)::int` })
     .from(notifications)
-    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+    .where(and(
+      eq(notifications.userId, userId),
+      isNull(notifications.readAt),
+      ne(notifications.kind, "chat_message"),
+    ));
   return rows[0]?.n ?? 0;
 }
 

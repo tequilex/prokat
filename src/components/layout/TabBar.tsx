@@ -98,7 +98,10 @@ export function TabBar({
 
         {tab("/chat", itemClass(messages), (
           <>
-            <MessageCircle className="h-[22px] w-[22px]" aria-hidden="true" />
+            <span className="relative inline-flex h-[22px] items-center">
+              <MessageCircle className="h-[22px] w-[22px]" aria-hidden="true" />
+              <LiveDot scope="messages" />
+            </span>
             Чаты
           </>
         ))}
@@ -114,7 +117,9 @@ export function TabBar({
               ) : (
                 <User className="h-[22px] w-[22px]" aria-hidden="true" />
               )}
-              <LiveDot />
+              {/* Только НЕ-чаты: сообщения уже отмечены на соседней вкладке,
+                  и второй такой же кружок был бы дублем. */}
+              <LiveDot scope="other" />
             </span>
             Кабинет
           </>

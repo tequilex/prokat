@@ -19,7 +19,7 @@ import { canReadThread } from "@/lib/chat/rules";
 import { cursorSchema, threadIdSchema } from "@/lib/chat/validation";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { getMessagesAfter, getUnreadCount, type ThreadMessage } from "@/server/chat";
-import { countUnreadNotifications } from "@/server/notifications";
+import { countUnseenNonChatEvents } from "@/server/notifications";
 import { countNewRequests } from "@/server/owner";
 import { readMessageToast, readRequestToast, type ToastContent } from "@/server/realtime";
 
@@ -65,7 +65,7 @@ export async function fetchRealtimeUpdate(
   // бы с базой, а после ближайшего refresh проп принёс бы ту же дельту второй раз.
   const [messages, notifications, requests, toast] = await Promise.all([
     getUnreadCount(userId),
-    countUnreadNotifications(userId),
+    countUnseenNonChatEvents(userId),
     countNewRequests(userId),
     !event
       ? Promise.resolve(null)
