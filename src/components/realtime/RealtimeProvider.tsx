@@ -77,6 +77,20 @@ export function RealtimeProvider({
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
 
+  // Отложенный refresh отменяется при уходе со страницы. Без этого он
+  // срабатывал уже во время навигации и просил перерисовать маршрут, который
+  // в этот момент заменяется, — сервер начинал стримить ответ в соединение,
+  // которое клиент тут же бросал. В логах это «The destination stream closed
+  // early»: не поломка, но шум, который мы сами и создавали.
+  useEffect(() => {
+    return () => {
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+    };
+  }, [pathname]);
+
   const scheduleRefresh = useCallback(() => {
     // Фоновая вкладка не перерисовывается: иначе каждое событие стоило бы
     // десятка запросов к базе на вкладку, а ядро на сервере одно.
