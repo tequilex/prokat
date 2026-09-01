@@ -46,7 +46,31 @@ export type NotifyPayload = z.infer<typeof notifySchema>;
 
 export type ClientFrame =
   | { type: "message"; threadId: string; messageId: string; counters: boolean }
-  | { type: "request"; requestId: string; counters: boolean };
+  | { type: "request"; requestId: string; counters: boolean }
+  // Широковещательный: сервер потерял и восстановил LISTEN, всё случившееся в
+  // разрыве потеряно безвозвратно — клиент дочитывает дельту сам.
+  | { type: "resync" };
+
+// Коды закрытия. Клиент обязан различать постоянный отказ и временный: иначе
+// вкладка с мёртвой cookie будет переподключаться вечно и выест лимитер.
+// Диапазон 4000–4999 отведён приложению самим протоколом.
+export const CLOSE = {
+  /** Сессии нет или она истекла. Переподключаться бессмысленно. */
+  unauthorized: 4001,
+  /** Забанен. Тоже терминально. */
+  banned: 4002,
+  /** Origin не в allow-list. Терминально. */
+  origin: 4003,
+  /** Слишком много соединений. Переподключаться, но с паузой. */
+  tooMany: 4004,
+  /** Истёк TTL соединения — штатная ротация, переподключаться сразу. */
+  ttl: 4008,
+} as const;
+
+// Отказы, после которых переподключаться нельзя.
+export function isTerminalClose(code: number): boolean {
+  return code === CLOSE.unauthorized || code === CLOSE.banned || code === CLOSE.origin;
+}
 
 // Получатели собираются ТОЛЬКО здесь и только из строки треда — параметром
 // снаружи список не принимается никогда.
