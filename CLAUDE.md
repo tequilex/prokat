@@ -67,9 +67,10 @@ pnpm db:studio           # drizzle studio
 
 Задача, которая меняет поведение, идёт по циклу:
 
-1. **План.** Короткий, в ответе или в plan mode: что меняется, каких слоёв и
-   файлов касается, чего задача осознанно не делает. Отдельным `.md` в
-   репозиторий план не кладётся.
+1. **План.** Короткий: что меняется, каких слоёв и файлов касается, чего задача
+   осознанно не делает. Обычная задача — план в ответе или в plan mode, отдельным
+   `.md` в репозиторий он не кладётся. Крупная — план файлом в
+   `docs/plans/current/`, который удаляется по завершении задачи.
 2. **Ревью плана.** План читает отдельный агент со свежим контекстом и ищет
    пропущенные слои, непроверенные допущения и риски.
 3. **Утверждение.** План и замечания к нему показываются целиком. Пока план не
@@ -134,6 +135,7 @@ pnpm db:studio           # drizzle studio
 | восстановление БД | [docs/RECOVERY.md](docs/RECOVERY.md) |
 | почему сделано именно так | [docs/decisions/](docs/decisions/) |
 | что осознанно отложено | [docs/BACKLOG.md](docs/BACKLOG.md) |
+| планы незавершённых крупных задач | [docs/plans/current/](docs/plans/current/) |
 
 Оглавление — [docs/README.md](docs/README.md).
 
@@ -141,14 +143,16 @@ pnpm db:studio           # drizzle studio
 
 Documentation describes the CURRENT state of the project.
 
-Do not create documentation for temporary implementation plans.
+Do not create documentation for temporary implementation plans. The single
+exception is a large task: its plan lives in `docs/plans/current/` while the work
+is in progress. That directory holds plans of unfinished tasks only.
 
 After completing a task:
 
 - update existing documentation if the current system changed;
 - record significant architectural decisions in `docs/decisions/`;
-- do not preserve implementation plans unless they contain important historical
-  information.
+- delete the task's plan from `docs/plans/current/` — what matters from it moves
+  into `docs/decisions/`, the rest stays in git history.
 
 Do not duplicate the same fact across multiple documentation files.
 
