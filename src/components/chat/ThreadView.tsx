@@ -16,6 +16,7 @@ import { MAX_MESSAGE_LENGTH } from "@/lib/chat/validation";
 import { field } from "@/components/ui/field";
 import { chatErrorText } from "@/lib/chat/errors";
 import { useRealtime } from "@/components/realtime/context";
+import { useSyncCounters } from "@/components/realtime/useSyncCounters";
 import { fetchNewerMessages } from "@/server/actions/realtime";
 import { buildFeed, unreadAnchor } from "@/lib/chat/grouping";
 import { fetchOlderMessages, postMessage, startThread, markThreadRead } from "@/server/actions/chat";
@@ -60,6 +61,7 @@ export function ThreadView({
   typing?: boolean;
 }) {
   const router = useRouter();
+  const syncCounters = useSyncCounters();
   const [messages, setMessages] = useState(initialMessages);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [draft, setDraft] = useState("");
@@ -120,10 +122,14 @@ export function ThreadView({
     if (!threadId) return;
     let cancelled = false;
     void markThreadRead(threadId).then((res) => {
-      if (!cancelled && res.ok) router.refresh();
+      if (cancelled || !res.ok) return;
+      router.refresh();
+      // refresh обновляет серверный проп, а бейдж и кружок при живом сокете
+      // читают стор — без этого прочитанное гасло бы только в базе.
+      syncCounters();
     });
     return () => { cancelled = true; };
-  }, [threadId, router]);
+  }, [threadId, router, syncCounters]);
 
   // Событие сокета тела сообщения не несёт — его надо дочитать. Курсор берётся
   // по максимальному id, а не по хвосту массива: «показать более ранние»
@@ -165,7 +171,7 @@ export function ThreadView({
         // заходе разделитель «непрочитанные» встанет над уже прочитанным.
         // Фоновая вкладка гасить непрочитанное не должна.
         if (!cancelled && document.visibilityState === "visible") {
-          void markThreadRead(threadId);
+          void markThreadRead(threadId).then(() => syncCounters());
         }
       } finally {
         // finally, а не хвост try: сеть отвалилась ровно тогда, когда догон и
@@ -179,7 +185,7 @@ export function ThreadView({
     return () => { cancelled = true; };
     // messages в зависимостях нет намеренно: догон реагирует на событие, а не на
     // собственный результат — иначе он зациклится сам на себе.
-  }, [threadId, liveMessage, resyncAt, loadingOlder, upsert, announce]);
+  }, [threadId, liveMessage, resyncAt, loadingOlder, upsert, announce, syncCounters]);
 
   async function loadOlder() {
     if (!threadId || loadingOlder || messages.length === 0) return;

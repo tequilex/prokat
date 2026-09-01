@@ -3,6 +3,7 @@
 
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CountersSync } from "@/components/realtime/CountersSync";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
@@ -35,6 +36,7 @@ export default async function RequestsPage() {
 
   return (
     <section aria-label="Мои заявки">
+      <CountersSync />
       {rows.length === 0 ? (
         <EmptyState>Пока нет заявок. Найдите нужную вещь в каталоге и выберите даты.</EmptyState>
       ) : (

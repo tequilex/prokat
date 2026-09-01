@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -13,11 +13,16 @@ vi.mock("@/server/actions/chat", () => ({
   startThread: vi.fn(),
 }));
 
-// Догон дельты после события сокета. Мок обязателен: цепочка auth() →
+// Догон дельты и обновление счётчиков. Мок обязателен: цепочка auth() →
 // next-auth → next/server в jsdom не разрешается.
-vi.mock("@/server/actions/realtime", () => ({
+const realtime = vi.hoisted(() => ({
   fetchNewerMessages: vi.fn(async () => ({ ok: true, data: { messages: [], hasMore: false } })),
+  fetchRealtimeUpdate: vi.fn(async () => ({
+    ok: true,
+    data: { counters: { messages: 0, notifications: 0, requests: 0 }, toast: null },
+  })),
 }));
+vi.mock("@/server/actions/realtime", () => realtime);
 
 const { ThreadView } = await import("@/components/chat/ThreadView");
 const { ChatPanes } = await import("@/components/chat/ChatPanes");
@@ -149,5 +154,24 @@ describe("ChatPanes", () => {
     );
     expect(screen.getByLabelText("Переписки")).toBeInTheDocument();
     expect(screen.getByText("заглушка")).toBeInTheDocument();
+  });
+});
+
+// Баг, найденный руками: прочитал переписку — счётчик в сайдбаре и кружок в
+// шапке оставались до перезагрузки. При живом сокете они читают стор, а
+// markThreadRead писал только в базу и звал router.refresh(), который обновляет
+// серверный проп — то есть ровно то, что в этот момент не используется.
+describe("ThreadView: прочтение гасит счётчики", () => {
+  it("после markThreadRead перечитывает счётчики", async () => {
+    realtime.fetchRealtimeUpdate.mockClear();
+    render(
+      <ThreadView
+        mode={{ kind: "thread", threadId: "t1" }}
+        viewerId="me"
+        initialMessages={[message("m1", "other", "привет")]}
+        initialHasMore={false}
+      />,
+    );
+    await waitFor(() => expect(realtime.fetchRealtimeUpdate).toHaveBeenCalled());
   });
 });

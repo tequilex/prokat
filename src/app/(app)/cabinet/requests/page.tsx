@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CountersSync } from "@/components/realtime/CountersSync";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getOwnerRequests } from "@/server/owner";
@@ -26,6 +27,7 @@ export default async function CabinetRequestsPage() {
 
   return (
     <section aria-label="Заявки на бронь">
+      <CountersSync />
       {rows.length === 0 ? (
         <EmptyState>Заявок пока нет. Они появятся здесь, когда клиенты выберут даты у ваших позиций.</EmptyState>
       ) : (
