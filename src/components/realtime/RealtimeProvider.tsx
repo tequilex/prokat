@@ -57,7 +57,6 @@ function refreshableRoute(pathname: string): boolean {
   return pathname.startsWith("/chat")
     || pathname.startsWith("/cabinet")
     || pathname.startsWith("/requests")
-    || pathname.startsWith("/notifications")
     || pathname.startsWith("/profile");
 }
 

@@ -19,7 +19,7 @@ const realtime = vi.hoisted(() => ({
   fetchNewerMessages: vi.fn(async () => ({ ok: true, data: { messages: [], hasMore: false } })),
   fetchRealtimeUpdate: vi.fn(async () => ({
     ok: true,
-    data: { counters: { messages: 0, notifications: 0, requests: 0 }, toast: null },
+    data: { counters: { messages: 0, incoming: 0, mine: 0 }, toast: null },
   })),
 }));
 vi.mock("@/server/actions/realtime", () => realtime);

@@ -19,18 +19,22 @@ import { canReadThread } from "@/lib/chat/rules";
 import { cursorSchema, threadIdSchema } from "@/lib/chat/validation";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { getMessagesAfter, getUnreadCount, type ThreadMessage } from "@/server/chat";
-import { countUnseenNonChatEvents } from "@/server/notifications";
-import { countNewRequests } from "@/server/owner";
+import { countUnseenEvents } from "@/server/notifications";
 import { readMessageToast, readRequestToast, type ToastContent } from "@/server/realtime";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
+// Три числа, и каждое отвечает на свой вопрос. Смесь «уведомления + заявки»
+// была непоказуемой: точка горела, а объяснить её в интерфейсе было нечем.
 export type Counters = {
+  /** Непрочитанные сообщения. */
   messages: number;
-  notifications: number;
-  requests: number;
+  /** Неувиденные события по МОИМ вещам: новая заявка, отменённая заявка. */
+  incoming: number;
+  /** Неувиденные решения по МОИМ заявкам: подтвердили, отклонили и прочее. */
+  mine: number;
 };
 
 const idSchema = z.string().min(1).max(64);
@@ -63,10 +67,9 @@ export async function fetchRealtimeUpdate(
   const event = parsedEvent.data;
   // Числа абсолютные, а не дельты: инкремент от неизвестного значения разошёлся
   // бы с базой, а после ближайшего refresh проп принёс бы ту же дельту второй раз.
-  const [messages, notifications, requests, toast] = await Promise.all([
+  const [messages, events, toast] = await Promise.all([
     getUnreadCount(userId),
-    countUnseenNonChatEvents(userId),
-    countNewRequests(userId),
+    countUnseenEvents(userId),
     !event
       ? Promise.resolve(null)
       : event.type === "message"
@@ -74,7 +77,7 @@ export async function fetchRealtimeUpdate(
         : readRequestToast(userId, event.requestId, event.kind as never),
   ]);
 
-  return { ok: true, data: { counters: { messages, notifications, requests }, toast } };
+  return { ok: true, data: { counters: { messages, ...events }, toast } };
 }
 
 // Догон ленты: всё, что появилось строго после курсора. Отдаётся по

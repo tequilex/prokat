@@ -4,9 +4,14 @@
 // областью — иначе один и тот же факт показывался бы в двух местах сразу.
 //
 //   messages — непрочитанные сообщения. Чаты в таб-баре, «Сообщения» в меню.
-//   other    — всё остальное неувиденное: решения по заявкам, новые заявки.
-//              Кабинет в таб-баре, чтобы не повторять кружок чатов.
+//   incoming — события по моим вещам: новая заявка, отменённая.
+//   mine     — решения по моим заявкам: подтвердили, отклонили и прочее.
+//   other    — incoming + mine. Кабинет в таб-баре, чтобы не повторять чаты.
 //   all      — что угодно. Аватарка в шапке: она вход во всё сразу.
+//
+// Точка на аватарке обязана быть объяснима содержимым выпадашки: если она
+// горит, а внутри пусто — человек идёт искать причину руками. Поэтому scope
+// «all» ровно равен сумме того, что показано пунктами меню.
 //
 // Источник — только сокет. Серверное значение означало бы запрос к базе на
 // каждой странице каталога, а шапка рендерится везде. Цена: индикатор
@@ -16,16 +21,16 @@ import { useRealtime } from "@/components/realtime/context";
 import { badgeCount } from "@/lib/badge-count";
 import { content } from "@theme/content";
 
-export type LiveScope = "messages" | "other" | "all";
+export type LiveScope = "messages" | "incoming" | "mine" | "other" | "all";
 
 function useLiveCount(scope: LiveScope): number {
   const counters = useRealtime((s) => s.counters);
   if (!counters) return 0;
   if (scope === "messages") return counters.messages;
-  // requests и notifications пересекаются по смыслу — новая заявка попадает в
-  // оба. Для кружка это неважно: он про «есть или нет», а не про число.
-  if (scope === "other") return counters.notifications + counters.requests;
-  return counters.messages + counters.notifications + counters.requests;
+  if (scope === "incoming") return counters.incoming;
+  if (scope === "mine") return counters.mine;
+  if (scope === "other") return counters.incoming + counters.mine;
+  return counters.messages + counters.incoming + counters.mine;
 }
 
 /** Кружок: только факт. Ставится в контейнер с `relative`. */

@@ -2,14 +2,17 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Package, ClipboardList, CalendarDays, Settings, ShieldCheck, LogOut, Palette, MessageCircle } from "lucide-react";
+import {
+  Package, ClipboardList, CalendarDays, Settings, ShieldCheck, LogOut, Palette,
+  MessageCircle, Bell, type LucideIcon,
+} from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Brackets } from "@/components/brand/Brackets";
 import { Avatar } from "@/components/ui/Avatar";
-import { LiveDot, LiveCount } from "@/components/realtime/LiveDot";
+import { LiveDot, LiveCount, type LiveScope } from "@/components/realtime/LiveDot";
 import { ThemeSegmented } from "@/components/providers/ThemeSegmented";
 import { content } from "@theme/content";
 
@@ -25,13 +28,21 @@ const CLOSE_DELAY_MS = 160;
 
 // Иконки нейтральные: скобки остаются пиктограммой только в таб-баре, чтобы
 // бренд не спорил с навигацией.
-const LINKS = [
-  { href: "/chat", label: "Сообщения", Icon: MessageCircle },
+// counter — какое число из стора показать рядом. Пункты с индикатором обязаны
+// покрывать всё, от чего загорается точка на аватарке: иначе она горит, человек
+// открывает меню, а там пусто — и идёт искать причину по разделам руками.
+// «Заявки на мои вещи» раньше в меню не было вовсе, и точка от новой заявки
+// объяснялась только походом в кабинет.
+export const LINKS = [
+  { href: "/chat", label: "Сообщения", Icon: MessageCircle, counter: "messages" },
+  { href: "/cabinet/requests", label: "Заявки на мои вещи", Icon: Bell, counter: "incoming" },
+  { href: "/requests", label: "Мои заявки", Icon: ClipboardList, counter: "mine" },
   { href: "/cabinet/listings", label: "Мои товары", Icon: Package },
-  { href: "/requests", label: "Мои заявки", Icon: ClipboardList },
   { href: "/cabinet/calendar", label: "Календарь", Icon: CalendarDays },
   { href: "/profile", label: "Настройки", Icon: Settings },
-] as const;
+] as const satisfies readonly {
+  href: string; label: string; Icon: LucideIcon; counter?: LiveScope;
+}[];
 
 export function UserMenu({ email, name, image, isAdmin = false }: Props) {
   // signOut делает XHR + redirect, без feedback'а пункт меню «зависает».
@@ -99,14 +110,14 @@ export function UserMenu({ email, name, image, isAdmin = false }: Props) {
 
         <DropdownMenuSeparator />
 
-        {LINKS.map(({ href, label, Icon }) => (
-          <DropdownMenuItem key={href} asChild className="gap-2.5">
-            <Link href={href as never}>
+        {LINKS.map((item) => (
+          <DropdownMenuItem key={item.href} asChild className="gap-2.5">
+            <Link href={item.href as never}>
               <span className="flex w-6 shrink-0 justify-center">
-                <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <item.Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </span>
-              {label}
-              {href === "/chat" && <LiveCount scope="messages" />}
+              {item.label}
+              {"counter" in item && <LiveCount scope={item.counter} />}
             </Link>
           </DropdownMenuItem>
         ))}

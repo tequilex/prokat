@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { countNewRequests } from "@/server/owner";
 import { getCabinetIdentity } from "@/server/me";
 import { getUnreadCount } from "@/server/chat";
-import { countUnseenNonChatEvents } from "@/server/notifications";
 import { AccountShell } from "@/components/account/AccountShell";
 import { buildAccountNav } from "@/components/account/accountNav";
 
@@ -17,10 +16,9 @@ export default async function CabinetLayout({ children }: { children: React.Reac
 
   // unreadMessages читается и здесь тоже: без него бейдж «Сообщения» пропадал
   // во всей ветке /cabinet, включая мобильный хаб — самый видный экран кабинета.
-  const [newCount, unread, notifications, identity] = await Promise.all([
+  const [newCount, unread, identity] = await Promise.all([
     countNewRequests(session.user.id),
     getUnreadCount(session.user.id),
-    countUnseenNonChatEvents(session.user.id),
     getCabinetIdentity(session.user.id),
   ]);
 

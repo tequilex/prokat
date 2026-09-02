@@ -24,6 +24,14 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 // разные формы: у заявки нет ни threadId, ни messageId.
 export type RequestNotificationKind = Exclude<NotificationKind, "chat_message">;
 
+// Кому адресовано событие. Владелец смотрит входящие заявки, арендатор — свои.
+// Списки нужны и счётчикам, и гашению при заходе в раздел; разъехавшись, они
+// дали бы точку, которая горит по одному правилу, а гаснет по другому.
+export const OWNER_EVENT_KINDS = ["request_created", "request_cancelled"] as const;
+export const CUSTOMER_EVENT_KINDS = [
+  "request_confirmed", "request_declined", "request_completed", "request_no_show",
+] as const;
+
 // Решения владельца по заявке — подмножество BookingStatus. Сужение не
 // косметика: transitionRequest принимает все семь статусов, а вид уведомления
 // есть только у четырёх, и `request_${to}` на полном union не типизируется.

@@ -9,7 +9,7 @@ import { createRealtimeStore } from "@/components/realtime/store";
 // они дублируют друг друга — так это и выглядело до разделения.
 
 function withStore(
-  counters: { messages: number; notifications: number; requests: number } | null,
+  counters: { messages: number; incoming: number; mine: number } | null,
   ui: React.ReactNode,
 ) {
   const store = createRealtimeStore();
@@ -19,8 +19,8 @@ function withStore(
   );
 }
 
-const only = (messages: number, notifications: number, requests: number) =>
-  ({ messages, notifications, requests });
+const only = (messages: number, incoming: number, mine: number) =>
+  ({ messages, incoming, mine });
 
 describe("области индикаторов", () => {
   it("кружок чатов зажигают только сообщения", () => {
@@ -64,5 +64,31 @@ describe("число в меню", () => {
   it("на нуле не рисуется", () => {
     withStore(only(0, 5, 5), <LiveCount scope="messages" />);
     expect(screen.queryByText("0")).toBeNull();
+  });
+});
+
+// Главный инвариант: точка на аватарке обязана быть объяснима выпадашкой.
+// Именно этого не было — заявка зажигала точку, человек открывал меню, а там
+// не было даже пункта «Заявки на мои вещи».
+describe("точка объяснима меню", () => {
+  it("scope=all равен сумме того, что показано пунктами", () => {
+    const c = { messages: 2, incoming: 3, mine: 4 };
+    const sum = (s: Parameters<typeof LiveCount>[0]["scope"]) => {
+      const { container } = withStore(c, <LiveCount scope={s} />);
+      return Number(container.textContent!.replace(/\D+/g, "").slice(0, 2));
+    };
+    expect(sum("all")).toBe(sum("messages") + sum("incoming") + sum("mine"));
+  });
+
+  it("каждый счётчик покрыт пунктом меню", async () => {
+    const { LINKS } = await import("@/components/auth/UserMenu");
+    const covered = new Set(
+      LINKS.flatMap((l) => ("counter" in l ? [l.counter as string] : [])),
+    );
+    // Ключи стора берутся с живого объекта: добавили счётчик и забыли пункт —
+    // тест падает, а не молча появляется необъяснимая точка.
+    for (const key of Object.keys({ messages: 0, incoming: 0, mine: 0 })) {
+      expect(covered, `нет пункта меню для «${key}»`).toContain(key);
+    }
   });
 });

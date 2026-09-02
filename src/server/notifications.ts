@@ -5,11 +5,13 @@
 // или booking_requests, только потом notifications. Встречный порядок даёт живой
 // дедлок на треде с активной перепиской — это проверено, а не предположено.
 
-import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb, type Tx } from "@/lib/db";
 import { notifications } from "@db/schema";
 import { newId } from "@/lib/id";
-import { type NotificationKind, notificationRecipient } from "@/lib/notifications/kinds";
+import {
+  CUSTOMER_EVENT_KINDS, OWNER_EVENT_KINDS, type NotificationKind, notificationRecipient,
+} from "@/lib/notifications/kinds";
 
 // Сколько прочитанных строк удаляется за один проход. Крона нет, чистка
 // ленивая — верхняя граница нужна, чтобы редкий заход на страницу не превращался
@@ -61,21 +63,24 @@ export async function notify(
 
 // ============================== Чтение ==============================
 
-// Непрочитанные события КРОМЕ переписки. Сообщения исключены намеренно: у них
-// свой счётчик, и без этого условия кружок на кабинете показывал бы ровно то
-// же, что кружок на чатах, — то есть дублировал бы его.
+// Неувиденные события по заявкам, разложенные по сторонам: владельцу —
+// входящие, арендатору — решения по его заявкам. Сообщения сюда не входят, у
+// них свой счётчик; без этого точка на кабинете дублировала бы точку на чатах.
 //
-// Идёт по префиксу частичного UNIQUE; kind в него входит третьей колонкой,
-// отдельный индекс не нужен.
-export async function countUnseenNonChatEvents(userId: string): Promise<number> {
-  const rows = await getDb().select({ n: sql<number>`count(*)::int` })
+// Одной выборкой с FILTER, а не двумя запросами: обе идут по одному индексу и
+// по одному и тому же набору строк.
+export async function countUnseenEvents(
+  userId: string,
+): Promise<{ incoming: number; mine: number }> {
+  const owner = OWNER_EVENT_KINDS.join("','");
+  const customer = CUSTOMER_EVENT_KINDS.join("','");
+  const rows = await getDb().select({
+    incoming: sql<number>`count(*) filter (where ${notifications.kind}::text in ('${sql.raw(owner)}'))::int`,
+    mine: sql<number>`count(*) filter (where ${notifications.kind}::text in ('${sql.raw(customer)}'))::int`,
+  })
     .from(notifications)
-    .where(and(
-      eq(notifications.userId, userId),
-      isNull(notifications.readAt),
-      ne(notifications.kind, "chat_message"),
-    ));
-  return rows[0]?.n ?? 0;
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+  return { incoming: rows[0]?.incoming ?? 0, mine: rows[0]?.mine ?? 0 };
 }
 
 // Ленивая чистка прочитанного — крона нет, единственный планировщик в проде это
@@ -104,9 +109,7 @@ export async function markRequestNotificationsSeen(
   userId: string,
   side: "owner" | "customer",
 ): Promise<void> {
-  const kinds = side === "owner"
-    ? (["request_created", "request_cancelled"] as const)
-    : (["request_confirmed", "request_declined", "request_completed", "request_no_show"] as const);
+  const kinds = side === "owner" ? OWNER_EVENT_KINDS : CUSTOMER_EVENT_KINDS;
 
   await getDb().update(notifications)
     .set({ readAt: sql`now()` })

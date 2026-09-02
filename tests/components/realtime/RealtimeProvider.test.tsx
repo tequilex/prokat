@@ -16,7 +16,7 @@ vi.mock("sonner", () => ({ toast: toastFn }));
 const fetchUpdate = vi.hoisted(() => vi.fn(async (event?: unknown) => ({
   ok: true as const,
   data: {
-    counters: { messages: 1, notifications: 0, requests: 0 },
+    counters: { messages: 1, incoming: 0, mine: 0 },
     toast: event ? { title: "Аня", text: "Привет", href: "/chat/t1" } : null,
   },
 })));

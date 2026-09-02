@@ -11,7 +11,7 @@ describe("стор реального времени", () => {
     const a = createRealtimeStore();
     const b = createRealtimeStore();
 
-    a.getState().setCounters({ messages: 7, notifications: 2, requests: 1 });
+    a.getState().setCounters({ messages: 7, incoming: 2, mine: 1 });
 
     expect(a.getState().counters?.messages).toBe(7);
     expect(b.getState().counters).toBeNull();
@@ -25,7 +25,7 @@ describe("стор реального времени", () => {
 
   it("потеря соединения возвращает счётчики в «неизвестно»", () => {
     const store = createRealtimeStore();
-    store.getState().setCounters({ messages: 3, notifications: 1, requests: 0 });
+    store.getState().setCounters({ messages: 3, incoming: 1, mine: 0 });
     store.getState().forgetCounters();
     // Без этого умерший realtime заморозил бы бейдж на последнем известном
     // числе, и починить его не смог бы ни refresh, ни перезагрузка.

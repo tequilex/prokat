@@ -130,7 +130,7 @@ describe("AccountShell: живой счётчик", () => {
 
   it("со стором показывает его число, а не серверное", () => {
     const store = createRealtimeStore();
-    store.getState().setCounters({ messages: 9, notifications: 0, requests: 0 });
+    store.getState().setCounters({ messages: 9, incoming: 0, mine: 0 });
     renderWith(store);
     expect(screen.getAllByText("9").length).toBeGreaterThan(0);
     expect(screen.queryByText("2")).toBeNull();
@@ -138,7 +138,7 @@ describe("AccountShell: живой счётчик", () => {
 
   it("после потери соединения возвращается к серверному числу", () => {
     const store = createRealtimeStore();
-    store.getState().setCounters({ messages: 9, notifications: 0, requests: 0 });
+    store.getState().setCounters({ messages: 9, incoming: 0, mine: 0 });
     store.getState().forgetCounters();
     renderWith(store);
     expect(screen.getAllByText("2").length).toBeGreaterThan(0);
