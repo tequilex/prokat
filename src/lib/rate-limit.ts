@@ -56,6 +56,18 @@ const RULES: Record<LimitKind, Rule> = {
   realtime_sync: { windowMs: 60 * 60 * 1000, maxInWindow: 1200, gapMs: 0 },
 };
 
+// Аварийный выключатель на время ручных проверок. Читается один раз при старте
+// процесса: смена значения требует перезапуска, и это намеренно — так его
+// нельзя выключить незаметно на живом сервисе.
+//
+// ВНИМАНИЕ: снимает ВСЕ лимиты сразу, включая вход, регистрацию и отправку
+// писем. Держать включённым в проде нельзя — без него перебор пароля и рассылка
+// с сайта ничем не ограничены.
+const DISABLED = process.env.RATE_LIMIT_DISABLED === "1";
+if (DISABLED) {
+  console.warn("[rate-limit] ВЫКЛЮЧЕН через RATE_LIMIT_DISABLED — только для проверок");
+}
+
 const MAX_KEYS = 10_000;
 const store = new Map<string, number[]>();
 
@@ -66,6 +78,7 @@ function evictIfFull(): void {
 }
 
 export function checkLimit(subject: string, kind: LimitKind): LimitResult {
+  if (DISABLED) return { ok: true };
   const rule = RULES[kind];
   const now = Date.now();
   const key = `${subject}:${kind}`;
