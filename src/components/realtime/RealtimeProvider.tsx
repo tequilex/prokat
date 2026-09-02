@@ -191,6 +191,11 @@ export function RealtimeProvider({
           void pull({ type: "message", threadId: frame.threadId, messageId: frame.messageId });
         } else if (frame.type === "request") {
           void pull({ type: "request", requestId: frame.requestId, kind: frame.kind });
+        } else if (frame.type === "read") {
+          // Ни счётчиков, ни серверной перерисовки: галочки живут в состоянии
+          // ленты, и полный SSR ради двух пикселей был бы дорогой платой.
+          state.pushRead(frame.threadId, frame.upToId);
+          return;
         }
         scheduleRefresh();
       };

@@ -326,7 +326,7 @@ dev-стека и сыпать "Failed to find Server Action"):
 > См. раздел «Чего сейчас нет» в [seo.md](seo.md).
 
 ```bash
-cd /opt/inrenta
+cd ~/prokat
 echo "<INDEXNOW_KEY>" > "public/<INDEXNOW_KEY>.txt"
 docker compose build app && docker compose build realtime && docker compose up -d app
 curl https://example.ru/<INDEXNOW_KEY>.txt   # вернёт ключ
@@ -396,7 +396,7 @@ docker volume rm prokat_pg_data prokat_caddy_data prokat_caddy_config
 ### Обновление кода
 
 ```bash
-cd /opt/inrenta
+cd ~/prokat
 git pull
 docker compose build app && docker compose up -d app
 # Процесс доставки собирается и обновляется отдельно — он переживает рестарт
@@ -442,7 +442,7 @@ docker compose up -d --force-recreate app realtime
 и `emailVerified`.
 
 ```bash
-cd /opt/inrenta
+cd ~/prokat
 npm install --legacy-peer-deps   # npm строже pnpm к peer deps (nodemailer 9 vs @auth/core)
 
 NODE_ENV=production \
@@ -459,7 +459,7 @@ dev-пароль. Сид идемпотентен: если город «Каз�
 ### Полный сброс БД и пересев
 
 ```bash
-cd /opt/inrenta
+cd ~/prokat
 docker compose stop app
 docker compose exec db psql -U app -d app -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 docker compose exec db psql -U app -d app -c "DROP SCHEMA IF EXISTS drizzle CASCADE;"

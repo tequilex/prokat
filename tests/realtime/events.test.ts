@@ -105,3 +105,27 @@ describe("кадр в браузер", () => {
     });
   });
 });
+
+// Прочтение. Отдельный вид события: персистентного уведомления за ним не стоит
+// и счётчиков оно не трогает — это чистый сигнал «твои галочки поменялись».
+describe("отметка прочтения", () => {
+  it("уходит только собеседнику и не трогает счётчик", async () => {
+    const { threadReadNotify } = await import("@/lib/realtime/events");
+    const p = threadReadNotify({ threadId: "t1", upToId: "m9", recipientId: "u2" });
+    // Читателю своё же прочтение ни о чём не говорит.
+    expect(p.recipients).toEqual(["u2"]);
+    expect(p.countFor).toBeNull();
+  });
+
+  it("кадр несёт отметку, до которой прочитано", async () => {
+    const { threadReadNotify, toClientFrame } = await import("@/lib/realtime/events");
+    const p = threadReadNotify({ threadId: "t1", upToId: "m9", recipientId: "u2" });
+    expect(toClientFrame(p, "u2")).toEqual({ type: "read", threadId: "t1", upToId: "m9" });
+  });
+
+  it("переживает сериализацию", async () => {
+    const { threadReadNotify, parseNotify } = await import("@/lib/realtime/events");
+    const p = threadReadNotify({ threadId: "t1", upToId: "m9", recipientId: "u2" });
+    expect(parseNotify(JSON.stringify(p))).toEqual(p);
+  });
+});

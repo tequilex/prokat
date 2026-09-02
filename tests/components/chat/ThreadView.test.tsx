@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -195,5 +195,30 @@ describe("ThreadView: обрыв связи при отправке", () => {
     // Текст возвращается в поле: иначе он потерян безвозвратно.
     expect(screen.getByLabelText(content.chat.composerLabel)).toHaveValue("не доехало");
     expect(screen.getByText(/Нет связи/)).toBeInTheDocument();
+  });
+});
+
+// Галочки прочтения теперь приезжают событием, а не ждут перезагрузки: курсор
+// собеседника переехал из пропа в состояние.
+describe("ThreadView: галочки в реальном времени", () => {
+  it("курсор собеседника двигается только вперёд", async () => {
+    const { createRealtimeStore } = await import("@/components/realtime/store");
+    const { RealtimeContext } = await import("@/components/realtime/context");
+    const store = createRealtimeStore();
+
+    const { rerender } = render(
+      <RealtimeContext.Provider value={store}>
+        <ThreadView {...base} counterpartCursor="01B" />
+      </RealtimeContext.Provider>,
+    );
+
+    // Опоздавшее событие с более старой отметкой не должно снимать галочки.
+    await act(async () => { store.getState().pushRead("01T", "01A"); });
+    rerender(
+      <RealtimeContext.Provider value={store}>
+        <ThreadView {...base} counterpartCursor="01B" />
+      </RealtimeContext.Provider>,
+    );
+    expect(store.getState().lastRead).toEqual({ threadId: "01T", upToId: "01A" });
   });
 });

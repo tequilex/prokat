@@ -39,6 +39,15 @@ const notifySchema = z.discriminatedUnion("kind", [
     recipients: z.array(idSchema).min(1).max(1),
     countFor: idSchema.nullable(),
   }),
+  // Прочтение. Персистентного уведомления за ним не стоит — это чистый сигнал
+  // «мои галочки поменялись», и счётчиков он не трогает.
+  z.object({
+    kind: z.literal("thread_read"),
+    threadId: idSchema,
+    upToId: idSchema,
+    recipients: z.array(idSchema).min(1).max(1),
+    countFor: z.null(),
+  }),
 ]);
 
 export type NotifyPayload = z.infer<typeof notifySchema>;
@@ -46,6 +55,9 @@ export type NotifyPayload = z.infer<typeof notifySchema>;
 export type ClientFrame =
   | { type: "message"; threadId: string; messageId: string; counters: boolean }
   | { type: "request"; requestId: string; kind: RequestNotificationKind; counters: boolean }
+  // Собеседник прочитал переписку до upToId — у моих сообщений до этой отметки
+  // появляется вторая галочка.
+  | { type: "read"; threadId: string; upToId: string }
   // Широковещательный: сервер потерял и восстановил LISTEN, всё случившееся в
   // разрыве потеряно безвозвратно — клиент дочитывает дельту сам.
   | { type: "resync" };
@@ -109,6 +121,21 @@ export function requestNotify(input: {
   };
 }
 
+// Уходит только собеседнику: своё же прочтение читателю ни о чём не говорит.
+export function threadReadNotify(input: {
+  threadId: string;
+  upToId: string;
+  recipientId: string;
+}): NotifyPayload {
+  return {
+    kind: "thread_read",
+    threadId: input.threadId,
+    upToId: input.upToId,
+    recipients: [input.recipientId],
+    countFor: null,
+  };
+}
+
 export function serializeNotify(payload: NotifyPayload): string {
   return JSON.stringify(payload);
 }
@@ -127,6 +154,9 @@ export function parseNotify(raw: string): NotifyPayload | null {
 }
 
 export function toClientFrame(payload: NotifyPayload, forUserId: string): ClientFrame {
+  if (payload.kind === "thread_read") {
+    return { type: "read", threadId: payload.threadId, upToId: payload.upToId };
+  }
   const counters = payload.countFor === forUserId;
   return payload.kind === "chat_message"
     ? { type: "message", threadId: payload.threadId, messageId: payload.messageId, counters }

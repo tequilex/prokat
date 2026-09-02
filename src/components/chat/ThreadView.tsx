@@ -8,7 +8,9 @@
 // Сборка ленты (группы, разделители) — чистая функция buildFeed, независимая от
 // порядка прихода: сокет не обязан присылать сообщения по возрастанию.
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Check, CheckCheck, SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,9 +54,9 @@ export function ThreadView({
   blockedReason?: string;
   /** Мой курсор прочтения на момент открытия — по нему ставится разделитель. */
   viewerCursor?: string | null;
-  /** Курсор собеседника — по нему рисуются галочки. Остаётся пропом, а не
-   *  уезжает в состояние: иначе замрёт навсегда. До задачи 2 обновляется
-   *  только при обновлении страницы. */
+  /** Курсор собеседника на момент открытия — по нему рисуются галочки. Дальше
+   *  живёт в состоянии и двигается событием сокета: сигнал о сдвиге появился
+   *  вместе с доставкой в реальном времени. */
   counterpartCursor?: string | null;
   counterpartName?: string | null;
   /** Заготовка под задачу 2: включить индикатор до сокета нечем. */
@@ -83,9 +85,25 @@ export function ThreadView({
 
   const threadId = mode.kind === "thread" ? mode.threadId : null;
 
+  // Событие сокета тела сообщения не несёт — его надо дочитать; отметку
+  // прочтения оно несёт целиком.
+  const liveMessage = useRealtime((s) => s.lastMessage);
+  const resyncAt = useRealtime((s) => s.resyncAt);
+  const liveRead = useRealtime((s) => s.lastRead);
+
+
   // Якорь непрочитанного снимается один раз, до markThreadRead: иначе
   // разделитель исчезнет через мгновение после открытия переписки.
   const [anchorId] = useState(() => unreadAnchor(initialMessages, viewerCursor, viewerId));
+
+  // Курсор собеседника: сеется пропом, дальше двигается событием. Только
+  // вперёд — событие из другой вкладки или доехавшее с опозданием не должно
+  // возвращать галочки назад. ULID сравнивается лексикографически.
+  const [readCursor, setReadCursor] = useState(counterpartCursor);
+  useEffect(() => {
+    if (!threadId || !liveRead || liveRead.threadId !== threadId) return;
+    setReadCursor((prev) => (!prev || liveRead.upToId > prev ? liveRead.upToId : prev));
+  }, [threadId, liveRead]);
 
   const feed = useMemo(
     () => buildFeed(messages, { viewerId, unreadAnchorId: anchorId }),
@@ -124,7 +142,37 @@ export function ThreadView({
     else endRef.current?.scrollIntoView({ block: "end" });
   }, []);
 
-  useEffect(scrollToEnd, [scrollToEnd]);
+  // Насколько далеко от низа человек ещё считается «внизу». Пара строк запаса:
+  // иначе инерционная прокрутка на мобиле оставляет пару пикселей и лента
+  // перестаёт доезжать сама.
+  const NEAR_BOTTOM_PX = 120;
+  const stickToBottom = useRef(true);
+
+  // Замеряется ПЕРЕД перерисовкой: после неё высота уже другая, и понять, где
+  // человек был, невозможно.
+  useLayoutEffect(() => {
+    const feedEl = feedRef.current;
+    if (!feedEl) return;
+    const distance = feedEl.scrollHeight - feedEl.scrollTop - feedEl.clientHeight;
+    stickToBottom.current = distance <= NEAR_BOTTOM_PX;
+  });
+
+  useEffect(() => {
+    // Догрузку ранней истории пропускаем: она дописывает СВЕРХУ, и прыжок вниз
+    // выбросил бы человека из того, что он читает.
+    if (loadingOlder) return;
+    // Липнем к низу, только если человек и так там. Читает старое — не дёргаем.
+    if (!stickToBottom.current) return;
+    scrollToEnd();
+    // Зависимость от длины, а не от массива: upsert возвращает новый массив
+    // даже когда ничего не изменилось, и лента прокручивалась бы вхолостую.
+  }, [scrollToEnd, messages.length, pending.length, loadingOlder]);
+
+  // При смене переписки внизу оказываемся всегда, чем бы ни кончилась прошлая.
+  useEffect(() => {
+    stickToBottom.current = true;
+    scrollToEnd();
+  }, [threadId, scrollToEnd]);
 
   useEffect(() => {
     if (!threadId) return;
@@ -139,11 +187,8 @@ export function ThreadView({
     return () => { cancelled = true; };
   }, [threadId, router, syncCounters]);
 
-  // Событие сокета тела сообщения не несёт — его надо дочитать. Курсор берётся
-  // по максимальному id, а не по хвосту массива: «показать более ранние»
-  // дописывает в него СТАРЫЕ сообщения.
-  const liveMessage = useRealtime((s) => s.lastMessage);
-  const resyncAt = useRealtime((s) => s.resyncAt);
+  // Курсор догона берётся по максимальному id, а не по хвосту массива:
+  // «показать более ранние» дописывает в него СТАРЫЕ сообщения.
   const catchingUp = useRef(false);
 
   useEffect(() => {
@@ -306,7 +351,7 @@ export function ThreadView({
               key={item.key}
               mine={item.mine}
               messages={item.messages}
-              counterpartCursor={counterpartCursor}
+              counterpartCursor={readCursor}
             />
           );
         })}

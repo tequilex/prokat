@@ -26,7 +26,7 @@ import { z } from "zod";
 import { findThreadByListing, getMessages, type ThreadMessage } from "@/server/chat";
 import { notify } from "@/server/notifications";
 import { publish } from "@/server/realtime";
-import { chatMessageNotify } from "@/lib/realtime/events";
+import { chatMessageNotify, threadReadNotify } from "@/lib/realtime/events";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -326,6 +326,19 @@ export async function markThreadRead(rawThreadId: unknown): Promise<ActionResult
           where ${chatMessages.id} = ${latestId}
         )`,
       ));
+
+    // Собеседнику — сигнал «твои сообщения прочитаны до этой отметки». Уходит
+    // только ему: своё же прочтение читателю ни о чём не говорит. Персистентного
+    // уведомления за этим не стоит, счётчики событие не трогает.
+    //
+    // Последним оператором транзакции, как и все pg_notify: событие не должно
+    // обгонять сдвинутый курсор.
+    const counterpartId = counterpartOf(thread, viewerId);
+    if (counterpartId) {
+      await publish(tx, threadReadNotify({
+        threadId, upToId: latestId, recipientId: counterpartId,
+      }));
+    }
   });
 
   return { ok: true, data: undefined };

@@ -43,12 +43,15 @@ export type RealtimeState = {
   lastMessage: { threadId: string; messageId: string; at: number } | null;
   /** Отметка широковещательного resync: сервер потерял и вернул LISTEN. */
   resyncAt: number | null;
+  /** Собеседник прочитал переписку до этой отметки — по ней рисуются галочки. */
+  lastRead: { threadId: string; upToId: string } | null;
 
   setCounters: (counters: Counters) => void;
   setStatus: (status: ConnectionStatus) => void;
   /** Соединение потеряно: счётчики перестают быть достоверными. */
   forgetCounters: () => void;
   pushMessage: (threadId: string, messageId: string) => void;
+  pushRead: (threadId: string, upToId: string) => void;
   markResync: () => void;
 };
 
@@ -58,12 +61,14 @@ export function createRealtimeStore() {
     status: "idle",
     lastMessage: null,
     resyncAt: null,
+    lastRead: null,
 
     setCounters: (counters) => set({ counters }),
     setStatus: (status) => set({ status }),
     forgetCounters: () => set({ counters: null }),
     pushMessage: (threadId, messageId) =>
       set({ lastMessage: { threadId, messageId, at: Date.now() } }),
+    pushRead: (threadId, upToId) => set({ lastRead: { threadId, upToId } }),
     markResync: () => set({ resyncAt: Date.now() }),
   }));
 }
