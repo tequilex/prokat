@@ -146,14 +146,46 @@ export function ThreadView({
   // двигать надо её scrollTop, а не страницу, иначе уедет вся панель. Запасная
   // ветка на случай, когда высота ленты всё-таки по контенту (короткая
   // переписка): тогда доводим до якоря в конце.
+  // Пока идёт наша собственная плавная прокрутка, события scroll сыплются
+  // каждый кадр. Без этого флага замер «внизу ли человек» ловил бы промежуточные
+  // положения анимации и отменял прилипание на полпути.
+  const firstRun = useRef(true);
+  const autoScrolling = useRef(false);
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Только собственный scrollTop. scrollIntoView здесь был ошибкой: он двигает
   // ВСЕ скроллеры-предки, включая страницу, и на мобиле это выглядело рывком
   // всего экрана. Когда лента короче контейнера, scrollTop и так остаётся 0 —
   // прокручивать нечего, распорка прижимает сообщения к низу сама.
-  const scrollToEnd = useCallback(() => {
+  //
+  // smooth только там, где человек сам вызвал движение: отправил сообщение,
+  // нажал «новые». Постановка на место при открытии обязана быть мгновенной —
+  // анимация там вернула бы ровно тот рывок, ради которого лента и прячется до
+  // позиционирования.
+  const scrollToEnd = useCallback((smooth = false) => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
-    feedEl.scrollTop = feedEl.scrollHeight;
+
+    // Уважаем системную настройку: кому анимации мешают, тому и эта не нужна.
+    const reduced = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    // typeof: Element.scrollTo есть не везде (в jsdom его нет вовсе), и падать
+    // из-за отсутствия анимации нельзя — прокрутка важнее плавности.
+    if (!smooth || reduced || typeof feedEl.scrollTo !== "function") {
+      feedEl.scrollTop = feedEl.scrollHeight;
+      return;
+    }
+    autoScrolling.current = true;
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    // Запас поверх типичной длительности плавной прокрутки: события scrollend
+    // есть не везде, а держать флаг вечно нельзя.
+    autoTimer.current = setTimeout(() => { autoScrolling.current = false; }, 700);
+    feedEl.scrollTo({ top: feedEl.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => () => {
+    if (autoTimer.current) clearTimeout(autoTimer.current);
   }, []);
 
   // Насколько далеко от низа человек ещё считается «внизу». Пара строк запаса:
@@ -177,6 +209,8 @@ export function ThreadView({
   const onFeedScroll = useCallback(() => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
+    // Кадры собственной анимации за намерение человека не считаем.
+    if (autoScrolling.current) return;
     const distance = feedEl.scrollHeight - feedEl.scrollTop - feedEl.clientHeight;
     stickToBottom.current = distance <= NEAR_BOTTOM_PX;
     // Доехал до низа сам — значит всё увидел, кнопка больше не нужна.
@@ -201,7 +235,11 @@ export function ThreadView({
     }
     seenUpTo.current = newest;
     setUnseenBelow(0);
-    scrollToEnd();
+    // Первый прогон — открытие переписки: там прокрутка обязана быть мгновенной,
+    // иначе анимация поедет поверх постановки на место и человек увидит, как
+    // лента ползёт снизу вверх. Плавно — только то, что он сам вызвал дальше.
+    scrollToEnd(!firstRun.current);
+    firstRun.current = false;
     // Зависимость от длины, а не от массива: upsert возвращает новый массив
     // даже когда ничего не изменилось, и лента прокручивалась бы вхолостую.
   }, [scrollToEnd, messages, pending.length, loadingOlder, viewerId]);
@@ -212,12 +250,18 @@ export function ThreadView({
     setUnseenBelow(0);
     scrollToEnd();
     setPositioned(true);
+    // Флаг снимается ЗДЕСЬ, а не в эффекте сообщений. Эффекты выполняются в
+    // порядке объявления, и этот идёт последним: к моменту его завершения лента
+    // уже поставлена на место, а всё дальнейшее вызвано человеком и должно быть
+    // плавным. Выставление флага здесь в true возвращало его после того, как
+    // эффект сообщений уже сбросил, — и первая отправка ехала рывком.
+    firstRun.current = false;
   }, [threadId, scrollToEnd]);
 
   const jumpToNew = useCallback(() => {
     stickToBottom.current = true;
     setUnseenBelow(0);
-    scrollToEnd();
+    scrollToEnd(true);
   }, [scrollToEnd]);
 
   useEffect(() => {
