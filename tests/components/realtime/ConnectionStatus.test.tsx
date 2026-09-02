@@ -22,6 +22,15 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("статус связи", () => {
+  // Аноним сокета не открывает вовсе — жаловаться ему не на что. Раньше он
+  // получал статус offline и через шесть секунд видел «связи нет» на любой
+  // публичной странице.
+  it("анониму ничего не показывает", () => {
+    withStatus("idle");
+    act(() => { vi.advanceTimersByTime(30_000); });
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("на живом соединении молчит", () => {
     withStatus("online");
     act(() => { vi.advanceTimersByTime(30_000); });

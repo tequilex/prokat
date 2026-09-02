@@ -58,6 +58,7 @@ class FakeSocket {
 vi.stubGlobal("WebSocket", FakeSocket);
 
 const { RealtimeProvider } = await import("@/components/realtime/RealtimeProvider");
+const { useRealtime } = await import("@/components/realtime/context");
 
 beforeEach(() => {
   FakeSocket.instances = [];
@@ -127,5 +128,21 @@ describe("RealtimeProvider", () => {
     render(<RealtimeProvider enabled={false}>x</RealtimeProvider>);
     await new Promise((r) => setTimeout(r, 20));
     expect(FakeSocket.instances).toHaveLength(0);
+  });
+
+  // Статус для анонима должен быть idle, а не offline: на offline висит плашка
+  // «связи нет», и она вылезала на публичных страницах у незалогиненных.
+  it("аноним получает idle, а не offline", async () => {
+    let seen = "";
+    function Probe() {
+      seen = useRealtime((s) => s.status);
+      return null;
+    }
+    render(
+      <RealtimeProvider enabled={false}>
+        <Probe />
+      </RealtimeProvider>,
+    );
+    await waitFor(() => expect(seen).toBe("idle"));
   });
 });

@@ -17,6 +17,10 @@ import type { Counters } from "@/server/actions/realtime";
 export type { Counters } from "@/server/actions/realtime";
 
 export type ConnectionStatus =
+  /** Соединение не заводится, и это норма: человек не залогинен. Отдельно от
+   *  offline, иначе анониму показывалась бы плашка «связи нет» — а связи у
+   *  него и не должно быть. */
+  | "idle"
   /** Соединения нет, но оно ожидается. */
   | "connecting"
   /** Канал живой. */
@@ -51,7 +55,7 @@ export type RealtimeState = {
 export function createRealtimeStore() {
   return createStore<RealtimeState>()((set) => ({
     counters: null,
-    status: "connecting",
+    status: "idle",
     lastMessage: null,
     resyncAt: null,
 

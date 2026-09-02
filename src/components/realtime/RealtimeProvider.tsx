@@ -137,7 +137,9 @@ export function RealtimeProvider({
 
   useEffect(() => {
     if (!enabled) {
-      store.getState().setStatus("offline");
+      // Именно idle, а не offline: аноним сокета не открывает, и жаловаться
+      // ему не на что.
+      store.getState().setStatus("idle");
       return;
     }
     stoppedRef.current = false;

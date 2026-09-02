@@ -20,7 +20,8 @@ export function ConnectionStatus() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (status === "online") { setVisible(false); return; }
+    // idle — аноним: соединения нет и не должно быть.
+    if (status === "online" || status === "idle") { setVisible(false); return; }
     // Терминальные состояния ждать незачем: сессии нет или вкладка от прошлой
     // сборки — само не починится.
     if (status === "unauthorized" || status === "stale") { setVisible(true); return; }
