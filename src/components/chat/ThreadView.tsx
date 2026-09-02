@@ -12,7 +12,7 @@ import {
   useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Check, CheckCheck, SendHorizontal } from "lucide-react";
+import { Check, CheckCheck, ChevronDown, SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat/validation";
 import { field } from "@/components/ui/field";
@@ -90,6 +90,9 @@ export function ThreadView({
   // которое прыгает. Начальное значение одинаково на сервере и на клиенте,
   // поэтому гидратацию это не ломает.
   const [positioned, setPositioned] = useState(false);
+  // Сколько ЧУЖИХ сообщений пришло, пока человек читал старое. Своих здесь быть
+  // не может: отправка всегда возвращает ленту вниз.
+  const [unseenBelow, setUnseenBelow] = useState(0);
 
   const threadId = mode.kind === "thread" ? mode.threadId : null;
 
@@ -167,11 +170,17 @@ export function ThreadView({
   // onScroll ловит намерение человека, а не последствие нашей же вставки.
   // (Ниже useLayoutEffect используется по прямому назначению — прокрутить до
   // отрисовки, — и с этим замером не конфликтует.)
+  // Последнее сообщение, которое человек видел, стоя внизу. По нему считается,
+  // сколько пришло за время чтения старого.
+  const seenUpTo = useRef("");
+
   const onFeedScroll = useCallback(() => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
     const distance = feedEl.scrollHeight - feedEl.scrollTop - feedEl.clientHeight;
     stickToBottom.current = distance <= NEAR_BOTTOM_PX;
+    // Доехал до низа сам — значит всё увидел, кнопка больше не нужна.
+    if (stickToBottom.current) setUnseenBelow(0);
   }, []);
 
   // useLayoutEffect, а не useEffect: он выполняется до отрисовки, и человек не
@@ -181,19 +190,35 @@ export function ThreadView({
     // Догрузку ранней истории пропускаем: она дописывает СВЕРХУ, и прыжок вниз
     // выбросил бы человека из того, что он читает.
     if (loadingOlder) return;
-    // Липнем к низу, только если человек и так там. Читает старое — не дёргаем.
-    if (!stickToBottom.current) return;
+    const newest = messages.reduce((acc, m) => (m.id > acc ? m.id : acc), "");
+    // Липнем к низу, только если человек и так там. Читает старое — не дёргаем,
+    // но считаем, сколько чужих сообщений пришло: об этом скажет кнопка.
+    if (!stickToBottom.current) {
+      setUnseenBelow(
+        messages.filter((m) => m.id > seenUpTo.current && m.senderUserId !== viewerId).length,
+      );
+      return;
+    }
+    seenUpTo.current = newest;
+    setUnseenBelow(0);
     scrollToEnd();
     // Зависимость от длины, а не от массива: upsert возвращает новый массив
     // даже когда ничего не изменилось, и лента прокручивалась бы вхолостую.
-  }, [scrollToEnd, messages.length, pending.length, loadingOlder]);
+  }, [scrollToEnd, messages, pending.length, loadingOlder, viewerId]);
 
   // При смене переписки внизу оказываемся всегда, чем бы ни кончилась прошлая.
   useLayoutEffect(() => {
     stickToBottom.current = true;
+    setUnseenBelow(0);
     scrollToEnd();
     setPositioned(true);
   }, [threadId, scrollToEnd]);
+
+  const jumpToNew = useCallback(() => {
+    stickToBottom.current = true;
+    setUnseenBelow(0);
+    scrollToEnd();
+  }, [scrollToEnd]);
 
   useEffect(() => {
     if (!threadId) return;
@@ -337,6 +362,9 @@ export function ThreadView({
           * повтор одного и того же сообщения тоже считался изменением. */}
         <span hidden>{announcement.n}</span>
       </p>
+      {/* relative-обёртка: кнопка ложится поверх ленты, а не поверх композера,
+        * и не участвует в её прокрутке. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
       <ol
         ref={feedRef}
         onScroll={onFeedScroll}
@@ -392,6 +420,24 @@ export function ThreadView({
 
         {typing && <TypingIndicator name={counterpartName} />}
       </ol>
+
+      {/* Чужое сообщение не утаскивает читающего вниз — иначе он терял бы место.
+        * Но и молчать нельзя: без этой кнопки человек узнаёт о новом, только
+        * докрутив до низа сам. */}
+      {unseenBelow > 0 && (
+        <button
+          type="button"
+          onClick={jumpToNew}
+          className="hoverable absolute inset-x-0 bottom-3 mx-auto flex w-fit items-center gap-2 rounded-pill border border-border bg-card px-3.5 py-1.5 text-sm shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronDown className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+          {t.newBelow}
+          <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-pill bg-accent px-1.5 text-2xs font-bold text-accent-foreground">
+            {unseenBelow > 99 ? "99+" : unseenBelow}
+          </span>
+        </button>
+      )}
+      </div>
 
       {error && <p className="px-4 pb-1 text-sm text-destructive">{error}</p>}
 

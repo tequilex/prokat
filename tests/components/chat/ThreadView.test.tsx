@@ -303,3 +303,96 @@ describe("ThreadView: лента держится низа", () => {
     expect(feed.scrollTop).toBe(100);
   });
 });
+
+// Чужое сообщение не утаскивает читающего вниз — но и молчать нельзя, иначе он
+// узнает о нём, только докрутив сам.
+describe("ThreadView: кнопка «новые сообщения»", () => {
+  const geo = (el: Element, sh: number, ch: number) => {
+    Object.defineProperty(el, "scrollHeight", { value: sh, configurable: true });
+    Object.defineProperty(el, "clientHeight", { value: ch, configurable: true });
+  };
+
+  const withStore = async () => {
+    const { createRealtimeStore } = await import("@/components/realtime/store");
+    const { RealtimeContext } = await import("@/components/realtime/context");
+    return { store: createRealtimeStore(), RealtimeContext };
+  };
+
+  it("появляется, когда чужое пришло, а человек читает старое", async () => {
+    const realtimeMod = await import("@/server/actions/realtime");
+    vi.mocked(realtimeMod.fetchNewerMessages).mockResolvedValueOnce({
+      ok: true,
+      data: { messages: [message("01NEW", "01THEM", "пока ты читал")], hasMore: false },
+    } as never);
+
+    const { store, RealtimeContext } = await withStore();
+    render(
+      <RealtimeContext.Provider value={store}>
+        <ThreadView {...base} />
+      </RealtimeContext.Provider>,
+    );
+    const feed = screen.getByLabelText("Сообщения");
+    geo(feed, 2000, 400);
+    feed.scrollTop = 100;
+    fireEvent.scroll(feed);                       // ушёл читать старое
+
+    await act(async () => { store.getState().pushMessage("01T", "01NEW"); });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Новые сообщения/ })).toBeInTheDocument();
+    });
+    // Ленту при этом не дёрнуло.
+    expect(feed.scrollTop).toBe(100);
+  });
+
+  it("по нажатию везёт вниз и исчезает", async () => {
+    const realtimeMod = await import("@/server/actions/realtime");
+    vi.mocked(realtimeMod.fetchNewerMessages).mockResolvedValueOnce({
+      ok: true,
+      data: { messages: [message("01NEW2", "01THEM", "ещё")], hasMore: false },
+    } as never);
+
+    const { store, RealtimeContext } = await withStore();
+    render(
+      <RealtimeContext.Provider value={store}>
+        <ThreadView {...base} />
+      </RealtimeContext.Provider>,
+    );
+    const feed = screen.getByLabelText("Сообщения");
+    geo(feed, 2000, 400);
+    feed.scrollTop = 100;
+    fireEvent.scroll(feed);
+    await act(async () => { store.getState().pushMessage("01T", "01NEW2"); });
+
+    const button = await screen.findByRole("button", { name: /Новые сообщения/ });
+    fireEvent.click(button);
+
+    expect(feed.scrollTop).toBe(2000);
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /Новые сообщения/ })).toBeNull();
+    });
+  });
+
+  it("не появляется, когда человек и так внизу", async () => {
+    const realtimeMod = await import("@/server/actions/realtime");
+    vi.mocked(realtimeMod.fetchNewerMessages).mockResolvedValueOnce({
+      ok: true,
+      data: { messages: [message("01NEW3", "01THEM", "внизу")], hasMore: false },
+    } as never);
+
+    const { store, RealtimeContext } = await withStore();
+    render(
+      <RealtimeContext.Provider value={store}>
+        <ThreadView {...base} />
+      </RealtimeContext.Provider>,
+    );
+    const feed = screen.getByLabelText("Сообщения");
+    geo(feed, 2000, 400);
+    feed.scrollTop = 1600;                        // у самого низа
+    fireEvent.scroll(feed);
+    await act(async () => { store.getState().pushMessage("01T", "01NEW3"); });
+
+    await waitFor(() => expect(screen.getByText("внизу")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Новые сообщения/ })).toBeNull();
+  });
+});
