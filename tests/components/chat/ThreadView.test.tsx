@@ -222,3 +222,58 @@ describe("ThreadView: галочки в реальном времени", () => 
     expect(store.getState().lastRead).toEqual({ threadId: "01T", upToId: "01A" });
   });
 });
+
+// Прокрутка вниз при отправке — ровно тот сценарий, который был сломан.
+// jsdom раскладки не считает: scrollHeight и clientHeight там всегда нули,
+// поэтому геометрия подменяется руками. Без подмены тест зелёный на заведомо
+// сломанном коде — так первая версия этой проверки и прошла впустую.
+describe("ThreadView: лента держится низа", () => {
+  const geometry = (el: Element, scrollHeight: number, clientHeight: number) => {
+    Object.defineProperty(el, "scrollHeight", { value: scrollHeight, configurable: true });
+    Object.defineProperty(el, "clientHeight", { value: clientHeight, configurable: true });
+  };
+
+  it("после отправки уезжает в самый низ", async () => {
+    const chat = await import("@/server/actions/chat");
+    vi.mocked(chat.postMessage).mockResolvedValueOnce({
+      ok: true,
+      data: { message: message("01Z", "01ME", "моё новое") },
+    } as never);
+
+    render(<ThreadView {...base} />);
+    const feed = screen.getByLabelText("Сообщения");
+    geometry(feed, 1000, 400);
+    feed.scrollTop = 0;
+
+    fireEvent.change(screen.getByLabelText(content.chat.composerLabel), {
+      target: { value: "моё новое" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: content.chat.send }));
+
+    // Лента обязана доехать до конца. На сломанной версии замер выполнялся уже
+    // после вставки, решал «человек далеко от низа» и прокрутку отменял.
+    await waitFor(() => expect(feed.scrollTop).toBe(1000));
+  });
+
+  it("не дёргает того, кто ушёл читать старое", async () => {
+    const chat = await import("@/server/actions/chat");
+    vi.mocked(chat.postMessage).mockResolvedValueOnce({
+      ok: true,
+      data: { message: message("01Y", "01ME", "ещё одно") },
+    } as never);
+
+    render(<ThreadView {...base} />);
+    const feed = screen.getByLabelText("Сообщения");
+    geometry(feed, 2000, 400);
+    feed.scrollTop = 100;
+    fireEvent.scroll(feed);          // человек сам ушёл наверх
+
+    fireEvent.change(screen.getByLabelText(content.chat.composerLabel), {
+      target: { value: "ещё одно" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: content.chat.send }));
+
+    await waitFor(() => expect(screen.getByText("ещё одно")).toBeInTheDocument());
+    expect(feed.scrollTop).toBe(100);
+  });
+});

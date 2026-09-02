@@ -9,7 +9,7 @@
 // порядка прихода: сокет не обязан присылать сообщения по возрастанию.
 
 import {
-  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition,
+  useCallback, useEffect, useMemo, useRef, useState, useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
 import { Check, CheckCheck, SendHorizontal } from "lucide-react";
@@ -148,14 +148,18 @@ export function ThreadView({
   const NEAR_BOTTOM_PX = 120;
   const stickToBottom = useRef(true);
 
-  // Замеряется ПЕРЕД перерисовкой: после неё высота уже другая, и понять, где
-  // человек был, невозможно.
-  useLayoutEffect(() => {
+  // Отслеживается прокруткой, а не замером после перерисовки. Замер в
+  // useLayoutEffect не годится: он выполняется УЖЕ ПОСЛЕ обновления DOM, когда
+  // новое сообщение ленту удлинило, — и сразу решает, что человек далеко от
+  // низа. Прилипание выключалось само, как только лента переполнялась.
+  //
+  // onScroll ловит намерение человека, а не последствие нашей же вставки.
+  const onFeedScroll = useCallback(() => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
     const distance = feedEl.scrollHeight - feedEl.scrollTop - feedEl.clientHeight;
     stickToBottom.current = distance <= NEAR_BOTTOM_PX;
-  });
+  }, []);
 
   useEffect(() => {
     // Догрузку ранней истории пропускаем: она дописывает СВЕРХУ, и прыжок вниз
@@ -314,6 +318,7 @@ export function ThreadView({
       </p>
       <ol
         ref={feedRef}
+        onScroll={onFeedScroll}
         tabIndex={0}
         aria-label="Сообщения"
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 py-4 [overscroll-behavior:contain] md:px-5"
