@@ -81,6 +81,15 @@ export function ThreadView({
   const [announcement, setAnnouncement] = useState<{ text: string; n: number }>(
     { text: "", n: 0 },
   );
+  // Лента прячется, пока не встала на место. Прокруткой это не чинится: сервер
+  // отдаёт готовый HTML, браузер рисует его СРАЗУ и всегда сверху, а сдвинуть
+  // ленту можно только после гидратации — примерно через сотню миллисекунд.
+  // Всё это время человек смотрел на верх переписки, а потом видел рывок вниз.
+  //
+  // Пустая лента на те же сто миллисекунд читается спокойнее, чем содержимое,
+  // которое прыгает. Начальное значение одинаково на сервере и на клиенте,
+  // поэтому гидратацию это не ломает.
+  const [positioned, setPositioned] = useState(false);
 
   const threadId = mode.kind === "thread" ? mode.threadId : null;
 
@@ -150,12 +159,14 @@ export function ThreadView({
   const NEAR_BOTTOM_PX = 120;
   const stickToBottom = useRef(true);
 
-  // Отслеживается прокруткой, а не замером после перерисовки. Замер в
-  // useLayoutEffect не годится: он выполняется УЖЕ ПОСЛЕ обновления DOM, когда
-  // новое сообщение ленту удлинило, — и сразу решает, что человек далеко от
-  // низа. Прилипание выключалось само, как только лента переполнялась.
+  // Отслеживается прокруткой, а не замером в эффекте. Любой эффект — включая
+  // layout — выполняется УЖЕ ПОСЛЕ обновления DOM: новое сообщение к этому
+  // моменту ленту удлинило, и замер решал бы, что человек далеко от низа.
+  // Прилипание выключалось само, как только лента переполнялась.
   //
   // onScroll ловит намерение человека, а не последствие нашей же вставки.
+  // (Ниже useLayoutEffect используется по прямому назначению — прокрутить до
+  // отрисовки, — и с этим замером не конфликтует.)
   const onFeedScroll = useCallback(() => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
@@ -181,6 +192,7 @@ export function ThreadView({
   useLayoutEffect(() => {
     stickToBottom.current = true;
     scrollToEnd();
+    setPositioned(true);
   }, [threadId, scrollToEnd]);
 
   useEffect(() => {
@@ -330,7 +342,9 @@ export function ThreadView({
         onScroll={onFeedScroll}
         tabIndex={0}
         aria-label="Сообщения"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 py-4 [overscroll-behavior:contain] md:px-5"
+        className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 py-4 [overscroll-behavior:contain] md:px-5 ${
+          positioned ? "" : "invisible"
+        }`}
       >
         {/* Распорка прижимает короткую переписку к низу ленты — как в любом
           * мессенджере: пара сообщений висит над полем ввода, а не под шапкой.
