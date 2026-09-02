@@ -9,7 +9,7 @@
 // порядка прихода: сокет не обязан присылать сообщения по возрастанию.
 
 import {
-  useCallback, useEffect, useMemo, useRef, useState, useTransition,
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
 import { Check, CheckCheck, SendHorizontal } from "lucide-react";
@@ -72,7 +72,6 @@ export function ThreadView({
   const [error, setError] = useState<string | null>(null);
   const [isSending, startTransition] = useTransition();
   const feedRef = useRef<HTMLOListElement>(null);
-  const endRef = useRef<HTMLLIElement>(null);
   const nextKey = useRef(0);
   // Отдельный живой регион ВНЕ ленты. Атрибут на самой <ol> объявлял бы и
   // догрузку сорока ранних сообщений тоже — скринридер зачитал бы их все.
@@ -135,11 +134,14 @@ export function ThreadView({
   // двигать надо её scrollTop, а не страницу, иначе уедет вся панель. Запасная
   // ветка на случай, когда высота ленты всё-таки по контенту (короткая
   // переписка): тогда доводим до якоря в конце.
+  // Только собственный scrollTop. scrollIntoView здесь был ошибкой: он двигает
+  // ВСЕ скроллеры-предки, включая страницу, и на мобиле это выглядело рывком
+  // всего экрана. Когда лента короче контейнера, scrollTop и так остаётся 0 —
+  // прокручивать нечего, распорка прижимает сообщения к низу сама.
   const scrollToEnd = useCallback(() => {
     const feedEl = feedRef.current;
     if (!feedEl) return;
-    if (feedEl.scrollHeight > feedEl.clientHeight) feedEl.scrollTop = feedEl.scrollHeight;
-    else endRef.current?.scrollIntoView({ block: "end" });
+    feedEl.scrollTop = feedEl.scrollHeight;
   }, []);
 
   // Насколько далеко от низа человек ещё считается «внизу». Пара строк запаса:
@@ -161,7 +163,10 @@ export function ThreadView({
     stickToBottom.current = distance <= NEAR_BOTTOM_PX;
   }, []);
 
-  useEffect(() => {
+  // useLayoutEffect, а не useEffect: он выполняется до отрисовки, и человек не
+  // видит, как лента прыгает. С обычным эффектом при перезагрузке посреди
+  // переписки заметен рывок — сначала показывается верх, потом низ.
+  useLayoutEffect(() => {
     // Догрузку ранней истории пропускаем: она дописывает СВЕРХУ, и прыжок вниз
     // выбросил бы человека из того, что он читает.
     if (loadingOlder) return;
@@ -173,7 +178,7 @@ export function ThreadView({
   }, [scrollToEnd, messages.length, pending.length, loadingOlder]);
 
   // При смене переписки внизу оказываемся всегда, чем бы ни кончилась прошлая.
-  useEffect(() => {
+  useLayoutEffect(() => {
     stickToBottom.current = true;
     scrollToEnd();
   }, [threadId, scrollToEnd]);
@@ -261,6 +266,10 @@ export function ThreadView({
     const key = nextKey.current++;
     setDraft("");
     setError(null);
+    // СВОЁ сообщение всегда возвращает ленту вниз, где бы человек ни читал.
+    // Правило «не дёргать того, кто смотрит старое» относится только к ЧУЖИМ
+    // сообщениям: своё он сам только что написал и хочет его увидеть.
+    stickToBottom.current = true;
     setPending((prev) => [...prev, { key, body }]);
 
     const fail = (code: string) => {
@@ -368,7 +377,6 @@ export function ThreadView({
         ))}
 
         {typing && <TypingIndicator name={counterpartName} />}
-        <li ref={endRef} aria-hidden="true" />
       </ol>
 
       {error && <p className="px-4 pb-1 text-sm text-destructive">{error}</p>}

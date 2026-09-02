@@ -255,7 +255,10 @@ describe("ThreadView: лента держится низа", () => {
     await waitFor(() => expect(feed.scrollTop).toBe(1000));
   });
 
-  it("не дёргает того, кто ушёл читать старое", async () => {
+  // Ровно тот сценарий, который был сломан: человек ушёл читать середину
+  // переписки и написал сообщение. Правило «не дёргать читающего» относится
+  // только к ЧУЖИМ сообщениям — своё он сам только что отправил.
+  it("прокручивает вниз, даже когда человек ушёл наверх", async () => {
     const chat = await import("@/server/actions/chat");
     vi.mocked(chat.postMessage).mockResolvedValueOnce({
       ok: true,
@@ -266,14 +269,37 @@ describe("ThreadView: лента держится низа", () => {
     const feed = screen.getByLabelText("Сообщения");
     geometry(feed, 2000, 400);
     feed.scrollTop = 100;
-    fireEvent.scroll(feed);          // человек сам ушёл наверх
+    fireEvent.scroll(feed);          // ушёл читать середину
 
     fireEvent.change(screen.getByLabelText(content.chat.composerLabel), {
       target: { value: "ещё одно" },
     });
     fireEvent.click(screen.getByRole("button", { name: content.chat.send }));
 
-    await waitFor(() => expect(screen.getByText("ещё одно")).toBeInTheDocument());
+    await waitFor(() => expect(feed.scrollTop).toBe(2000));
+  });
+
+  // А догрузка ранней истории дописывает СВЕРХУ — прыжок вниз выбросил бы
+  // человека из того, что он читает.
+  it("догрузка ранней истории вниз не прыгает", async () => {
+    const chat = await import("@/server/actions/chat");
+    let release: (v: unknown) => void = () => {};
+    vi.mocked(chat.fetchOlderMessages).mockReturnValueOnce(
+      new Promise((r) => { release = r; }) as never,
+    );
+
+    render(<ThreadView {...base} initialHasMore />);
+    const feed = screen.getByLabelText("Сообщения");
+    geometry(feed, 2000, 400);
+    feed.scrollTop = 100;
+    fireEvent.scroll(feed);
+
+    fireEvent.click(screen.getByRole("button", { name: /более ранние/ }));
+    await act(async () => {
+      release({ ok: true, data: { messages: [message("01OLD", "01THEM", "старое")], hasMore: false } });
+    });
+
+    await waitFor(() => expect(screen.getByText("старое")).toBeInTheDocument());
     expect(feed.scrollTop).toBe(100);
   });
 });
