@@ -12,7 +12,7 @@ import {
   useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Check, CheckCheck, ChevronDown, SendHorizontal } from "lucide-react";
+import { Check, CheckCheck, ChevronDown, Clock, SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat/validation";
 import { field } from "@/components/ui/field";
@@ -111,10 +111,23 @@ export function ThreadView({
   // вперёд — событие из другой вкладки или доехавшее с опозданием не должно
   // возвращать галочки назад. ULID сравнивается лексикографически.
   const [readCursor, setReadCursor] = useState(counterpartCursor);
+
+  // Двигать курсор вперёд — общее правило для обоих источников: событие может
+  // прийти дважды, а проп после router.refresh — оказаться свежее пропущенного
+  // события. Назад не откатываем никогда: снятая галочка выглядит как ошибка.
+  const advanceRead = useCallback((upToId: string | null) => {
+    if (!upToId) return;
+    setReadCursor((prev) => (!prev || upToId > prev ? upToId : prev));
+  }, []);
+
   useEffect(() => {
     if (!threadId || !liveRead || liveRead.threadId !== threadId) return;
-    setReadCursor((prev) => (!prev || liveRead.upToId > prev ? liveRead.upToId : prev));
-  }, [threadId, liveRead]);
+    advanceRead(liveRead.upToId);
+  }, [threadId, liveRead, advanceRead]);
+
+  // Проп обновляется серверной перерисовкой. Без этого состояние, засеянное
+  // один раз, навсегда отставало бы от базы — стоило пропустить одно событие.
+  useEffect(() => { advanceRead(counterpartCursor); }, [counterpartCursor, advanceRead]);
 
   const feed = useMemo(
     () => buildFeed(messages, { viewerId, unreadAnchorId: anchorId }),
@@ -568,7 +581,11 @@ function Bubble({
     : mine
       ? "rounded-[12px_4px_12px_12px]"
       : "rounded-[12px_12px_12px_4px]";
-  const StatusIcon = read ? CheckCheck : Check;
+  // Часы вместо слова «отправляется…»: слово заметно шире, чем «23:28 ✓», и
+  // при замене на настоящее сообщение пузырь схлопывался — текст переливался
+  // на глазах. Иконка держит ту же ширину, что и галочка, поэтому меняется
+  // только она сама.
+  const StatusIcon = createdAt ? (read ? CheckCheck : Check) : Clock;
 
   return (
     <div
@@ -584,13 +601,17 @@ function Bubble({
             mine ? "justify-end opacity-70" : "text-muted-foreground"
           }`}
         >
-          {createdAt
-            ? new Date(createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
-            : t.sending}
-          {mine && createdAt && (
+          {/* У сообщения в полёте времени с сервера ещё нет, но место под него
+            * занять надо — иначе ширина пузыря меняется дважды за секунду.
+            * Локальное время отличается от серверного на доли секунды. */}
+          {new Date(createdAt ?? Date.now())
+            .toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+          {mine && (
             <>
               <StatusIcon className="h-3 w-3" aria-hidden="true" />
-              <span className="sr-only">{read ? t.read : t.delivered}</span>
+              <span className="sr-only">
+                {!createdAt ? t.sending : read ? t.read : t.delivered}
+              </span>
             </>
           )}
         </span>

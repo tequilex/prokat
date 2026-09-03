@@ -396,3 +396,36 @@ describe("ThreadView: кнопка «новые сообщения»", () => {
     expect(screen.queryByRole("button", { name: /Новые сообщения/ })).toBeNull();
   });
 });
+
+// Пузырь в полёте обязан занимать столько же места, сколько отправленный.
+// Слово «отправляется…» шире, чем «23:28 ✓», и на коротких сообщениях пузырь
+// схлопывался на глазах — текст переливался.
+describe("ThreadView: пузырь в полёте", () => {
+  it("показывает время и часы, а не слово", async () => {
+    const chat = await import("@/server/actions/chat");
+    let release: (v: unknown) => void = () => {};
+    vi.mocked(chat.postMessage).mockReturnValueOnce(
+      new Promise((r) => { release = r; }) as never,
+    );
+
+    render(<ThreadView {...base} />);
+    fireEvent.change(screen.getByLabelText(content.chat.composerLabel), {
+      target: { value: "ок" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: content.chat.send }));
+
+    // Слова быть не должно нигде, кроме озвучки для скринридера.
+    await waitFor(() => expect(screen.getByText("ок")).toBeInTheDocument());
+    const bubble = screen.getByText("ок").closest("div")!;
+    expect(bubble.textContent).toMatch(/\d{2}:\d{2}/);
+    expect(bubble.querySelector(".sr-only")?.textContent).toBe(content.chat.sending);
+
+    await act(async () => {
+      release({ ok: true, data: { message: message("01S", "01ME", "ок") } });
+    });
+    // После подтверждения — то же время на месте, меняется только иконка.
+    await waitFor(() => {
+      expect(screen.getByText("ок").closest("div")!.textContent).toMatch(/\d{2}:\d{2}/);
+    });
+  });
+});
