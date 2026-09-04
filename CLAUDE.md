@@ -33,6 +33,7 @@ pnpm test                # vitest
 pnpm exec next typegen   # типы роутов (нужны tsc при typedRoutes)
 pnpm exec tsc --noEmit   # проверка типов
 pnpm check-theme         # проверка обязательных CSS-токенов
+pnpm build:icons         # иконки из theme/brand/*.svg (после правки исходников)
 pnpm db:generate         # миграция из drizzle/schema.ts
 pnpm db:migrate          # применить миграции
 pnpm db:seed             # тестовые данные (идемпотентно)

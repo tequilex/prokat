@@ -45,6 +45,7 @@
 - [0008](decisions/0008-interaction-states-as-overlays.md) — состояния накладками, охра как «выбрано», перестроенные шкалы нейтралей
 - [0009](decisions/0009-realtime-as-a-separate-process.md) — доставка в реальном времени отдельным процессом, фанаут через LISTEN/NOTIFY
 - [0010](decisions/0010-ban-hides-listings-on-write.md) — бан гасит объявления на записи, разбан возвращает по метке
+- [0011](decisions/0011-app-icons-from-two-svg-sources.md) — иконки из двух SVG, сборка коммитится, `.ico` собирается вручную
 
 ## Где ещё лежит правда
 

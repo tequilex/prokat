@@ -47,6 +47,9 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons/.*|manifest\\.webmanifest).*)",
+    // icon.svg и apple-icon.png — метаданные-роуты Next из src/app/, лежат в
+    // корне рядом с favicon.ico. Без них в списке middleware отрабатывал бы на
+    // каждом запросе иконки впустую.
+    "/((?!_next/static|_next/image|favicon\\.ico|icon\\.svg|apple-icon\\.png|icons/.*|manifest\\.webmanifest).*)",
   ],
 };

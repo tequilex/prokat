@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import NextTopLoader from "nextjs-toploader";
 import { fontDisplay, fontText, fontMark, fontMono } from "@theme/fonts";
 import { seo } from "@theme/seo";
@@ -18,6 +18,22 @@ import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
 export const metadata: Metadata = {
   title: { default: seo.defaultTitle, template: `%s — ${seo.siteName}` },
   description: seo.defaultDescription,
+  // icons здесь намеренно не задаются: favicon.ico, icon.svg и apple-icon.png
+  // лежат рядом в src/app/ и подхватываются файловой конвенцией. Next
+  // подмешивает icon и apple-icon, ТОЛЬКО пока metadata.icons пуст: стоит
+  // любому сегменту задать это поле, и вектор вкладки с иконкой iOS пропадут
+  // без ошибки сборки. favicon.ico исключение — его Next добавляет всегда.
+};
+
+// Цвет адресной строки. Один тёмный, а не пара под prefers-color-scheme: та
+// media смотрит на тему ОС, а тема сайта от неё не зависит — next-themes берёт
+// localStorage либо defaultTheme="dark", и системную подхватывает лишь при
+// явном "system", которого в UI выбора темы нет. Пара разъезжалась бы у
+// самого частого гостя: новый посетитель со светлой ОС видит тёмную страницу.
+// Точное совпадение с выбранной темой требует правки meta на клиенте — см.
+// docs/BACKLOG.md.
+export const viewport: Viewport = {
+  themeColor: seo.themeColor,
 };
 
 // Флаг из middleware, а не auth(): Header и MobileNav и так зовут auth() каждый

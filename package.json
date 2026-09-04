@@ -12,6 +12,7 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "build:icons": "tsx scripts/build-icons.ts",
     "check-theme": "tsx scripts/check-theme.ts",
     "check-storage": "tsx --env-file=.env scripts/check-storage.ts",
     "db:generate": "drizzle-kit generate",

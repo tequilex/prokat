@@ -109,6 +109,8 @@ describe("middleware matcher", () => {
       "/_next/static/chunks/main.js",
       "/_next/image?url=%2Fdemo%2F1.webp",
       "/favicon.ico",
+      "/icon.svg",
+      "/apple-icon.png",
       "/icons/icon-192.png",
       "/manifest.webmanifest",
     ]) {
