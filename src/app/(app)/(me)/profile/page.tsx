@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getUserProfile, getCabinetIdentity } from "@/server/me";
+import { getActiveCities } from "@/server/catalog";
 import { countNewRequests } from "@/server/owner";
 import { ProfileForm } from "@/components/me/ProfileForm";
 import { ProfileCoverField } from "@/components/me/ProfileCoverField";
@@ -24,10 +25,11 @@ export default async function ProfilePage() {
 
   // identity и счётчик нужны миниатюре шапки в выборе обложки — превью
   // показывает страницу такой, какой её увидят.
-  const [profile, identity, newCount] = await Promise.all([
+  const [profile, identity, newCount, cities] = await Promise.all([
     getUserProfile(session.user.id),
     getCabinetIdentity(session.user.id),
     countNewRequests(session.user.id),
+    getActiveCities(),
   ]);
   if (!profile || !identity) redirect("/login");
   const { user, providers } = profile;
@@ -39,7 +41,18 @@ export default async function ProfilePage() {
         <p className="mb-4 text-sm text-muted-foreground">
           {user.email}
         </p>
-        <ProfileForm initialName={user.name ?? ""} initialPhone={user.phone ?? ""} initialBio={user.bio ?? ""} />
+        {/* Город могли отключить уже после того, как человек его выбрал. В
+          * списке активных его нет, <select> нарисовался бы пустым, но со
+          * старым id в состоянии — и любое сохранение, хоть имени, падало бы с
+          * ошибкой про город, которого человек не трогал. Показываем «Не
+          * указан», что правде и соответствует. */}
+        <ProfileForm
+          initialName={user.name ?? ""}
+          initialPhone={user.phone ?? ""}
+          initialBio={user.bio ?? ""}
+          initialCityId={cities.some((c) => c.id === user.cityId) ? user.cityId! : ""}
+          cities={cities.map((c) => ({ id: c.id, name: c.name, slug: c.slug }))}
+        />
         <div className="mt-5">
           <h3 className="mb-2 text-sm font-medium">Обложка профиля</h3>
           <ProfileCoverField me={identity} pendingCount={newCount} />

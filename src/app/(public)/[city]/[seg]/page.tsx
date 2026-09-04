@@ -12,6 +12,7 @@ import { CategoryListing, type CategorySearchParams } from "@/components/catalog
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd } from "@/lib/jsonld";
 import { siteConfig } from "@/lib/site-config";
+import { headingCity, proseCity } from "@/lib/catalog/city-locative";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!r) return {};
   const cat = r.category;
   return {
-    title: `Аренда: ${cat.name.toLowerCase()} в ${r.city.name}`,
-    description: `${cat.name} напрокат в ${r.city.name}: каталог товаров с ценами, залогами и календарём занятости.`,
+    title: `Аренда: ${cat.name.toLowerCase()} ${headingCity(r.city)}`,
+    description: `${cat.name} напрокат ${proseCity(r.city)}: каталог товаров с ценами, залогами и календарём занятости.`,
     alternates: { canonical: `${siteConfig.url}/${r.city.slug}/${seg}` },
   };
 }
@@ -84,7 +85,7 @@ async function RootCategoryPage({
         { label: category.name },
       ]} />
       <h1 className="mb-4 mt-3 font-display text-2xl font-bold">
-        Аренда: {category.name.toLowerCase()} в {city.name}
+        Аренда: {category.name.toLowerCase()} {headingCity(city)}
       </h1>
       <CategoryListing
         city={city}

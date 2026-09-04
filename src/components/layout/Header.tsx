@@ -23,8 +23,9 @@ export async function Header() {
 
   // Текущий город шапка не вычисляет: она живёт в корневом layout'е, а он при
   // клиентской навигации не перерисовывается — прочитанный здесь адрес протух
-  // бы на первом же переходе. Город определяют сами клиентские компоненты, им
-  // нужен только список активных.
+  // бы на первом же переходе. Город определяют сами клиентские компоненты: из
+  // адреса, а где его там нет — из предпочтения, которое layout положил в
+  // CityPreferenceProvider. Шапке нужен только список активных.
   const citySlugs = cities.map((c) => c.slug);
 
   return (
@@ -35,20 +36,28 @@ export async function Header() {
     <header data-site-header className="sticky top-0 z-40 w-full">
       <div className="mx-auto max-w-[1200px] px-4 py-[var(--header-inset)]">
         <div className="flex h-[var(--header-h)] items-center gap-2 rounded-lg border border-border bg-header px-3 md:gap-3 md:px-4">
-          {/* Бренд и город. Разделитель и город появляются только с md: на
-           * мобайле город живёт первым чипом в ленте фильтров, и поиск получает
-           * всю освободившуюся ширину. */}
-          <div className="flex shrink-0 items-center gap-2 md:gap-3">
+          {/* Бренд и город. Город виден и на мобайле: другого способа сменить
+           * его с телефона нет — таб-бар города не показывает, а чипа в ленте
+           * фильтров, который здесь когда-то обещали, никогда не было. На узком
+           * экране прячется словесная часть знака, а не город. */}
+          <div className="flex min-w-0 shrink-0 items-center gap-1.5 md:gap-3">
             {/* flex, а не просто shrink-0: знак — inline-flex, и внутри строки
              * он садится на baseline с пустотой под ним, из-за чего ряд
              * центрирует ссылку вместе с этим «хвостом». */}
+            {/* Знак нарисован дважды: со словом и без — на телефоне рядом
+              * встал город, и слову места нет. Оба помечены aria-hidden, имя
+              * ссылке даёт её собственный aria-label — иначе скринридер читал
+              * бы «inrenta» трижды. */}
             <Link href="/" className="flex shrink-0 items-center" aria-label={content.site.name}>
-              <Logo size={20} word={content.site.name} />
+              <span aria-hidden="true" className="flex md:hidden">
+                <Logo size={20} word={content.site.name} showWord={false} />
+              </span>
+              <span aria-hidden="true" className="hidden md:flex">
+                <Logo size={20} word={content.site.name} />
+              </span>
             </Link>
             <span className="hidden h-5 w-px shrink-0 bg-border md:block" aria-hidden="true" />
-            <div className="hidden md:block">
-              <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />
-            </div>
+            <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />
           </div>
 
           {/* Поиск занимает всё оставшееся место в ряду. */}

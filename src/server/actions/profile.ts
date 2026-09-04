@@ -5,7 +5,10 @@
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { getDb } from "@/lib/db";
+import { getCityById, type City } from "@/server/catalog";
+import { CITY_COOKIE, cityCookieOptions } from "@/lib/catalog/city-cookie";
 import { uploads, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { normalizePhone } from "@/lib/booking/validation";
@@ -17,6 +20,9 @@ export type ActionResult<T = void> =
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Укажите имя").max(100),
+  // Пустая строка = «не указан». Существование города zod проверить не может —
+  // это делает запрос ниже.
+  cityId: z.string().trim().max(64).optional().default(""),
   bio: z.string().trim().max(500).optional().default(""),
   // Пустая строка = убрать телефон; иначе — валидный номер.
   phone: z.string().transform((raw) => {
@@ -36,9 +42,29 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
 
+  // Город проверяем по базе: zod знает только форму строки, а сюда приходит
+  // произвольный payload — action доступен по сети мимо формы. Отключённый
+  // город тоже не берём: он не показывается нигде, и в профиле висел бы
+  // ссылкой в никуда.
+  let city: City | null = null;
+  if (parsed.data.cityId) {
+    city = await getCityById(parsed.data.cityId);
+    if (!city) return { ok: false, error: "Такого города нет" };
+  }
+
   await getDb().update(users)
-    .set({ name: parsed.data.name, phone: parsed.data.phone ?? null, bio: parsed.data.bio || null })
+    .set({
+      name: parsed.data.name,
+      phone: parsed.data.phone ?? null,
+      bio: parsed.data.bio || null,
+      cityId: city?.id ?? null,
+    })
     .where(eq(users.id, session.user.id));
+
+  // Выбор города в профиле — такой же явный выбор, как в селекторе шапки, и
+  // обязан быть виден сразу. Без этого кука с годовым сроком перебивала бы
+  // только что сохранённый город на каждой странице.
+  if (city) (await cookies()).set(CITY_COOKIE, city.slug, cityCookieOptions());
 
   revalidatePath("/profile");
   return { ok: true, data: undefined };

@@ -70,6 +70,12 @@ async function main() {
     }
   }
 
+  // Падеж доливаем до раннего выхода: на уже засеянной базе всё, что ниже, не
+  // выполняется, и «в Казани» никогда бы не появилось.
+  await db.update(cities)
+    .set({ nameLocative: "Казани" })
+    .where(and(eq(cities.slug, "kazan"), isNull(cities.nameLocative)));
+
   const existing = await db.select({ id: cities.id }).from(cities).where(eq(cities.slug, "kazan")).limit(1);
   if (existing.length > 0) {
     console.log("Seeds already applied (city 'kazan' exists), nothing to do");
@@ -82,6 +88,7 @@ async function main() {
   await db.insert(cities).values({
     id: cityId,
     name: "Казань",
+    nameLocative: "Казани",
     slug: "kazan",
     region: "Республика Татарстан",
     lat: 55.7963,

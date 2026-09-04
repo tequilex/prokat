@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getActiveCities, getAllCategories } from "@/server/catalog";
+import { resolveOwnCity } from "@/server/city";
 import { leafCategories } from "@/lib/owner/categories";
 import { ListingForm } from "@/components/cabinet/ListingForm";
 
@@ -12,7 +13,11 @@ export default async function NewListingPage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
 
-  const [cities, cats] = await Promise.all([getActiveCities(), getAllCategories()]);
+  // Город предзаполняем «своим», а не тем, который человек сейчас листает:
+  // вещь лежит там, где он живёт. Поле остаётся редактируемым.
+  const [cities, cats, ownCity] = await Promise.all([
+    getActiveCities(), getAllCategories(), resolveOwnCity(),
+  ]);
 
   return (
     <main>
@@ -23,7 +28,7 @@ export default async function NewListingPage() {
         cities={cities.map((c) => ({ id: c.id, name: c.name }))}
         categories={leafCategories(cats)}
         initial={{
-          title: "", cityId: "", categoryId: "", location: "", description: "",
+          title: "", cityId: ownCity?.id ?? "", categoryId: "", location: "", description: "",
           priceDay: "", priceHour: "", priceWeek: "",
           depositType: "money", depositAmount: "", quantity: "1",
           handoverPickup: true, handoverDelivery: false,

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { adminListCities } from "@/server/admin";
 import { adminSetCityActive } from "@/server/actions/admin";
-import { ActionButton } from "@/components/admin/ActionButton";
 import { CityForm } from "@/components/admin/CityForm";
+import { CityRow } from "@/components/admin/CityRow";
 import { listingsCountLabel } from "@/lib/catalog/format";
 
 export const dynamic = "force-dynamic";
@@ -20,22 +20,12 @@ export default async function AdminCitiesPage() {
 
       <ul className="flex flex-col gap-2">
         {rows.map(({ city, listingCount }) => (
-          <li key={city.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3">
-            <div>
-              <span className="font-medium">{city.name}</span>
-              {!city.isActive && (
-                <span className="ml-2 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">отключён</span>
-              )}
-              <p className="text-sm text-muted-foreground">
-                /{city.slug}{city.region ? ` · ${city.region}` : ""} · {listingsCountLabel(listingCount)}
-              </p>
-            </div>
-            <ActionButton
-              label={city.isActive ? "Отключить" : "Включить"}
-              confirmText={city.isActive ? "Отключить город? Его страницы пропадут из каталога." : undefined}
-              action={adminSetCityActive.bind(null, city.id, !city.isActive)}
-            />
-          </li>
+          <CityRow
+            key={city.id}
+            city={city}
+            meta={`/${city.slug}${city.region ? ` · ${city.region}` : ""} · ${listingsCountLabel(listingCount)}`}
+            toggle={adminSetCityActive.bind(null, city.id, !city.isActive)}
+          />
         ))}
       </ul>
     </section>

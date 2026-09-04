@@ -93,6 +93,9 @@ export async function adminSetUserVerified(
 const citySchema = z.object({
   name: z.string().trim().min(2).max(100),
   region: z.string().trim().max(100).optional().default(""),
+  // Предложный падеж без предлога: «Казани». Пусто — допустимо: заголовок тогда
+  // соберётся без предлога, но неверный падеж не покажет.
+  nameLocative: z.string().trim().max(100).optional().default(""),
 });
 
 export async function adminCreateCity(input: unknown): Promise<ActionResult> {
@@ -111,7 +114,30 @@ export async function adminCreateCity(input: unknown): Promise<ActionResult> {
     name: parsed.data.name,
     slug,
     region: parsed.data.region || null,
+    nameLocative: parsed.data.nameLocative || null,
   });
+  revalidatePath("/admin/cities");
+  return { ok: true, data: undefined };
+}
+
+/* Правка заведённого города. Слаг не трогаем: он в адресах всех страниц города
+ * и в чужих ссылках — переименование ломало бы их молча. Менять можно то, что
+ * видно текстом: название, регион и падеж. */
+export async function adminUpdateCity(cityId: string, input: unknown): Promise<ActionResult> {
+  if (!(await requireAdmin())) return { ok: false, error: "forbidden" };
+  const parsed = citySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid_input" };
+
+  const res = await getDb().update(cities)
+    .set({
+      name: parsed.data.name,
+      region: parsed.data.region || null,
+      nameLocative: parsed.data.nameLocative || null,
+    })
+    .where(eq(cities.id, cityId))
+    .returning({ id: cities.id });
+  if (res.length === 0) return { ok: false, error: "not_found" };
+
   revalidatePath("/admin/cities");
   return { ok: true, data: undefined };
 }

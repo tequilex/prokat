@@ -1,7 +1,37 @@
 import { describe, it, expect } from "vitest";
-import { citySwitchHref, resolveCitySlug } from "@/lib/catalog/current-city";
+import { citySwitchHref, pickCitySlug, resolveCitySlug } from "@/lib/catalog/current-city";
 
 const KNOWN = ["kazan", "spb"];
+
+describe("pickCitySlug", () => {
+  it("takes the first candidate that is an active city", () => {
+    expect(pickCitySlug(["spb", "kazan"], KNOWN)).toBe("spb");
+    expect(pickCitySlug([null, "kazan"], KNOWN)).toBe("kazan");
+  });
+
+  // Кука живёт год и правится руками, город админ отключает в любой момент.
+  // Непроверенный слаг обнулял бы витрину и давал 404 в поиске из шапки.
+  it("skips a candidate that is no longer active", () => {
+    expect(pickCitySlug(["atlantida", "spb"], KNOWN)).toBe("spb");
+    expect(pickCitySlug(["atlantida"], KNOWN)).toBe("kazan");
+  });
+
+  it("falls back to the first active city when nothing is chosen", () => {
+    expect(pickCitySlug([], KNOWN)).toBe("kazan");
+    expect(pickCitySlug([undefined, null], KNOWN)).toBe("kazan");
+  });
+
+  // Порядок задаёт вызывающий: витрине — кука вперёд профиля, форме
+  // объявления — наоборот.
+  it("respects the order it is given", () => {
+    expect(pickCitySlug(["kazan", "spb"], KNOWN)).toBe("kazan");
+    expect(pickCitySlug(["spb", "kazan"], KNOWN)).toBe("spb");
+  });
+
+  it("has nothing to offer when no city is active", () => {
+    expect(pickCitySlug(["kazan"], [])).toBeUndefined();
+  });
+});
 
 describe("resolveCitySlug", () => {
   it("takes the city from the first path segment", () => {

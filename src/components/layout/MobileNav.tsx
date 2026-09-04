@@ -10,15 +10,15 @@ export async function MobileNav() {
   const user = session?.user;
   const placeHref = user ? "/cabinet/listings/new" : "/login";
 
-  // Город по умолчанию — тот же, что на главной и в /search: первый активный.
-  const catalogHref = cities[0] ? `/${cities[0].slug}` : "/";
-
   const authProps = authPanelProps();
 
   return (
     <TabBar
       placeHref={placeHref}
-      catalogHref={catalogHref}
+      // Город таб-бар выбирает сам: из адреса, а где его там нет — из
+      // предпочтения. Здесь его считать нельзя — MobileNav живёт в корневом
+      // layout'е и при навигации не перерисовывается.
+      cities={cities.map((c) => c.slug)}
       authProps={authProps}
       user={
         user

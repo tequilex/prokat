@@ -1,6 +1,8 @@
 // Data layer публичного каталога. Только чтение, только активные сущности.
 // Все функции принимают уже разрезолвленные id (страницы резолвят слаги сами).
 
+import { cache } from "react";
+
 import {
   and, asc, desc, eq, gte, ilike, inArray, lte, or, sql,
 } from "drizzle-orm";
@@ -20,10 +22,22 @@ export function listingPhotos(listing: Listing): ListingPhoto[] {
   return Array.isArray(listing.photosJson) ? (listing.photosJson as ListingPhoto[]) : [];
 }
 
-export async function getActiveCities(): Promise<City[]> {
+// cache(): справочник спрашивают по четыре раза за рендер публичной страницы —
+// корневой layout (город для шапки), сама шапка, таб-бар и страница. Запрос
+// одинаковый, в пределах одного запроса ответ тоже.
+export const getActiveCities = cache(async (): Promise<City[]> => {
   return getDb().select().from(cities)
     .where(eq(cities.isActive, true))
     .orderBy(asc(cities.name));
+});
+
+// Только активный: неактивный город нигде не показывается, и выбрать его себе
+// в профиль тоже нельзя.
+export async function getCityById(id: string): Promise<City | null> {
+  const rows = await getDb().select().from(cities)
+    .where(and(eq(cities.id, id), eq(cities.isActive, true)))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 export async function getCityBySlug(slug: string): Promise<City | null> {
@@ -430,16 +444,25 @@ export async function getSellerById(userId: string): Promise<Seller | null> {
 export interface SellerStats {
   /** Состоявшиеся аренды по обе стороны сделки. */
   deals: number;
-  /** Город продавца — по его активным объявлениям, если он один. */
+  /** Свой город из профиля; без него — город активных объявлений, если он один. */
   cityName: string | null;
 }
 
-/* Подпись под именем на витрине продавца. Города у пользователя в модели нет:
- * он есть у вещей. Пока все вещи в одном городе, это и есть его город; если
- * человек сдаёт в разных, сегмент честнее опустить, чем выбирать за него. */
+/* Подпись под именем на витрине продавца. Город берём тот, что человек указал
+ * о себе, — это его город, а не место, где случайно лежит вещь. Не указал —
+ * догадываемся по активным объявлениям, но только пока они все в одном городе:
+ * у сдающего в разных сегмент честнее опустить, чем выбирать за него. */
 export async function getSellerStats(userId: string): Promise<SellerStats> {
   const db = getDb();
-  const [dealRows, cityRows] = await Promise.all([
+  const [ownRows, dealRows, cityRows] = await Promise.all([
+    // Отключённый город не показываем: его страниц нет, и в подписи он был бы
+    // ссылкой в никуда.
+    db
+      .select({ name: cities.name })
+      .from(users)
+      .innerJoin(cities, and(eq(cities.id, users.cityId), eq(cities.isActive, true)))
+      .where(eq(users.id, userId))
+      .limit(1),
     db
       .select({ cnt: sql<number>`count(*)::int` })
       .from(bookingRequests)
@@ -460,7 +483,7 @@ export async function getSellerStats(userId: string): Promise<SellerStats> {
 
   return {
     deals: dealRows[0]?.cnt ?? 0,
-    cityName: cityRows.length === 1 ? cityRows[0]!.name : null,
+    cityName: ownRows[0]?.name ?? (cityRows.length === 1 ? cityRows[0]!.name : null),
   };
 }
 

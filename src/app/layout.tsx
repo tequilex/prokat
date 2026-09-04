@@ -11,6 +11,8 @@ import "./globals.css";
 import "@theme/tokens.css";
 import "@theme/typography.css";
 import { headers } from "next/headers";
+import { resolveViewerCity } from "@/server/city";
+import { CityPreferenceProvider } from "@/components/layout/CityPreference";
 import { RealtimeProvider } from "@/components/realtime/RealtimeProvider";
 import { RealtimeToaster } from "@/components/realtime/RealtimeToaster";
 import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
@@ -40,7 +42,14 @@ export const viewport: Viewport = {
 // на своей стороне, и третий поход в базу на каждой публичной странице был бы
 // платой ровно за то, чтобы решить, поднимать ли сокет анониму.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const hasSession = (await headers()).get("x-has-session") === "1";
+  // Город считается здесь один раз на запрос и раздаётся шапке и таб-бару: они
+  // соседи, и провайдер обязан накрывать обоих. Без этого вкладка «Каталог»
+  // после смены города вела бы в старый — ровно на мобайле, где селектор и
+  // появился.
+  const [hasSession, viewerCity] = await Promise.all([
+    headers().then((h) => h.get("x-has-session") === "1"),
+    resolveViewerCity(),
+  ]);
 
   return (
     <html
@@ -53,6 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <YandexMetrika counterId={process.env.YANDEX_METRIKA_ID} />
         )}
         <RealtimeProvider enabled={hasSession}>
+        <CityPreferenceProvider initialSlug={viewerCity?.slug}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {/* Глобальный progress-bar поверх <html>: даёт моментальный visual
            * feedback на любой client-side навигации (Link/router.push), пока
@@ -74,6 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <RealtimeToaster />
           <ConnectionStatus />
         </ThemeProvider>
+        </CityPreferenceProvider>
         </RealtimeProvider>
       </body>
     </html>

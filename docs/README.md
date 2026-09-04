@@ -46,6 +46,7 @@
 - [0009](decisions/0009-realtime-as-a-separate-process.md) — доставка в реальном времени отдельным процессом, фанаут через LISTEN/NOTIFY
 - [0010](decisions/0010-ban-hides-listings-on-write.md) — бан гасит объявления на записи, разбан возвращает по метке
 - [0011](decisions/0011-app-icons-from-two-svg-sources.md) — иконки из двух SVG, сборка коммитится, `.ico` собирается вручную
+- [0012](decisions/0012-city-as-three-things.md) — город вещи, мой город и город просмотра разведены; падеж хранимой колонкой
 
 ## Где ещё лежит правда
 

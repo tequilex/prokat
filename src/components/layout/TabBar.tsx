@@ -8,6 +8,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
 import { LiveDot } from "@/components/realtime/LiveDot";
+import { useCurrentCity } from "./use-current-city";
 
 /* Мобильная навигация: парящая пилюля внизу экрана — зеркалит стеклянные
  * пилюли шапки. Пять пунктов, как в брендбуке, но на месте «Чатов» — «Заявки»:
@@ -19,15 +20,16 @@ import { LiveDot } from "@/components/realtime/LiveDot";
  * это знак. Прочие иконки нейтральные, чтобы бренд не спорил с навигацией. */
 export function TabBar({
   placeHref,
-  catalogHref,
+  cities,
   user,
   authProps,
 }: {
   placeHref: string;
-  // Витрина города по умолчанию (/kazan): вкладка «Каталог» ведёт туда, а не на
-  // /search. Выдача у них теперь одинаковая, но витрина — индексируемая
-  // страница города, а поиск закрыт от индексации и живёт в шапке.
-  catalogHref: string;
+  // Слаги активных городов: по ним вкладка «Каталог» узнаёт город текущего
+  // адреса, а где его нет — берёт выбранный. Ведёт она на витрину города
+  // (/kazan), а не на /search: выдача у них одинаковая, но витрина —
+  // индексируемая страница города, а поиск закрыт от индексации и живёт в шапке.
+  cities: readonly string[];
   user: { name: string | null; image: string | null } | null;
   // Флаги входа: анониму «Сдать» открывает модалку, а не уводит на /login —
   // так же, как кнопка в десктопном хедере.
@@ -35,6 +37,9 @@ export function TabBar({
 }) {
   const pathname = usePathname();
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+  const { slug: citySlug } = useCurrentCity(cities);
+  const catalogHref = citySlug ? `/${citySlug}` : "/";
 
   const itemClass = (on: boolean) =>
     cn(

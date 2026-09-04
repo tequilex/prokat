@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getActiveCities, getCityBySlug } from "@/server/catalog";
+import { getCityBySlug } from "@/server/catalog";
+import { resolveViewerCity } from "@/server/city";
 import { parseQuery, type CategorySearchParams } from "@/lib/catalog/filters";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { SearchResults } from "@/components/catalog/SearchResults";
@@ -23,12 +24,13 @@ export default async function SearchPage({
   const sp = await searchParams;
   const q = parseQuery(sp);
 
-  // Поиск в пределах города: ?city=… или город по умолчанию (первый активный).
-  // Город здесь несущий, а не декоративный, поэтому чужой слаг — это 404, а не
-  // молчаливый откат к другому городу с чужой выдачей.
+  // Поиск в пределах города: ?city=… или выбранный город. Город здесь несущий,
+  // а не декоративный, поэтому чужой слаг в адресе — это 404, а не молчаливый
+  // откат к другому городу с чужой выдачей. Предпочтение так не работает: оно
+  // не адрес, и отключённый в нём город просто уступает следующему.
   const city = sp.city
     ? (await getCityBySlug(sp.city)) ?? notFound()
-    : (await getActiveCities())[0] ?? null;
+    : await resolveViewerCity();
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6">

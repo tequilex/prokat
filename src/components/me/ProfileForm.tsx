@@ -4,19 +4,25 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { field } from "@/components/ui/field";
 import { updateProfile } from "@/server/actions/profile";
+import { useCityPreference } from "@/components/layout/CityPreference";
 
 const INPUT = `${field} h-11 px-3`;
 
 export function ProfileForm({
-  initialName, initialPhone, initialBio,
+  initialName, initialPhone, initialBio, initialCityId, cities,
 }: {
   initialName: string;
   initialPhone: string;
   initialBio: string;
+  /** Пустая строка — город не указан. */
+  initialCityId: string;
+  cities: readonly { id: string; name: string; slug: string }[];
 }) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone);
   const [bio, setBio] = useState(initialBio);
+  const [cityId, setCityId] = useState(initialCityId);
+  const { choose } = useCityPreference();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -26,9 +32,14 @@ export function ProfileForm({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const r = await updateProfile({ name, phone, bio });
-      if (r.ok) setSaved(true);
-      else setError(r.error);
+      const r = await updateProfile({ name, phone, bio, cityId });
+      if (!r.ok) { setError(r.error); return; }
+      setSaved(true);
+      // Шапка и таб-бар живут в корневом layout'е и от сохранения формы сами не
+      // перерисуются: без этого город менялся бы на страницах, но не в шапке
+      // над ними. Экшен уже записал ту же куку.
+      const chosen = cities.find((c) => c.id === cityId);
+      if (chosen) choose(chosen.slug);
     });
   };
 
@@ -45,6 +56,21 @@ export function ProfileForm({
           onChange={(e) => { setPhone(e.target.value); setSaved(false); }} className={INPUT} />
         <span className="text-xs text-muted-foreground">
           Подставляется в форму заявки и показывается покупателю после подтверждения.
+        </span>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Мой город
+        {/* Пустой пункт выбираемый, а не disabled: без города живут все, кто
+          * его не указывал, и <select> иначе показывал бы им первый город из
+          * списка — а любое сохранение молча записывало бы его. */}
+        <select value={cityId}
+          onChange={(e) => { setCityId(e.target.value); setSaved(false); }}
+          className={INPUT}>
+          <option value="">Не указан</option>
+          {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <span className="text-xs text-muted-foreground">
+          Виден в вашем публичном профиле и подставляется в новое объявление.
         </span>
       </label>
       <label className="flex flex-col gap-1 text-sm">

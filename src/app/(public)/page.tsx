@@ -3,8 +3,9 @@ import { seo } from "@theme/seo";
 import { auth } from "@/lib/auth";
 import { authPanelProps } from "@/lib/auth/panel-props";
 import {
-  getActiveCities, getAllCategories, getListingCountsByCategory, getRecentListings, rollupToRoots,
+  getAllCategories, getListingCountsByCategory, getRecentListings, rollupToRoots,
 } from "@/server/catalog";
+import { resolveViewerCity } from "@/server/city";
 import { Hero } from "@/components/home/Hero";
 import { CategoryTiles } from "@/components/home/CategoryTiles";
 import { RecentItems } from "@/components/home/RecentItems";
@@ -21,15 +22,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [session, cities, cats] = await Promise.all([
+  const [session, defaultCity, cats] = await Promise.all([
     auth(),
-    getActiveCities(),
+    resolveViewerCity(),
     getAllCategories(),
   ]);
 
-  // Категории завязаны на город (роуты /[city]/[seg]). Берём «город по умолчанию» —
-  // единственный активный, иначе первый; переключение — через CitySelector в шапке.
-  const defaultCity = cities[0] ?? null;
   const roots = cats.filter((c) => c.parentId === null);
   const counts = defaultCity
     ? rollupToRoots(cats, await getListingCountsByCategory(defaultCity.id))

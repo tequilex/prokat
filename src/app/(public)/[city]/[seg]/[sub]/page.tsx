@@ -23,6 +23,7 @@ import { CategoryListing, type CategorySearchParams } from "@/components/catalog
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
 import { siteConfig } from "@/lib/site-config";
+import { headingCity, proseCity } from "@/lib/catalog/city-locative";
 import { buildAvailabilityByListing, freeQty } from "@/lib/catalog/availability";
 import { isPubliclyVisible } from "@/lib/catalog/visibility";
 import { BOOKING_HORIZON_DAYS, parseBookingParams } from "@/lib/booking/params";
@@ -83,16 +84,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!r) return {};
   if (r.kind === "subcategory") {
     return {
-      title: `Аренда: ${r.sub.name.toLowerCase()} в ${r.city.name}`,
-      description: `${r.sub.name} напрокат в ${r.city.name}: цены, залоги, календарь занятости.`,
+      title: `Аренда: ${r.sub.name.toLowerCase()} ${headingCity(r.city)}`,
+      description: `${r.sub.name} напрокат ${proseCity(r.city)}: цены, залоги, календарь занятости.`,
       alternates: { canonical: `${siteConfig.url}/${r.city.slug}/${seg}/${sub}` },
     };
   }
   const priceBit = r.listing.priceDay !== null ? ` от ${formatPrice(r.listing.priceDay)}/сутки` : "";
   const canonical = listingPath(r.city.slug, r.category.slug, r.listing.slug, r.listing.id);
   return {
-    title: `${r.listing.title} — аренда в ${r.city.name}${priceBit}`,
-    description: r.listing.description ?? `${r.listing.title} напрокат в ${r.city.name}.`,
+    // Город в хвосте, а не перед ценой: без падежа получалось бы «аренда,
+    // Казань от 500 ₽» — читается как цена города.
+    title: `${r.listing.title} — аренда${priceBit} ${proseCity(r.city)}`,
+    description: r.listing.description ?? `${r.listing.title} напрокат ${proseCity(r.city)}.`,
     alternates: { canonical: `${siteConfig.url}${canonical}` },
   };
 }
@@ -142,7 +145,7 @@ async function SubcategoryPage({
         { label: sub.name },
       ]} />
       <h1 className="mb-4 mt-3 font-display text-2xl font-bold">
-        Аренда: {sub.name.toLowerCase()} в {city.name}
+        Аренда: {sub.name.toLowerCase()} {headingCity(city)}
       </h1>
       <CategoryListing
         city={city}
