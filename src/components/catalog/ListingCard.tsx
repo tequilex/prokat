@@ -1,11 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeftRight, BadgeCheck, ImageOff, MapPin, Truck } from "lucide-react";
+import { BadgeCheck, ImageOff } from "lucide-react";
 import { listingPhotos, type Listing, type ListingWithOwner } from "@/server/catalog";
 import { formatDeposit, formatHandoverShort, formatPrice } from "@/lib/catalog/format";
 import { listingPath } from "@/lib/catalog/listing-path";
 import { freeQty, type AvailabilityMap } from "@/lib/catalog/availability";
 import { Avatar } from "@/components/ui/Avatar";
+import { HandoverIcon } from "@/components/catalog/HandoverIcon";
 
 function priceParts(l: Listing): { amount: string; unit: string } | null {
   if (l.priceDay !== null) return { amount: formatPrice(l.priceDay), unit: "в сутки" };
@@ -14,17 +15,7 @@ function priceParts(l: Listing): { amount: string; unit: string } | null {
   return null;
 }
 
-// Словарь дизайн-пакета: обмен — оба способа, грузовик — доставка, булавка —
-// самовывоз. Булавка же достаётся случаю «ни одного способа»: место встречи
-// всё равно обсуждают, и это ближе к правде, чем грузовик или пустота.
-//
-// NB: в блоке брони на странице позиции у того же свойства другой набор
-// значков (Truck / Package / Handshake). Расхождение известно и осознано —
-// здесь набор из макета карточки.
-function HandoverIcon({ pickup, delivery }: { pickup: boolean; delivery: boolean }) {
-  const Icon = pickup && delivery ? ArrowLeftRight : delivery ? Truck : MapPin;
-  return <Icon className="h-[15px] w-[15px] shrink-0 text-accent" aria-hidden="true" />;
-}
+const HANDOVER_ICON = "h-[15px] w-[15px] shrink-0 text-accent";
 
 // Единая карточка товара для всего проекта (главная, каталог, поиск, профиль).
 // Фото с плашками занятости и продавца, название, цена с залогом одной строкой
@@ -205,6 +196,7 @@ export function ListingCard({
             <HandoverIcon
               pickup={listing.handoverPickup}
               delivery={listing.handoverDelivery}
+              className={HANDOVER_ICON}
             />
             <span className="min-w-0 truncate">{handover}</span>
             <span className={`shrink-0 ${placeTone}`}>· {cityName}</span>
@@ -221,6 +213,7 @@ export function ListingCard({
           <HandoverIcon
             pickup={listing.handoverPickup}
             delivery={listing.handoverDelivery}
+            className={HANDOVER_ICON}
           />
           <span className="min-w-0 truncate">{handover}</span>
           <span className={`ml-auto shrink-0 pl-2 ${placeTone}`}>{cityName}</span>

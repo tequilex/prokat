@@ -5,7 +5,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Package, Truck } from "lucide-react";
+import { HandoverIcon } from "@/components/catalog/HandoverIcon";
 import { Button } from "@/components/ui/button";
 import { FormBlock } from "@/components/cabinet/FormBlock";
 import { StepProgress } from "@/components/cabinet/StepProgress";
@@ -249,13 +249,13 @@ export function ListingForm({
           <div className="flex flex-wrap gap-2">
             <HandoverChip
               label="Самовывоз"
-              icon={<Package className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              icon={<HandoverIcon pickup delivery={false} className="h-4 w-4 shrink-0" />}
               checked={v.handoverPickup}
               onChange={(checked) => set({ handoverPickup: checked })}
             />
             <HandoverChip
               label="Доставка"
-              icon={<Truck className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              icon={<HandoverIcon pickup={false} delivery className="h-4 w-4 shrink-0" />}
               checked={v.handoverDelivery}
               onChange={(checked) => set({ handoverDelivery: checked })}
             />

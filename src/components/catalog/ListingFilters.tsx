@@ -7,7 +7,8 @@
 // отдельную шторку (CategorySheet).
 
 import Link from "next/link";
-import { Banknote, FileText, Ban, Package, Truck } from "lucide-react";
+import { Banknote, FileText, Ban } from "lucide-react";
+import { HandoverIcon } from "@/components/catalog/HandoverIcon";
 import { Button } from "@/components/ui/button";
 import { FiltersSheet } from "@/components/catalog/FiltersSheet";
 import { CategorySheet } from "@/components/catalog/CategorySheet";
@@ -148,12 +149,15 @@ function FormInner({
       <fieldset className="border-0 p-0">
         <SectionLabel>Как забрать</SectionLabel>
         <div className="flex flex-wrap gap-2">
+          {/* Значки — общий HandoverIcon: то же свойство в выдаче и на позиции
+            * рисуется теми же глифами. Цвет не задаём, чип красит содержимое
+            * сам и меняет его при выборе. */}
           <Chip name="handover" value="pickup" checked={state.handover === "pickup"}
-            icon={<Package className="h-3 w-3 shrink-0" aria-hidden="true" />}>
+            icon={<HandoverIcon pickup delivery={false} className="h-3 w-3 shrink-0" />}>
             Самовывоз
           </Chip>
           <Chip name="handover" value="delivery" checked={state.handover === "delivery"}
-            icon={<Truck className="h-3 w-3 shrink-0" aria-hidden="true" />}>
+            icon={<HandoverIcon pickup={false} delivery className="h-3 w-3 shrink-0" />}>
             Доставка
           </Chip>
         </div>
