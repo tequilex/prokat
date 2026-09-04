@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { content } from "@theme/content";
+import { citySwitchHref } from "@/lib/catalog/current-city";
+import { useCurrentCity } from "./use-current-city";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -15,14 +17,14 @@ export interface CityOption {
   name: string;
 }
 
-export function CitySelector({
-  cities,
-  currentSlug,
-}: {
-  cities: CityOption[];
-  currentSlug?: string;
-}) {
-  const current = cities.find((c) => c.slug === currentSlug);
+// Текущий город и адреса перехода считаются здесь, а не приходят из шапки:
+// шапка отрисовывается один раз на весь сеанс (корневой layout не
+// перерисовывается при навигации), и любое запечённое в неё значение адреса
+// протухло бы на первом же переходе.
+export function CitySelector({ cities }: { cities: CityOption[] }) {
+  const { pathname, search, slug } = useCurrentCity(cities.map((c) => c.slug));
+  const current = cities.find((c) => c.slug === slug);
+
   return (
     // modal={false}: без него Radix включает scroll-lock (overflow:hidden на
     // body), из-за чего sticky-хедер пересчитывается и прыгает к началу
@@ -35,7 +37,7 @@ export function CitySelector({
       <DropdownMenuContent align="start">
         {cities.map((c) => (
           <DropdownMenuItem key={c.slug} asChild>
-            <Link href={`/${c.slug}` as never}>{c.name}</Link>
+            <Link href={citySwitchHref(pathname, search, c.slug) as never}>{c.name}</Link>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

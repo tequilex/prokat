@@ -245,34 +245,67 @@ export interface SearchFacets {
   maxPriceDay: number | null;
 }
 
+// Условие текстового поиска. Пустой запрос условия не даёт вовсе: /search без
+// него работает витриной города, а не пустой страницей.
+//
+// Спецсимволы ILIKE экранируются: без этого `%` в запросе означал «что угодно»,
+// и `/search?q=%` отдавал весь город, выдавая это за результат поиска.
+function textConditions(query: string) {
+  if (query === "") return [];
+  const like = `%${query.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+  return [or(ilike(listings.title, like), ilike(listings.description, like))];
+}
+
 export async function getSearchFacets(
   cityId: string,
   q: string,
   filters: ListingFilters = {},
 ): Promise<SearchFacets> {
-  const query = q.trim();
-  const empty: SearchFacets = { countsByCategory: new Map(), minPriceDay: null, maxPriceDay: null };
-  if (query === "") return empty;
-  const like = `%${query}%`;
+  const base = [
+    eq(listings.cityId, cityId),
+    eq(listings.status, "active"),
+    ...textConditions(q.trim()),
+  ];
 
-  const rows = await getDb()
-    .select({
-      categoryId: listings.categoryId,
-      cnt: sql<number>`count(*)::int`,
-      minPrice: sql<number | null>`min(${listings.priceDay})::int`,
-      maxPrice: sql<number | null>`max(${listings.priceDay})::int`,
-    })
+  const db = getDb();
+  const priceColumns = {
+    minPrice: sql<number | null>`min(${listings.priceDay})::int`,
+    maxPrice: sql<number | null>`max(${listings.priceDay})::int`,
+  };
+
+  const rowsPromise = db
+    .select({ categoryId: listings.categoryId, cnt: sql<number>`count(*)::int`, ...priceColumns })
     .from(listings)
     .innerJoin(users, eq(users.id, listings.ownerUserId))
-    .where(and(
-      eq(listings.cityId, cityId),
-      eq(listings.status, "active"),
-      or(ilike(listings.title, like), ilike(listings.description, like)),
-      ...filterConditions(filters),
-    ))
+    .where(and(...base, ...filterConditions(filters)))
     .groupBy(listings.categoryId);
 
-  const prices = rows.flatMap((r) => [r.minPrice, r.maxPrice]).filter((v): v is number => v !== null);
+  // Границы слайдера считаются БЕЗ ценового фильтра — по тому же правилу, по
+  // которому счётчики разделов не учитывают выбранный раздел: фасет не сужает
+  // сам себя. Иначе выбранные 100–500 ₽ схлопывали бы ручки в те же 100–500 и
+  // расширить диапазон назад было бы нечем, а останься в выдаче одна цена —
+  // секция цены исчезла бы вместе с фильтром.
+  //
+  // Отдельный запрос нужен только когда фильтр цены и правда стоит: без него
+  // границы совпадают со счётчиками и берутся из того же прохода.
+  const pricedFiltered = filters.priceMin !== undefined || filters.priceMax !== undefined;
+  const boundsPromise = pricedFiltered
+    ? db.select(priceColumns)
+      .from(listings)
+      .innerJoin(users, eq(users.id, listings.ownerUserId))
+      .where(and(...base, ...filterConditions({
+        ...filters, priceMin: undefined, priceMax: undefined,
+      })))
+    : null;
+
+  const [rows, boundsRows] = await Promise.all([rowsPromise, boundsPromise]);
+
+  // Без отдельного запроса границы собираются по группам категорий: min из
+  // минимумов и max из максимумов дают то же, что один агрегат по всей выдаче.
+  const prices = (boundsRows ?? rows)
+    .flatMap((r) => [r.minPrice, r.maxPrice])
+    .filter((v): v is number => v !== null);
+
   return {
     countsByCategory: new Map(rows.map((r) => [r.categoryId, r.cnt])),
     minPriceDay: prices.length ? Math.min(...prices) : null,
@@ -280,8 +313,10 @@ export async function getSearchFacets(
   };
 }
 
-// Текстовый поиск по позициям в пределах города: ILIKE по названию и описанию.
-// Пустой запрос → пустой результат (страница показывает подсказку).
+// Выдача города с текстовым поиском: ILIKE по названию и описанию. Пустой
+// запрос — не пустой ответ, а весь город: /search без `q` работает витриной,
+// а запрос лишь сужает её. Отличие от getListingsForCategories ровно в двух
+// вещах: здесь есть текстовое условие, а раздел необязателен.
 export async function searchListings(
   cityId: string,
   q: string,
@@ -289,17 +324,14 @@ export async function searchListings(
   /** Сужение по разделу. В каталоге раздел задаёт страница, здесь — фильтр. */
   categoryIds?: string[],
 ): Promise<{ items: ListingWithOwner[]; total: number }> {
-  const query = q.trim();
-  if (query === "") return { items: [], total: 0 };
   const db = getDb();
   const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
   const page = Math.max(1, filters.page ?? 1);
-  const like = `%${query}%`;
 
   const where = and(
     eq(listings.cityId, cityId),
     eq(listings.status, "active"),
-    or(ilike(listings.title, like), ilike(listings.description, like)),
+    ...textConditions(q.trim()),
     ...(categoryIds && categoryIds.length > 0 ? [inArray(listings.categoryId, categoryIds)] : []),
     ...filterConditions(filters),
   );

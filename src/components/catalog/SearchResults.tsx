@@ -1,5 +1,9 @@
-// Результаты поиска: тот же вид, что у категории (фильтры + сетка карточек +
+// Выдача поиска: тот же вид, что у категории (фильтры + сетка карточек +
 // пагинация), но источник — searchListings по городу. Server component.
+//
+// Запрос здесь — обычный сужающий фильтр, а не условие существования страницы:
+// без него показывается весь город, с ним — то, что нашлось. Поэтому фильтры,
+// разделы и верхняя панель живут независимо от `q`.
 
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -27,8 +31,10 @@ export async function SearchResults({
   searchParams: CategorySearchParams;
 }) {
   const filters = parseFilters(searchParams);
-  // Пустой запрос — страница показывает подсказку, разделы и фасеты не нужны.
-  const cats = q.trim() === "" ? [] : await getAllCategories();
+  // Категории идут отдельной волной, а не в общем Promise.all ниже: от них
+  // зависит narrowIds, то есть сам запрос выдачи. На витрине города такой
+  // зависимости нет — там набор разделов задаёт страница.
+  const cats = await getAllCategories();
 
   // Сужение по разделу: слаг из адреса → корень и все его подкатегории. Раздела
   // нет или слаг чужой — сужения нет, ищем по всему городу.
@@ -50,7 +56,9 @@ export async function SearchResults({
   const availByListing = buildAvailabilityByListing(availRows);
 
   // Границы слайдера — по результатам запроса, а не по всему городу: иначе
-  // ручки стояли бы на ценах, которых в выдаче нет.
+  // ручки стояли бы на ценах, которых в выдаче нет. Исключение — сам ценовой
+  // фильтр: его getSearchFacets в границы не учитывает, иначе диапазон
+  // схлопывался бы к выбранному и разжать его назад было бы нечем.
   const priceBounds =
     facets.minPriceDay !== null && facets.maxPriceDay !== null
       && facets.maxPriceDay > facets.minPriceDay
@@ -92,6 +100,16 @@ export async function SearchResults({
     deposit: filters.deposit, handover: filters.handover,
     verifiedOnly: filters.verifiedOnly, sort: filters.sort,
   };
+
+  // Сужена ли выдача хоть чем-нибудь, кроме запроса, — от этого зависит текст
+  // пустого состояния. Считаем по разобранным фильтрам, а не по filterParams:
+  // туда входят вид и сортировка, а они выдачу не сужают и «условиями» не
+  // являются.
+  const hasFilters = Boolean(
+    filters.priceMin !== undefined || filters.priceMax !== undefined
+    || filters.deposit || filters.handover || filters.verifiedOnly
+    || (filters.availableFrom && filters.availableTo) || activeRoot,
+  );
 
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / DEFAULT_PAGE_SIZE));
@@ -139,24 +157,41 @@ export async function SearchResults({
       </aside>
 
       <div className="flex flex-1 flex-col gap-4">
-        {q !== "" && items.length > 0 && (
-          <div className="surface flex items-center justify-between gap-2 p-1.5">
-            <DateRangeFilter
-              from={searchParams.from}
-              to={searchParams.to}
-              resetHref={datesResetHref}
-              today={from}
-            />
-            <div className="flex items-center gap-2">
-              <SortMenu options={sortOptions} current={searchParams.sort} />
-              <ViewToggle view={view} gridHref={gridHref} listHref={listHref} />
-            </div>
+        {/* Панель видна всегда, в том числе на пустой выдаче: единственный
+          * способ снять фильтр дат — этот календарь, а «Сбросить» в фильтрах
+          * даты не трогает. Спрячь панель на нуле результатов — и выбранные
+          * даты стало бы нечем убрать, кроме правки адреса. */}
+        <div className="surface flex items-center justify-between gap-2 p-1.5">
+          <DateRangeFilter
+            from={searchParams.from}
+            to={searchParams.to}
+            resetHref={datesResetHref}
+            today={from}
+          />
+          <div className="flex items-center gap-2">
+            <SortMenu options={sortOptions} current={searchParams.sort} />
+            <ViewToggle view={view} gridHref={gridHref} listHref={listHref} />
           </div>
-        )}
-        {q === "" ? (
-          <EmptyState>Введите запрос в строке поиска, чтобы найти вещи в аренду.</EmptyState>
-        ) : items.length === 0 ? (
-          <EmptyState>Ничего не найдено по запросу «{q}».</EmptyState>
+        </div>
+        {items.length === 0 ? (
+          // Пусто по разным причинам, и валить их в одну фразу нельзя: «в
+          // городе ничего нет» — прямая ложь, когда выдачу обнулил фильтр или
+          // номер страницы за концом списка. Страница вперёд идёт первой: с
+          // неё ещё и уйти нужно ссылкой, кнопок пагинации внизу уже нет.
+          page > 1 ? (
+            <EmptyState>
+              На этой странице ничего нет.{" "}
+              <Link href={pageHref(1) as never} className="text-accent hoverable">
+                Вернуться к началу выдачи
+              </Link>
+            </EmptyState>
+          ) : q !== "" ? (
+            <EmptyState>Ничего не найдено по запросу «{q}».</EmptyState>
+          ) : hasFilters ? (
+            <EmptyState>По этим условиям позиций не нашлось.</EmptyState>
+          ) : (
+            <EmptyState>В этом городе пока нечего арендовать.</EmptyState>
+          )
         ) : (
           <>
             <div className={view === "list"

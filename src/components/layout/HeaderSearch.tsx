@@ -5,9 +5,20 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { content } from "@theme/content";
 import { fieldWithin } from "@/components/ui/field";
+import { useCurrentCity } from "./use-current-city";
 
-export function HeaderSearch({ className = "" }: { className?: string }) {
+export function HeaderSearch({
+  className = "",
+  // Слаги активных городов — чтобы узнать город в адресе и не принять за него
+  // первый попавшийся сегмент вроде /cabinet. Без города поиск уходил бы в
+  // город по умолчанию, и листающий Петербург получал бы выдачу Казани.
+  cities = [],
+}: {
+  className?: string;
+  cities?: readonly string[];
+}) {
   const router = useRouter();
+  const { slug: city } = useCurrentCity(cities);
   const [q, setQ] = useState("");
   return (
     <form
@@ -15,8 +26,12 @@ export function HeaderSearch({ className = "" }: { className?: string }) {
       className={`${fieldWithin} flex h-9 w-full items-center gap-2 pl-3 pr-1 ${className}`}
       onSubmit={(e) => {
         e.preventDefault();
+        const params = new URLSearchParams();
         const query = q.trim();
-        router.push(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
+        if (query) params.set("q", query);
+        if (city) params.set("city", city);
+        const qs = params.toString();
+        router.push(qs ? `/search?${qs}` : "/search");
       }}
     >
       <input
