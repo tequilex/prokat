@@ -20,8 +20,15 @@ export function ConnectionStatus() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // idle — аноним: соединения нет и не должно быть.
-    if (status === "online" || status === "idle") { setVisible(false); return; }
+    // idle — аноним: соединения нет и не должно быть. banned — забаненный: связь
+    // ему не положена так же, и объяснять нечего, причину показывает /banned.
+    // Сказать ему про конец сессии нельзя: она живая, бан её не удаляет.
+    // Обе ветки обязаны быть здесь, а не ниже: провалившись в GRACE_MS, они
+    // через шесть секунд покажут «Связи нет».
+    if (status === "online" || status === "idle" || status === "banned") {
+      setVisible(false);
+      return;
+    }
     // Терминальные состояния ждать незачем: сессии нет или вкладка от прошлой
     // сборки — само не починится.
     if (status === "unauthorized" || status === "stale") { setVisible(true); return; }
@@ -29,7 +36,10 @@ export function ConnectionStatus() {
     return () => clearTimeout(timer);
   }, [status]);
 
-  if (!visible) return null;
+  // status проверяется и здесь, а не только в эффекте: тот гасит visible уже
+  // после отрисовки, и на переходе «плашка висела → бан» успевал мелькнуть один
+  // кадр «Связи нет».
+  if (!visible || status === "banned") return null;
 
   const terminal = status === "unauthorized" || status === "stale";
   const text = status === "stale" ? content.realtime.stale

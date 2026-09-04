@@ -211,7 +211,8 @@ export function RealtimeProvider({
         if (isTerminalClose(event.code)) {
           // Сессии нет, бан или чужой Origin. Переподключение здесь дало бы
           // вечный цикл у вкладки с мёртвой cookie и выело бы лимитер.
-          state.setStatus("unauthorized");
+          // Бан отделяется статусом — почему, см. ConnectionStatus.
+          state.setStatus(event.code === CLOSE.banned ? "banned" : "unauthorized");
           stoppedRef.current = true;
           return;
         }

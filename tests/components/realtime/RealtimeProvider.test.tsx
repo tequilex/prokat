@@ -113,16 +113,19 @@ describe("RealtimeProvider", () => {
   // Терминальный код означает, что переподключаться бессмысленно: сессии нет,
   // бан или чужой Origin. Без этого вкладка с мёртвой cookie долбилась бы в
   // сервер вечно и выедала лимитер.
-  it("после терминального отказа не переподключается", async () => {
-    render(<RealtimeProvider enabled>x</RealtimeProvider>);
-    await waitFor(() => expect(FakeSocket.live).toHaveLength(1));
+  it.each([4001, 4002, 4003] as const)(
+    "после терминального отказа %i не переподключается",
+    async (code) => {
+      render(<RealtimeProvider enabled>x</RealtimeProvider>);
+      await waitFor(() => expect(FakeSocket.live).toHaveLength(1));
 
-    const before = FakeSocket.instances.length;
-    await act(async () => { FakeSocket.live[0].close(4001); });
-    await new Promise((r) => setTimeout(r, 50));
+      const before = FakeSocket.instances.length;
+      await act(async () => { FakeSocket.live[0].close(code); });
+      await new Promise((r) => setTimeout(r, 50));
 
-    expect(FakeSocket.instances.length).toBe(before);
-  });
+      expect(FakeSocket.instances.length).toBe(before);
+    },
+  );
 
   it("без сессии соединение не открывается вовсе", async () => {
     render(<RealtimeProvider enabled={false}>x</RealtimeProvider>);
@@ -144,5 +147,24 @@ describe("RealtimeProvider", () => {
       </RealtimeProvider>,
     );
     await waitFor(() => expect(seen).toBe("idle"));
+  });
+
+  // Оба кода терминальны, но человеку это разные вещи, и isTerminalClose их не
+  // различает. Коды заданы числами нарочно: это проводной контракт с процессом
+  // realtime, и тест обязан упасть, если константа уедет.
+  it.each([
+    [4002, "banned"],
+    [4001, "unauthorized"],
+  ] as const)("код закрытия %i даёт статус %s", async (code, expected) => {
+    let seen = "";
+    function Probe() {
+      seen = useRealtime((s) => s.status);
+      return null;
+    }
+    render(<RealtimeProvider enabled><Probe /></RealtimeProvider>);
+    await waitFor(() => expect(FakeSocket.live).toHaveLength(1));
+
+    await act(async () => { FakeSocket.live[0].close(code); });
+    await waitFor(() => expect(seen).toBe(expected));
   });
 });
