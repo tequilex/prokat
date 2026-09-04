@@ -6,9 +6,9 @@ import {
   getActiveCities, getAllCategories, getListingCountsByCategory, getRecentListings, rollupToRoots,
 } from "@/server/catalog";
 import { Hero } from "@/components/home/Hero";
-import { RecentItems } from "@/components/home/RecentItems";
 import { CategoryTiles } from "@/components/home/CategoryTiles";
-import { WhyChoose } from "@/components/home/WhyChoose";
+import { RecentItems } from "@/components/home/RecentItems";
+import { HowItWorks } from "@/components/home/HowItWorks";
 import { ListYourItemBand } from "@/components/home/ListYourItemBand";
 
 export const dynamic = "force-dynamic";
@@ -35,37 +35,36 @@ export default async function HomePage() {
     ? rollupToRoots(cats, await getListingCountsByCategory(defaultCity.id))
     : null;
 
-  const recent = defaultCity ? await getRecentListings(defaultCity.id, 12) : [];
-  const tiles = roots.map((c) => ({
-    slug: c.slug,
-    name: c.name,
-    vertical: c.vertical,
-    count: counts?.get(c.id),
-  }));
+  // Восемь последних — ровно два ряда по четыре на десктопе.
+  const recent = defaultCity ? await getRecentListings(defaultCity.id, 8) : [];
+
+  // Только непустые категории: чип, за которым в городе ничего нет, обещает
+  // то, чего человек не найдёт. Числа в чипах не показываем.
+  const chips = counts
+    ? roots
+        .filter((c) => (counts.get(c.id) ?? 0) > 0)
+        .map((c) => ({ slug: c.slug, name: c.name, vertical: c.vertical }))
+    : [];
 
   const user = session?.user;
   const placeHref = user ? "/cabinet/listings/new" : "/login";
 
-  // Анониму баннер «Разместить» открывает вход модалкой, а не уводит на /login.
-  const authProps = authPanelProps();
+  // Анониму «Разместить» открывает вход модалкой, а не уводит на /login.
+  const authProps = user ? undefined : authPanelProps();
 
   return (
-    <main>
-      <Hero
-        citySlug={defaultCity?.slug}
-        cityName={defaultCity?.name}
-        categories={roots.map((c) => ({ slug: c.slug, name: c.name }))}
-      />
+    // Стопка панелей одной ширины. Контейнер совпадает с шапкой и подвалом,
+    // иначе края главной разъезжаются с плавающей панелью над ней.
+    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pb-4 pt-5">
+      <Hero citySlug={defaultCity?.slug} placeHref={placeHref} authProps={authProps} />
+
+      {defaultCity && <CategoryTiles citySlug={defaultCity.slug} categories={chips} />}
 
       {defaultCity && <RecentItems items={recent} citySlug={defaultCity.slug} />}
 
-      {defaultCity && <CategoryTiles citySlug={defaultCity.slug} categories={tiles} />}
+      <HowItWorks />
 
-      <div className="mx-auto w-full max-w-[1200px] space-y-10 px-4 pb-12 pt-6">
-        <WhyChoose />
-
-        <ListYourItemBand href={placeHref} authProps={user ? undefined : authProps} />
-      </div>
+      <ListYourItemBand href={placeHref} authProps={authProps} />
     </main>
   );
 }

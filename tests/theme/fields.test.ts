@@ -26,9 +26,6 @@ function contractNames(text: string): RegExp {
 }
 
 const ALLOWED = new Map([
-  // Поиск в герое лежит на фотографии: белый текст по затемнению. Токены
-  // интерфейса там означали бы не то — та же семья, что кнопки поверх снимков.
-  ["src/components/home/HeroSearch.tsx", "поле на фотографии"],
   // Обёртка над <input>: className приходит от вызывающего, контракт
   // применяется там. Сам компонент вида не задаёт.
   ["src/components/ui/PasswordInput.tsx", "прокидывает className"],

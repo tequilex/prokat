@@ -27,6 +27,11 @@ export default {
       full: "9999px",
     },
     extend: {
+      // Главная складывается из двух колонок в одну на 1120px — это точка из
+      // макета, и она одна на все её секции: с разными точками полоса
+      // 1024–1279 разъезжалась бы посекционно (герой уже в колонку, лента ещё
+      // в четыре). Дефолтные брейкпоинты Tailwind остаются нетронутыми.
+      screens: { wide: "1120px" },
       colors: {
         background: c("--color-background"),
         foreground: c("--color-foreground"),
@@ -76,6 +81,11 @@ export default {
         xl:   "var(--text-xl)",
         "2xl": "var(--text-2xl)",
         "3xl": "var(--text-3xl)",
+        // Две ступени сверх ряда, обе только на главной. Своими именами, а не
+        // 4xl/5xl: шкала кеглей идёт через extend, дефолтные ключи Tailwind
+        // живы, и text-4xl уже набирает «404» в not-found.tsx.
+        band: "var(--text-band)",
+        hero: "var(--text-hero)",
       },
       lineHeight: {
         tight: "var(--leading-tight)",

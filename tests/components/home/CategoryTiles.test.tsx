@@ -1,14 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { CategoryTiles } from "@/components/home/CategoryTiles";
+import { content } from "@theme/content";
 
 describe("CategoryTiles", () => {
   const cats = [
-    { slug: "instrument", name: "Инструмент", vertical: "tools", count: 3 },
+    { slug: "instrument", name: "Инструмент", vertical: "tools" },
     { slug: "sport", name: "Спорт", vertical: "sport" },
   ];
 
-  it("links each tile into the city", () => {
+  it("links each chip into the city", () => {
     render(<CategoryTiles citySlug="kazan" categories={cats} />);
     expect(screen.getByRole("link", { name: /Инструмент/ })).toHaveAttribute(
       "href",
@@ -17,8 +18,15 @@ describe("CategoryTiles", () => {
     expect(screen.getByRole("link", { name: /Спорт/ })).toHaveAttribute("href", "/kazan/sport");
   });
 
-  it("has a browse-all link to the city", () => {
+  it("closes the row with a link to every category", () => {
     render(<CategoryTiles citySlug="kazan" categories={cats} />);
-    expect(screen.getByRole("link", { name: /Смотреть все/ })).toHaveAttribute("href", "/kazan");
+    expect(
+      screen.getByRole("link", { name: content.home.categoriesAll }),
+    ).toHaveAttribute("href", "/kazan");
+  });
+
+  it("renders nothing when the city has no non-empty categories", () => {
+    const { container } = render(<CategoryTiles citySlug="kazan" categories={[]} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });
