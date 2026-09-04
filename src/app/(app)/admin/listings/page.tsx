@@ -35,10 +35,13 @@ export default async function AdminListingsPage() {
                 {ownerName ?? "—"}
                 {listing.priceDay !== null ? ` · ${formatPrice(listing.priceDay)}/сутки` : ""}
                 {" · "}{STATUS_LABEL[listing.status] ?? listing.status}
+                {listing.hiddenByBan ? " (баном)" : ""}
               </p>
             </div>
             <div className="flex gap-2">
-              {listing.status !== "active" && (
+              {/* Погашенное баном не активируется, пока владелец забанен, —
+                  кнопка тут только раздражала бы отказом. */}
+              {listing.status !== "active" && !listing.hiddenByBan && (
                 <ActionButton label="Активировать" action={adminSetListingStatus.bind(null, listing.id, "active")} />
               )}
               {listing.status === "active" && (

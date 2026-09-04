@@ -76,7 +76,13 @@ export default async function ChatPage({
   // название с именем владельца показывать нельзя, иначе по id из старой ссылки
   // читается скрытая карточка. Ответ совпадает с несуществующим id: по нему
   // нельзя узнать, что объявление вообще есть.
-  if (!verdict.ok && verdict.reason === "listing_not_active") redirect("/chat");
+  //
+  // counterpart_banned в этом списке обязателен. canStartThread проверяет бан
+  // раньше статуса, поэтому у забаненного владельца до listing_not_active дело
+  // не доходит — а его объявление как раз скрыто и на витрине отдаёт 404.
+  if (!verdict.ok && (verdict.reason === "listing_not_active" || verdict.reason === "counterpart_banned")) {
+    redirect("/chat");
+  }
 
   return (
     <section

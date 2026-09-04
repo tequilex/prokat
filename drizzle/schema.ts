@@ -153,6 +153,10 @@ export const listings = pgTable("listings", {
   handoverDelivery: boolean("handover_delivery").notNull().default(false),
   photosJson: jsonb("photos_json").notNull().default([]),  // { url, width, height }[]
   status: listingStatus("status").notNull().default("active"),
+  // Объявление ушло в hidden не по воле владельца, а из-за бана. Нужен, чтобы
+  // разбан вернул в active ровно погашенное баном и не поднял то, что владелец
+  // скрыл сам: по одному лишь статусу эти два случая неотличимы.
+  hiddenByBan: boolean("hidden_by_ban").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => ({

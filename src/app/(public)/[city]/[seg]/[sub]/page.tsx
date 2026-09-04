@@ -24,6 +24,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/lib/jsonld";
 import { siteConfig } from "@/lib/site-config";
 import { buildAvailabilityByListing, freeQty } from "@/lib/catalog/availability";
+import { isPubliclyVisible } from "@/lib/catalog/visibility";
 import { BOOKING_HORIZON_DAYS, parseBookingParams } from "@/lib/booking/params";
 import { BookingWidget } from "@/components/booking/BookingWidget";
 import { authPanelProps } from "@/lib/auth/panel-props";
@@ -60,6 +61,10 @@ async function resolve(citySlug: string, seg: string, sub: string): Promise<Reso
       getSellerById(listing.ownerUserId),
     ]);
     if (!category || !seller) return null;
+    // Бан владельца уводит карточку в 404 — и саму страницу, и generateMetadata:
+    // обе ходят сюда. Статус объявления бан гасит на записи, так что до этой
+    // строки обычно не доходит; она страхует расхождение статуса с баном.
+    if (!isPubliclyVisible({ status: listing.status, ownerBannedAt: seller.bannedAt })) return null;
     return { kind: "listing", city, category, listing, seller };
   }
 

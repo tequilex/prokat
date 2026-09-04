@@ -44,6 +44,7 @@
 - [0007](decisions/0007-chat-thread-per-listing.md) — переписка тредом на объявление
 - [0008](decisions/0008-interaction-states-as-overlays.md) — состояния накладками, охра как «выбрано», перестроенные шкалы нейтралей
 - [0009](decisions/0009-realtime-as-a-separate-process.md) — доставка в реальном времени отдельным процессом, фанаут через LISTEN/NOTIFY
+- [0010](decisions/0010-ban-hides-listings-on-write.md) — бан гасит объявления на записи, разбан возвращает по метке
 
 ## Где ещё лежит правда
 

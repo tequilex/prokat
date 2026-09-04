@@ -143,8 +143,12 @@ export async function setListingStatus(
   const parsed = setStatusSchema.safeParse({ listingId, status });
   if (!parsed.success) return { ok: false, error: "bad_status" };
 
+  // hiddenByBan снимается вместе с явной сменой статуса, чтобы метка означала
+  // ровно одно: строку погасил бан и с тех пор статуса никто не касался. Сюда
+  // забаненный не дойдёт (requireUser его отсекает), но инвариант должен
+  // держаться на любом пути записи, а не на рассуждении о достижимости.
   const res = await getDb().update(listings)
-    .set({ status: parsed.data.status, updatedAt: new Date() })
+    .set({ status: parsed.data.status, hiddenByBan: false, updatedAt: new Date() })
     .where(and(eq(listings.id, parsed.data.listingId), eq(listings.ownerUserId, owner.userId)))
     .returning({ id: listings.id });
   if (res.length === 0) return { ok: false, error: "not_found" };

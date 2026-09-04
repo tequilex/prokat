@@ -22,6 +22,7 @@ import { checkLimit } from "@/lib/rate-limit";
 import { bookingFormSchema } from "@/lib/booking/validation";
 import { parseBookingParams } from "@/lib/booking/params";
 import { unavailableDates, type AvailabilityMap } from "@/lib/catalog/availability";
+import { isPubliclyVisible } from "@/lib/catalog/visibility";
 import { canTransition, availabilityDelta } from "@/lib/catalog/booking-status";
 import { todayStr } from "@/lib/catalog/dates";
 import { notify } from "@/server/notifications";
@@ -54,11 +55,21 @@ export async function createBookingRequest(
   if (!limit.ok) return { ok: false, error: `rate_limited:${limit.retryAfterSec}` };
 
   const db = getDb();
-  const listingRows = await db.select().from(listings)
-    .where(and(eq(listings.id, form.listingId), eq(listings.status, "active")))
+  // Владелец читается вместе с объявлением: публичность решает isPubliclyVisible,
+  // а не один только статус. Бан гасит объявления на записи, но статус может
+  // разойтись с баном, если объявление подняли вручную.
+  const listingRows = await db.select({ listing: listings, ownerBannedAt: users.bannedAt })
+    .from(listings)
+    .innerJoin(users, eq(users.id, listings.ownerUserId))
+    .where(eq(listings.id, form.listingId))
     .limit(1);
-  const listing = listingRows[0];
-  if (!listing) return { ok: false, error: "listing_not_found" };
+  const row = listingRows[0];
+  // Ответ совпадает с несуществующим объявлением: по нему нельзя узнать, что
+  // владелец забанен, — тот же принцип, что в lib/chat/rules.ts.
+  if (!row || !isPubliclyVisible({ status: row.listing.status, ownerBannedAt: row.ownerBannedAt })) {
+    return { ok: false, error: "listing_not_found" };
+  }
+  const listing = row.listing;
 
   // Кламп дат к [today, horizon] — форма могла пролежать открытой.
   const sel = parseBookingParams(

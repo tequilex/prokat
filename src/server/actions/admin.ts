@@ -5,13 +5,17 @@
 // от assertAdmin с redirect — actions возвращают ошибку).
 
 import { z } from "zod";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gte, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { categories, cities, listings, users } from "@db/schema";
+import { bookingRequests, categories, cities, events, listings, users } from "@db/schema";
 import { auth } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slugify";
+import { notify } from "@/server/notifications";
+import { publish } from "@/server/realtime";
+import { requestNotify } from "@/lib/realtime/events";
+import type { RequestNotificationKind } from "@/lib/notifications/kinds";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -25,16 +29,47 @@ async function requireAdmin(): Promise<string | null> {
 
 // ============================== Модерация ==============================
 
+const listingStatusSchema = z.enum(["active", "hidden", "archived"]);
+
 export async function adminSetListingStatus(
   listingId: string,
   status: "active" | "hidden" | "archived",
 ): Promise<ActionResult> {
   if (!(await requireAdmin())) return { ok: false, error: "forbidden" };
-  const res = await getDb().update(listings)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(listings.id, listingId))
+  // Тип аргумента защищает только вызывающих из кода: action доступен по сети
+  // напрямую, и оттуда в enum-колонку приедет что угодно.
+  const parsed = listingStatusSchema.safeParse(status);
+  if (!parsed.success) return { ok: false, error: "invalid_input" };
+  const next = parsed.data;
+  const db = getDb();
+
+  // Поднять объявление забаненного нельзя: каталог, поиск и sitemap отличают
+  // публичное от скрытого по одному лишь статусу, и active у забаненного вернул
+  // бы вещь в выдачу при том, что её карточка отдаёт 404, а заявку создать
+  // нельзя. Условие живёт в самом UPDATE, а не в отдельном SELECT: между чтением
+  // и записью владельца могли забанить, и тогда объявление осталось бы active
+  // без метки — разбан бы его не нашёл, а из каталога оно бы уже не ушло.
+  const ownerAlive = sql`not exists (
+    select 1 from ${users}
+    where ${users.id} = ${listings.ownerUserId} and ${users.bannedAt} is not null
+  )`;
+
+  // Явная смена статуса снимает метку бана: дальше судьба объявления — решение
+  // админа, и разбан не должен его отменять.
+  const res = await db.update(listings)
+    .set({ status: next, hiddenByBan: false, updatedAt: new Date() })
+    .where(next === "active" ? and(eq(listings.id, listingId), ownerAlive) : eq(listings.id, listingId))
     .returning({ id: listings.id });
-  if (res.length === 0) return { ok: false, error: "not_found" };
+
+  if (res.length === 0) {
+    // Ноль строк значит либо «нет такого объявления», либо «владелец забанен».
+    // Админу разница важна: во втором случае есть что сделать.
+    const exists = await db.select({ id: listings.id })
+      .from(listings).where(eq(listings.id, listingId)).limit(1);
+    return exists.length > 0
+      ? { ok: false, error: "Владелец забанен — сначала снимите бан" }
+      : { ok: false, error: "not_found" };
+  }
   revalidatePath("/admin/listings");
   return { ok: true, data: undefined };
 }
@@ -150,28 +185,133 @@ export async function adminDeleteCategory(categoryId: string): Promise<ActionRes
 
 // ============================== Пользователи ==============================
 
-export async function adminBanUser(userId: string, reason: string): Promise<ActionResult> {
+const banReasonSchema = z.string().trim().min(5, "Причина от 5 символов").max(500);
+
+// Бан уводит из публичного контура и человека, и его вещи. Одной транзакцией:
+// частичный бан оставил бы объявления в каталоге, а заявки — висеть на том, кто
+// уже не может ни ответить на них, ни довести до конца свои.
+//
+// Порядок внутри транзакции не произволен. booking_requests берутся раньше
+// listings, потому что встречный порядок даёт ABBA с transitionRequest: тот
+// лочит заявку, а потом объявление (actions/owner.ts, ветка confirmed).
+// Уведомления идут после обеих таблиц — этот порядок описан в server/
+// notifications.ts. publish уходит последним оператором, как требует
+// server/realtime.ts.
+export async function adminBanUser(userId: string, reason: unknown): Promise<ActionResult> {
   const adminId = await requireAdmin();
   if (!adminId) return { ok: false, error: "forbidden" };
   if (userId === adminId) return { ok: false, error: "Нельзя забанить себя" };
-  if (reason.trim().length < 5) return { ok: false, error: "Причина от 5 символов" };
+  const parsedReason = banReasonSchema.safeParse(reason);
+  if (!parsedReason.success) {
+    return { ok: false, error: parsedReason.error.issues[0]?.message ?? "invalid_input" };
+  }
 
-  const res = await getDb().update(users)
-    .set({ bannedAt: new Date(), banReason: reason.trim() })
-    .where(eq(users.id, userId))
-    .returning({ id: users.id });
-  if (res.length === 0) return { ok: false, error: "not_found" };
+  try {
+    await getDb().transaction(async (tx) => {
+      const res = await tx.update(users)
+        .set({ bannedAt: new Date(), banReason: parsedReason.data })
+        .where(eq(users.id, userId))
+        .returning({ id: users.id });
+      // Раньше всего остального: несуществующий пользователь не должен оставить
+      // за собой ни строки.
+      if (res.length === 0) throw new Error("not_found");
+
+      const now = new Date();
+      // Только ещё живые заявки. Та, у которой срок вышел, но ленивое протухание
+      // до неё не дошло, — уже мертва: пометить её отклонённой и уведомить об
+      // этом значило бы сообщить о событии, которого не было (протухание молчит).
+      const stillPending = and(eq(bookingRequests.status, "new"), gte(bookingRequests.expiresAt, now));
+
+      // Входящие: подтвердить их забаненный не может (requireUser в
+      // actions/owner.ts отсекает banned), а ссылка на скрытое объявление у
+      // арендатора теперь отдаёт 404. Оставить их протухать значило бы сутки
+      // держать человека в ожидании ответа, которого не будет.
+      const incoming = await tx.update(bookingRequests)
+        .set({ status: "declined", respondedAt: now })
+        .where(and(eq(bookingRequests.ownerUserId, userId), stillPending))
+        .returning({ id: bookingRequests.id, counterpartId: bookingRequests.customerUserId });
+
+      // Исходящие: забаненный не доведёт аренду до конца, а чужой владелец,
+      // ничего не зная, подтвердил бы её и занял даты под аккаунт, которого на
+      // сайт уже не пускают.
+      const outgoing = await tx.update(bookingRequests)
+        .set({ status: "cancelled", respondedAt: now })
+        .where(and(eq(bookingRequests.customerUserId, userId), stillPending))
+        .returning({ id: bookingRequests.id, counterpartId: bookingRequests.ownerUserId });
+
+      // Подтверждённые заявки бан не трогает по обе стороны: это сделка в
+      // реальном мире, вещь может быть уже у арендатора, и даты она держит по
+      // праву. Ни одна new-заявка дат не держит, поэтому availability здесь ни
+      // при чём (см. lib/catalog/booking-status).
+
+      // Метка отличает погашенное баном от скрытого владельцем — по одному лишь
+      // статусу эти случаи неразличимы, и разбан поднял бы лишнее.
+      await tx.update(listings)
+        .set({ status: "hidden", hiddenByBan: true, updatedAt: now })
+        .where(and(eq(listings.ownerUserId, userId), eq(listings.status, "active")));
+
+      const touched = [
+        ...incoming.map((r) => ({ ...r, kind: "request_declined" as const, event: "request_declined" })),
+        ...outgoing.map((r) => ({ ...r, kind: "request_cancelled" as const, event: "cancel_request" })),
+      ];
+
+      const toPublish: Array<{ kind: RequestNotificationKind; requestId: string; recipientId: string }> = [];
+      for (const req of touched) {
+        await tx.insert(events).values({
+          id: newId(),
+          entityType: "booking_request",
+          entityId: req.id,
+          event: req.event,
+          userId: adminId,
+          metaJson: { fromStatus: "new", reason: "user_banned" },
+        });
+        const notified = await notify(tx, {
+          recipientId: req.counterpartId,
+          actorId: adminId,
+          kind: req.kind,
+          entityId: req.id,
+        });
+        if (notified) {
+          toPublish.push({ kind: req.kind, requestId: req.id, recipientId: req.counterpartId });
+        }
+      }
+
+      for (const p of toPublish) await publish(tx, requestNotify(p));
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "not_found") return { ok: false, error: "not_found" };
+    throw e;
+  }
+
   revalidatePath("/admin/users");
+  revalidatePath("/requests");
+  revalidatePath("/cabinet/requests");
   return { ok: true, data: undefined };
 }
 
 export async function adminUnbanUser(userId: string): Promise<ActionResult> {
   if (!(await requireAdmin())) return { ok: false, error: "forbidden" };
-  const res = await getDb().update(users)
-    .set({ bannedAt: null, banReason: null })
-    .where(eq(users.id, userId))
-    .returning({ id: users.id });
-  if (res.length === 0) return { ok: false, error: "not_found" };
+
+  try {
+    await getDb().transaction(async (tx) => {
+      const res = await tx.update(users)
+        .set({ bannedAt: null, banReason: null })
+        .where(eq(users.id, userId))
+        .returning({ id: users.id });
+      if (res.length === 0) throw new Error("not_found");
+
+      // Условие по метке, а не по статусу: объявления, которые владелец скрыл
+      // сам до бана, должны остаться скрытыми. Отклонённые заявки не
+      // воскрешаются — declined терминален.
+      await tx.update(listings)
+        .set({ status: "active", hiddenByBan: false, updatedAt: new Date() })
+        .where(and(eq(listings.ownerUserId, userId), eq(listings.hiddenByBan, true)));
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "not_found") return { ok: false, error: "not_found" };
+    throw e;
+  }
+
   revalidatePath("/admin/users");
   return { ok: true, data: undefined };
 }
