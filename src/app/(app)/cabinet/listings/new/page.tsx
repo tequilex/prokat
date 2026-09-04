@@ -25,7 +25,9 @@ export default async function NewListingPage() {
         initial={{
           title: "", cityId: "", categoryId: "", location: "", description: "",
           priceDay: "", priceHour: "", priceWeek: "",
-          depositType: "money", depositAmount: "", quantity: "1", photos: [],
+          depositType: "money", depositAmount: "", quantity: "1",
+          handoverPickup: true, handoverDelivery: false,
+          photos: [],
         }}
       />
     </main>

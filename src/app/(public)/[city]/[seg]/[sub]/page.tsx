@@ -13,7 +13,7 @@ import {
   type Category, type City, type Listing, type Seller,
 } from "@/server/catalog";
 import { extractListingId, listingPath } from "@/lib/catalog/listing-path";
-import { formatDeposit, formatPrice } from "@/lib/catalog/format";
+import { formatDeposit, formatHandover, formatPrice } from "@/lib/catalog/format";
 import { addDaysStr, todayStr } from "@/lib/catalog/dates";
 import type { AvailabilityMap } from "@/lib/catalog/availability";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
@@ -292,6 +292,10 @@ async function ListingPage({
                         ? `Залог ${formatPrice(listing.depositAmount)} — возвращается после возврата вещи в исходном состоянии.`
                         : "Залог — по договорённости с владельцем."}
                 </span>
+              </li>
+              <li className="flex gap-2.5">
+                <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                <span>{formatHandover(listing.handoverPickup, listing.handoverDelivery)}</span>
               </li>
             </ul>
           </section>

@@ -7,6 +7,8 @@ export interface CategorySearchParams {
   price_min?: string;
   price_max?: string;
   deposit?: string;
+  /** Способ получения: `pickup` | `delivery`. Пусто — оба подходят. */
+  handover?: string;
   verified?: string;
   /** Слаг корневого раздела — сужает поиск, не теряя запрос. */
   category?: string;
@@ -48,6 +50,13 @@ function deposit(s: string | undefined): DepositFilter | undefined {
   return DEPOSITS.find((d) => d === s);
 }
 
+const HANDOVERS = ["pickup", "delivery"] as const;
+type HandoverFilter = (typeof HANDOVERS)[number];
+
+function handover(s: string | undefined): HandoverFilter | undefined {
+  return HANDOVERS.find((h) => h === s);
+}
+
 // Поисковый запрос из GET-параметров. Отдельно от parseFilters, т.к. категорийные
 // страницы его не используют, а /search — да.
 export function parseQuery(sp: { q?: string }): string {
@@ -74,6 +83,7 @@ export function parseFilters(sp: CategorySearchParams): ListingFilters {
     priceMin: num(sp.price_min),
     priceMax: num(sp.price_max),
     deposit: deposit(sp.deposit),
+    handover: handover(sp.handover),
     // Тумблер: присутствие «1» включает, всё остальное — выключено. Значение
     // не булево из формы, потому что незажатый checkbox браузер не отправляет.
     verifiedOnly: sp.verified === "1" ? true : undefined,
@@ -87,7 +97,8 @@ export function parseFilters(sp: CategorySearchParams): ListingFilters {
 export function filterParams(sp: CategorySearchParams): URLSearchParams {
   const out = new URLSearchParams();
   for (const key of [
-    "price_min", "price_max", "deposit", "verified", "category", "from", "to", "view", "sort",
+    "price_min", "price_max", "deposit", "handover", "verified", "category",
+    "from", "to", "view", "sort",
   ] as const) {
     const v = sp[key];
     if (v !== undefined && v !== "") out.set(key, v);

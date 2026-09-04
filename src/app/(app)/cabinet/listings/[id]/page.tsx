@@ -40,6 +40,8 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
           depositType: listing.depositType,
           depositAmount: listing.depositAmount?.toString() ?? "",
           quantity: String(listing.quantity),
+          handoverPickup: listing.handoverPickup,
+          handoverDelivery: listing.handoverDelivery,
           photos: listingPhotos(listing),
         }}
       />

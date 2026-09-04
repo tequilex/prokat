@@ -102,6 +102,11 @@ export interface ListingFilters {
   priceMin?: number;
   priceMax?: number;
   deposit?: "money" | "document" | "none";
+  /**
+   * Способ получения. Условие включающее: `pickup` = «поддерживает самовывоз»,
+   * и товар с обоими флагами попадает и в «Самовывоз», и в «Доставку».
+   */
+  handover?: "pickup" | "delivery";
   /** Только объявления продавцов с галочкой (users.is_verified). */
   verifiedOnly?: boolean;
   /** Диапазон дат: позиция должна быть свободна во ВСЕ дни включительно. */
@@ -132,6 +137,8 @@ function filterConditions(f: ListingFilters) {
   if (f.priceMin !== undefined) conds.push(gte(listings.priceDay, f.priceMin));
   if (f.priceMax !== undefined) conds.push(lte(listings.priceDay, f.priceMax));
   if (f.deposit !== undefined) conds.push(eq(listings.depositType, f.deposit));
+  if (f.handover === "pickup") conds.push(eq(listings.handoverPickup, true));
+  if (f.handover === "delivery") conds.push(eq(listings.handoverDelivery, true));
   if (f.verifiedOnly) conds.push(eq(users.isVerified, true));
   if (f.availableFrom && f.availableTo) conds.push(freeInRange(f.availableFrom, f.availableTo));
   return conds;

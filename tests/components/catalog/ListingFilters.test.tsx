@@ -4,6 +4,8 @@ import { ListingFilters } from "@/components/catalog/ListingFilters";
 
 const radio = (value: string) =>
   document.querySelector<HTMLInputElement>(`input[name="deposit"][value="${value}"]`)!;
+const handover = (value: string) =>
+  document.querySelector<HTMLInputElement>(`input[name="handover"][value="${value}"]`)!;
 const verified = () =>
   document.querySelector<HTMLInputElement>('input[name="verified"]')!;
 
@@ -54,6 +56,26 @@ describe("ListingFilters", () => {
   it("не создаёт полей для незаданных параметров", () => {
     render(<ListingFilters basePath="/kazan/tools" state={{}} hidden={{ view: "", from: "" }} />);
     expect(document.querySelectorAll('input[type="hidden"]')).toHaveLength(0);
+  });
+
+  // «Как забрать» долго стоял в разметке отключённым: поля в listings не было,
+  // и блок намеренно ничего не отбирал. Тест держит его рабочим.
+  it("способ получения выбирается и отражает адрес", () => {
+    render(<ListingFilters basePath="/kazan/tools" state={{ handover: "delivery" }} />);
+
+    expect(handover("delivery").checked).toBe(true);
+    expect(handover("pickup").checked).toBe(false);
+  });
+
+  // Единственный фильтр в адресе: иначе ключ формы менял бы соседний фильтр, и
+  // тест проходил бы, даже забудь мы handover в stateKey.
+  it("сбрасывает способ получения, когда он ушёл из адреса", () => {
+    const { rerender } = render(
+      <ListingFilters basePath="/kazan/tools" state={{ handover: "pickup" }} />,
+    );
+    rerender(<ListingFilters basePath="/kazan/tools" state={{}} />);
+
+    expect(handover("pickup").checked).toBe(false);
   });
 
   it("переключение одного фильтра не сбрасывает соседний", () => {

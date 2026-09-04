@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Package, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormBlock } from "@/components/cabinet/FormBlock";
 import { StepProgress } from "@/components/cabinet/StepProgress";
@@ -24,11 +25,48 @@ export interface ListingFormValues {
   depositType: "money" | "document" | "none";
   depositAmount: string;
   quantity: string;
+  handoverPickup: boolean;
+  handoverDelivery: boolean;
   photos: Photo[];
 }
 
 const INPUT = `${field} h-11 px-3`;
 const MAX_PHOTOS = 10;
+
+// Способ получения — галочка видом чипа, как в фильтрах каталога. Чип оттуда не
+// переиспользуется: там это radio с defaultChecked, а здесь способов можно
+// выбрать два, и значение живёт в состоянии формы.
+//
+// Ввод sr-only, поэтому кольцо фокуса рисуется вручную: без него обязательное
+// поле не видно с клавиатуры. Наружное и с отступом — то же, что у чипов
+// фильтров и по той же причине: цвет кольца совпадает с кантом отмеченного
+// чипа, и вплотную его было бы не различить.
+function HandoverChip({
+  label, icon, checked, onChange,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={`inline-flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-border
+        bg-background px-4 text-sm text-muted-foreground transition-colors hover:text-foreground
+        has-[:checked]:border-accent has-[:checked]:bg-selected has-[:checked]:text-selected-foreground
+        has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring
+        has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background`}
+    >
+      <input
+        type="checkbox" checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+      />
+      {icon}
+      {label}
+    </label>
+  );
+}
 
 export function ListingForm({
   mode, listingId, cities, categories, initial, sellerName: initialSellerName = "",
@@ -61,7 +99,8 @@ export function ListingForm({
         v.title.trim().length >= 3 && v.categoryId !== "",
         v.photos.length > 0,
         [v.priceDay, v.priceHour, v.priceWeek].some((p) => Number(p) > 0),
-        v.cityId !== "" && Number(v.quantity) > 0,
+        v.cityId !== "" && Number(v.quantity) > 0
+          && (v.handoverPickup || v.handoverDelivery),
       ].filter(Boolean).length,
     [v],
   );
@@ -205,6 +244,24 @@ export function ListingForm({
       </FormBlock>
 
       <FormBlock title="Где забирают" hint="точный адрес не публикуем">
+        <fieldset className="flex flex-col gap-1 text-sm">
+          <legend className="mb-1">Способ получения (хотя бы один)</legend>
+          <div className="flex flex-wrap gap-2">
+            <HandoverChip
+              label="Самовывоз"
+              icon={<Package className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              checked={v.handoverPickup}
+              onChange={(checked) => set({ handoverPickup: checked })}
+            />
+            <HandoverChip
+              label="Доставка"
+              icon={<Truck className="h-4 w-4 shrink-0" aria-hidden="true" />}
+              checked={v.handoverDelivery}
+              onChange={(checked) => set({ handoverDelivery: checked })}
+            />
+          </div>
+        </fieldset>
+
         <div className="flex flex-wrap gap-2">
           <label className="flex flex-1 flex-col gap-1 text-sm">
             Город

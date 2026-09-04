@@ -7,7 +7,7 @@
 // отдельную шторку (CategorySheet).
 
 import Link from "next/link";
-import { Banknote, FileText, Ban } from "lucide-react";
+import { Banknote, FileText, Ban, Package, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FiltersSheet } from "@/components/catalog/FiltersSheet";
 import { CategorySheet } from "@/components/catalog/CategorySheet";
@@ -17,6 +17,7 @@ export interface FilterState {
   priceMin?: number;
   priceMax?: number;
   deposit?: string;
+  handover?: string;
   verifiedOnly?: boolean;
   sort?: string;
 }
@@ -29,26 +30,35 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Чип-переключатель на radio: без JS, состояние рисуется через peer-checked.
+// Чип-переключатель на radio: без JS, состояние рисуется через has-[:checked].
+// Ввод sr-only, поэтому кольцо фокуса рисуется на обёртке — иначе выбор чипа
+// с клавиатуры ничем не отзывается.
+//
+// Кольцо наружное и с отступом, как у тумблера ниже. Внутреннее здесь не
+// годится: --color-ring и --color-accent — один цвет, а у отмеченного чипа
+// кант уже accent, и кольцо вплотную под ним только утолщало бы кант. В
+// radio-группе с клавиатуры фокус почти всегда стоит именно на отмеченном, то
+// есть в основном сценарии его было бы не видно. Отступ красим токеном:
+// умолчание Tailwind — белый, в тёмной теме он светил бы дырой.
 function Chip({
-  name, value, checked, disabled, icon, children,
+  name, value, checked, icon, children,
 }: {
   name: string;
   value: string;
   checked: boolean;
-  disabled?: boolean;
   icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <label
-      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-xs transition-colors
-        ${disabled
-          ? "cursor-not-allowed border-border bg-background text-muted-foreground opacity-50"
-          : "cursor-pointer border-border bg-background text-muted-foreground hover:text-foreground has-[:checked]:border-accent has-[:checked]:bg-selected has-[:checked]:text-selected-foreground"}`}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-border
+        bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground
+        has-[:checked]:border-accent has-[:checked]:bg-selected has-[:checked]:text-selected-foreground
+        has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring
+        has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background"
     >
       <input
-        type="radio" name={name} value={value} defaultChecked={checked} disabled={disabled}
+        type="radio" name={name} value={value} defaultChecked={checked}
         className="sr-only"
       />
       {icon}
@@ -66,7 +76,8 @@ function FormInner({
   priceBounds?: { min: number; max: number };
 }) {
   const hiddenEntries = Object.entries(hidden ?? {}).filter(([, v]) => v !== "");
-  // «Сбросить» очищает только фильтры этой панели (цена, залог, проверенные).
+  // «Сбросить» очищает только фильтры этой панели (цена, залог, способ
+  // получения, проверенные).
   // Контекст поиска и состояние верхней панели — вид, даты, сортировка —
   // переносятся скрытыми полями: форма GET, и в адрес попадает ровно то, что
   // она отправила. Без них сабмит фильтров сбрасывал бы список обратно в сетку
@@ -80,7 +91,8 @@ function FormInner({
   // useState: и то, и другое читается только при монтировании. Смена ключа
   // заставляет форму перемонтироваться и перечитать состояние из адреса.
   const stateKey = [
-    state.priceMin, state.priceMax, state.deposit, state.verifiedOnly, state.sort,
+    state.priceMin, state.priceMax, state.deposit, state.handover,
+    state.verifiedOnly, state.sort,
   ].join("|");
 
   return (
@@ -130,15 +142,20 @@ function FormInner({
 
       <hr className="border-border" />
 
-      {/* Как забрать: разметка есть, отбирать не по чему — в listings нет поля
-        * способа получения. Блок намеренно неактивен, чтобы не притворяться
-        * рабочим фильтром; причина и цена вопроса — в docs/BACKLOG.md. */}
+      {/* Условие включающее: «Самовывоз» отбирает всё, что поддерживает
+        * самовывоз, и товар с обоими способами попадает под оба чипа.
+        * Чипа «Любой» нет — как и у залога: снимает выбор кнопка «Сбросить». */}
       <fieldset className="border-0 p-0">
         <SectionLabel>Как забрать</SectionLabel>
         <div className="flex flex-wrap gap-2">
-          <Chip name="pickup" value="any" checked disabled>Любой</Chip>
-          <Chip name="pickup" value="self" checked={false} disabled>Самовывоз</Chip>
-          <Chip name="pickup" value="delivery" checked={false} disabled>Доставка</Chip>
+          <Chip name="handover" value="pickup" checked={state.handover === "pickup"}
+            icon={<Package className="h-3 w-3 shrink-0" aria-hidden="true" />}>
+            Самовывоз
+          </Chip>
+          <Chip name="handover" value="delivery" checked={state.handover === "delivery"}
+            icon={<Truck className="h-3 w-3 shrink-0" aria-hidden="true" />}>
+            Доставка
+          </Chip>
         </div>
       </fieldset>
 

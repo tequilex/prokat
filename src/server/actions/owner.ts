@@ -80,6 +80,8 @@ export async function createListing(input: unknown): Promise<ActionResult<{ list
     depositAmount: form.depositType === "money" ? form.depositAmount : null,
     depositType: form.depositType,
     quantity: form.quantity,
+    handoverPickup: form.handoverPickup,
+    handoverDelivery: form.handoverDelivery,
     photosJson: form.photos,
     status: "active",
   });
@@ -109,6 +111,8 @@ export async function updateListing(listingId: string, input: unknown): Promise<
       depositAmount: form.depositType === "money" ? form.depositAmount : null,
       depositType: form.depositType,
       quantity: form.quantity,
+      handoverPickup: form.handoverPickup,
+      handoverDelivery: form.handoverDelivery,
       photosJson: form.photos,
       updatedAt: new Date(),
     })

@@ -144,6 +144,13 @@ export const listings = pgTable("listings", {
   depositAmount: integer("deposit_amount"),
   depositType: depositType("deposit_type").notNull().default("none"),
   quantity: integer("quantity").notNull().default(1),
+  // Способ получения — два независимых флага, а не enum: «и самовывоз, и
+  // доставка» это пересечение двух фактов, и в enum оно стало бы третьим
+  // значением, а с появлением третьего способа — пятым. Дефолт «самовывоз без
+  // доставки» достаётся и всем объявлениям, созданным до этой колонки:
+  // платежей и логистики в сервисе нет, доставку люди обсуждают между собой.
+  handoverPickup: boolean("handover_pickup").notNull().default(true),
+  handoverDelivery: boolean("handover_delivery").notNull().default(false),
   photosJson: jsonb("photos_json").notNull().default([]),  // { url, width, height }[]
   status: listingStatus("status").notNull().default("active"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

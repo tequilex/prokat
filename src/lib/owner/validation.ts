@@ -6,6 +6,11 @@ const priceField = z.union([z.literal(""), z.coerce.number().int().min(0).max(10
   .optional()
   .transform((v) => (v === "" || v === undefined ? null : v));
 
+const handoverField = z.boolean({
+  required_error: "Форма устарела — обновите страницу",
+  invalid_type_error: "Форма устарела — обновите страницу",
+});
+
 export const listingFormSchema = z.object({
   title: z.string().trim().min(3, "Название от 3 символов").max(200),
   categoryId: z.string().min(1, "Выберите категорию"),
@@ -18,6 +23,15 @@ export const listingFormSchema = z.object({
   depositType: z.enum(["money", "document", "none"]),
   depositAmount: priceField,
   quantity: z.coerce.number().int().min(1).max(1000),
+  // Способ получения. Флаги обязательные, без дефолтов: updateListing пишет
+  // .set() всеми полями, и подстановка «самовывоз без доставки» вместо
+  // отсутствующего ключа молча снимала бы владельцу доставку при любой правке
+  // объявления из устаревшей вкладки. Пусть лучше запрос не пройдёт.
+  // Сообщения разные не для красоты: «оба сняты» человек чинит галочкой, а
+  // отсутствующий ключ шлёт бандл, в форме которого этого поля ещё нет, — там
+  // единственное лечение перезагрузить страницу.
+  handoverPickup: handoverField,
+  handoverDelivery: handoverField,
   photos: z.array(z.object({
     url: z.string().url(),
     width: z.number().int().positive(),
@@ -26,6 +40,9 @@ export const listingFormSchema = z.object({
 }).refine((v) => v.priceDay !== null || v.priceHour !== null || v.priceWeek !== null, {
   message: "Укажите хотя бы одну цену",
   path: ["priceDay"],
+}).refine((v) => v.handoverPickup || v.handoverDelivery, {
+  message: "Выберите хотя бы один способ получения",
+  path: ["handoverPickup"],
 });
 
 export type ListingForm = z.output<typeof listingFormSchema>;

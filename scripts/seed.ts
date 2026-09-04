@@ -3,7 +3,7 @@
 // Запуск: pnpm db:seed (нужен DATABASE_URL в .env, миграции применены).
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { and, eq, isNull, like, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, like, sql } from "drizzle-orm";
 import { Pool } from "pg";
 import {
   users, cities, categories, listings, availability,
@@ -13,6 +13,17 @@ import { slugify } from "../src/lib/slugify";
 import { addDaysStr, todayStr } from "../src/lib/catalog/dates";
 import { DEV_SEED_PASSWORD, devSeedPassword } from "../src/lib/auth/password";
 import { COVER_PRESETS } from "../src/lib/covers";
+
+// Способ получения демо-товара по его порядковому номеру. Разнообразие тут не
+// украшение: будь самовывоз у всех, чип «Самовывоз» отбирал бы вообще всё и
+// выглядел бы сломанным — ровно та болезнь, из-за которой фильтр когда-то и
+// отключили. Смещение на единицу разводит доставку с занятыми датами (те
+// считаются от `i % 3 === 0` ниже): иначе всё с доставкой было бы ещё и занято.
+// Каждый шестой остаётся без самовывоза — чтобы вариант «только доставка»
+// встречался на живых страницах. Обоих флагов снятыми не бывает: i % 6 === 1
+// целиком лежит внутри i % 3 === 1.
+const seedHasDelivery = (i: number) => i % 3 === 1;
+const seedHasPickup = (i: number) => i % 6 !== 1;
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -33,6 +44,29 @@ async function main() {
       .returning({ id: users.id });
     if (updated.length > 0) {
       console.log(`Seed owners got a dev password (${updated.length}): ${DEV_SEED_PASSWORD}`);
+    }
+  }
+
+  // Способ получения — тоже до проверки идемпотентности, по той же причине:
+  // колонки появились позже сидов, и на уже засеянной базе выход ниже до
+  // вставки товаров не дойдёт, а фильтр «Как забрать» остался бы без данных.
+  // Правило то же, что при вставке, и трогает только товары сидовых владельцев:
+  // чужие объявления в dev-базе — не наше дело. NB: значения именно
+  // проставляются, а не дополняются, — если владелец сида снимал доставку
+  // руками, следующий запуск сида её вернёт.
+  const seededListings = await db.select({ id: listings.id })
+    .from(listings)
+    .innerJoin(users, eq(listings.ownerUserId, users.id))
+    .where(like(users.email, "%@seed.local"))
+    .orderBy(listings.createdAt, listings.id);
+  for (const [pickup, delivery] of [[true, false], [true, true], [false, true]] as const) {
+    const ids = seededListings
+      .filter((_, i) => seedHasPickup(i) === pickup && seedHasDelivery(i) === delivery)
+      .map((r) => r.id);
+    if (ids.length > 0) {
+      await db.update(listings)
+        .set({ handoverPickup: pickup, handoverDelivery: delivery })
+        .where(inArray(listings.id, ids));
     }
   }
 
@@ -197,6 +231,8 @@ async function main() {
     // Демо-фото: 3 локальные картинки из public/demo/ (циклом), без внешних хостов.
     const base = listingIds.length % 6;
     const photos = [0, 1, 2].map((k) => `/demo/${((base + k) % 6) + 1}.webp`);
+    const handoverDelivery = seedHasDelivery(listingIds.length);
+    const handoverPickup = seedHasPickup(listingIds.length);
     listingIds.push(id);
     await db.insert(listings).values({
       id,
@@ -211,6 +247,8 @@ async function main() {
       depositAmount,
       depositType,
       quantity,
+      handoverPickup,
+      handoverDelivery,
       photosJson: photos.map((url) => ({ url, width: 800, height: 600 })),
       status: "active",
     });

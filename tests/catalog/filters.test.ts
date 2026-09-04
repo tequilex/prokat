@@ -49,6 +49,14 @@ describe("parseFilters()", () => {
     expect(parseFilters({ deposit: "evil" }).deposit).toBeUndefined();
   });
 
+  it("handover только из белого списка", () => {
+    expect(parseFilters({ handover: "pickup" }).handover).toBe("pickup");
+    expect(parseFilters({ handover: "delivery" }).handover).toBe("delivery");
+    expect(parseFilters({ handover: "any" }).handover).toBeUndefined();
+    expect(parseFilters({ handover: "evil" }).handover).toBeUndefined();
+    expect(parseFilters({}).handover).toBeUndefined();
+  });
+
   // Незажатый checkbox браузер не отправляет вовсе, поэтому включает только
   // явная «1»: любое другое значение считаем выключенным.
   it("verified включается только значением 1", () => {
@@ -65,6 +73,12 @@ describe("filterParams()", () => {
       price_min: "300", price_max: "", deposit: "money", verified: "1", sort: "price_asc",
     }).toString();
     expect(qs).toBe("price_min=300&deposit=money&verified=1&sort=price_asc");
+  });
+
+  // Регрессия: ключ, забытый в filterParams, слетает при переходе на вторую
+  // страницу, смене вида и сортировки — фильтр молча перестаёт действовать.
+  it("переносит способ получения", () => {
+    expect(filterParams({ handover: "delivery" }).toString()).toBe("handover=delivery");
   });
 
   // page в ссылки фильтров не попадает: пагинация дописывает его сама, иначе

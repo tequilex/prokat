@@ -89,7 +89,8 @@ export async function SearchResults({
 
   const filterState: FilterState = {
     priceMin: filters.priceMin, priceMax: filters.priceMax,
-    deposit: filters.deposit, verifiedOnly: filters.verifiedOnly, sort: filters.sort,
+    deposit: filters.deposit, handover: filters.handover,
+    verifiedOnly: filters.verifiedOnly, sort: filters.sort,
   };
 
   const page = filters.page ?? 1;
