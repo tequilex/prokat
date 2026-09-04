@@ -9,13 +9,15 @@ import { useCityPreference } from "@/components/layout/CityPreference";
 const INPUT = `${field} h-11 px-3`;
 
 export function ProfileForm({
-  initialName, initialPhone, initialBio, initialCityId, cities,
+  initialName, initialPhone, initialBio, initialCityId, cityGone, cities,
 }: {
   initialName: string;
   initialPhone: string;
   initialBio: string;
   /** Пустая строка — город не указан. */
   initialCityId: string;
+  /** У человека записан город, которого больше нет среди активных. */
+  cityGone?: boolean;
   cities: readonly { id: string; name: string; slug: string }[];
 }) {
   const [name, setName] = useState(initialName);
@@ -69,9 +71,18 @@ export function ProfileForm({
           <option value="">Не указан</option>
           {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <span className="text-xs text-muted-foreground">
-          Виден в вашем публичном профиле и подставляется в новое объявление.
-        </span>
+        {/* Город человека отключили. Молча стереть его при сохранении имени
+          * или телефона нельзя — надо сказать, что именно записывается. */}
+        {cityGone ? (
+          <span className="text-xs text-accent">
+            Город, который вы указывали, больше не доступен. Сохранение запишет
+            «Не указан» — выберите другой, если он есть в списке.
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Виден в вашем публичном профиле и подставляется в новое объявление.
+          </span>
+        )}
       </label>
       <label className="flex flex-col gap-1 text-sm">
         О себе

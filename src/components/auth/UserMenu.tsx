@@ -1,7 +1,7 @@
 "use client";
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { useSignOut } from "@/components/auth/useSignOut";
 import {
   Package, ClipboardList, CalendarDays, Settings, ShieldCheck, LogOut, Palette,
   MessageCircle, Bell, type LucideIcon,
@@ -45,9 +45,11 @@ export const LINKS = [
 }[];
 
 export function UserMenu({ email, name, image, isAdmin = false }: Props) {
-  // signOut делает XHR + redirect, без feedback'а пункт меню «зависает».
-  // useTransition держит pending до окончания навигации.
-  const [isSigningOut, startSignOut] = useTransition();
+  // Общий хук, а не свой signOut: выход обязан ещё и забыть выбранный город,
+  // иначе следующий человек за этим браузером получит чужой. Меню в шапке —
+  // основной способ выйти на десктопе, и своя копия логики здесь означала бы,
+  // что починка мимо него и проходит. Pending так же держится до редиректа.
+  const { pending: isSigningOut, run: runSignOut } = useSignOut();
 
   // Меню раскрывается наведением, а сам аватар — ссылка в кабинет. Поэтому
   // состояние ведём вручную: штатный триггер Radix открывался бы по клику и
@@ -152,10 +154,8 @@ export function UserMenu({ email, name, image, isAdmin = false }: Props) {
           disabled={isSigningOut}
           onSelect={(e) => {
             // preventDefault — иначе Radix закроет меню сразу, вместе с лоадером.
-            // Колбэк асинхронный: React 19 держит pending до конца await, тогда
-            // как синхронный вызов снимал его в тот же кадр.
             e.preventDefault();
-            startSignOut(async () => { await signOut({ callbackUrl: "/" }); });
+            runSignOut();
           }}
         >
           <span className="flex w-6 shrink-0 justify-center">

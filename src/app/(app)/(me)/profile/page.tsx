@@ -51,6 +51,7 @@ export default async function ProfilePage() {
           initialPhone={user.phone ?? ""}
           initialBio={user.bio ?? ""}
           initialCityId={cities.some((c) => c.id === user.cityId) ? user.cityId! : ""}
+          cityGone={Boolean(user.cityId) && !cities.some((c) => c.id === user.cityId)}
           cities={cities.map((c) => ({ id: c.id, name: c.name, slug: c.slug }))}
         />
         <div className="mt-5">

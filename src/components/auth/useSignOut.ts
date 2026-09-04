@@ -16,7 +16,12 @@ export function useSignOut() {
   return {
     pending,
     run: () => start(async () => {
-      await forgetCityPreference();
+      // Best-effort и строго до signOut (тот редиректит и обратно не вернётся).
+      // Без catch отказ экшена — моргнувшая сеть, 500, деплой в эту секунду —
+      // отклонил бы промис до вызова signOut: человек нажал «Выйти», индикатор
+      // погас, ошибки нет, а он остался залогинен. Забытая кука такой цены не
+      // стоит.
+      try { await forgetCityPreference(); } catch { /* выход важнее куки */ }
       await signOut({ callbackUrl: "/" });
     }),
   };

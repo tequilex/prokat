@@ -16,8 +16,12 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 interface CityPreference {
   slug: string | undefined;
-  /** Запомнить выбор на клиенте. Куку пишет server action setCityPreference. */
-  choose: (slug: string | undefined) => void;
+  /**
+   * Запомнить выбор на клиенте. Куку пишет server action setCityPreference.
+   * Принимает и функцию: откат после неудачи обязан посмотреть на текущее
+   * значение, иначе затрёт более свежий выбор.
+   */
+  choose: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 const Context = createContext<CityPreference>({ slug: undefined, choose: () => {} });

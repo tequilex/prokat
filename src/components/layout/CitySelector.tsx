@@ -37,11 +37,16 @@ export function CitySelector({ cities }: { cities: CityOption[] }) {
   //
   // Отказ экшена (город успели отключить) откатывает состояние: иначе шапка
   // показывала бы город, которого нет в куке, и спорила бы со страницами.
+  //
+  // Откат смотрит на текущее значение, а не пишет захваченное замыканием: при
+  // двух кликах подряд A→B ответ по A приходит уже после того, как B записал
+  // куку, и слепой откат вернул бы город, который сейчас неверен.
   const pick = (nextSlug: string) => {
+    const rollback = () => choose((cur) => (cur === nextSlug ? preferred : cur));
     choose(nextSlug);
     setCityPreference(nextSlug)
-      .then((r) => { if (!r.ok) choose(preferred); })
-      .catch(() => choose(preferred));
+      .then((r) => { if (!r.ok) rollback(); })
+      .catch(rollback);
   };
 
   return (
@@ -49,7 +54,13 @@ export function CitySelector({ cities }: { cities: CityOption[] }) {
     // body), из-за чего sticky-хедер пересчитывается и прыгает к началу
     // страницы. См. тот же приём в UserMenu.
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className="inline-flex h-9 min-w-0 items-center gap-1 rounded-sm px-2 text-sm text-foreground transition-colors hoverable md:px-3">
+      {/* aria-label: без него скринридер слышит «Казань, кнопка» и не узнаёт,
+        * что это переключатель города — а на телефоне другого способа его
+        * сменить нет. */}
+      <DropdownMenuTrigger
+        aria-label={`Город: ${current?.name ?? content.nav.city}`}
+        className="inline-flex h-9 min-w-0 items-center gap-1 rounded-sm px-2 text-sm text-foreground transition-colors hoverable md:px-3"
+      >
         {/* На узком экране имя города режется сильнее: рядом стоят знак и
           * поиск, и длинное название («Петропавловск-Камчатский») съело бы
           * поле поиска целиком. Платит за место название, а не бренд. */}
