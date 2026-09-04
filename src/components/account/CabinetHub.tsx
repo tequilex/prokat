@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { BadgeCheck, ChevronRight, LogOut, Settings, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { AvatarViewer } from "@/components/ui/AvatarViewer";
+import { AvatarPickerButton } from "@/components/account/AvatarPicker";
 import { Brackets } from "@/components/brand/Brackets";
 import { ruPlural } from "@/lib/plural";
 import type { AccountNavGroup, AccountNavIcon } from "@/components/account/accountNav";
@@ -18,12 +20,15 @@ export function CabinetHub({
   groups,
   icons,
   signOut,
+  editable = false,
 }: {
   me: AccountIdentity;
   groups: AccountNavGroup[];
   /** Словарь ключ → компонент живёт в AccountShell — сюда приходит готовым. */
   icons: Record<AccountNavIcon, LucideIcon>;
   signOut: { pending: boolean; run: () => void };
+  /** Пробрасывается в шапку — см. комментарий у CabinetHubHeader. */
+  editable?: boolean;
 }) {
   // «Сводка» — это сам хаб: строка «вы находитесь здесь» была бы шумом.
   // Убираем именно её, а не всю группу «сейчас»: рядом в ней живут «Сообщения»,
@@ -34,7 +39,7 @@ export function CabinetHub({
 
   return (
     <div className="flex flex-col gap-4 md:hidden">
-      <CabinetHubHeader me={me} />
+      <CabinetHubHeader me={me} editable={editable} />
 
       {sections.map((group) => (
         <div key={group.title} className="flex flex-col gap-2">
@@ -93,17 +98,43 @@ export function CabinetHub({
 /* Верх хаба: профиль с аватаром, свисающим с обложки, и две плитки с итогами.
  * Отдельным компонентом, потому что его рендерит ещё и превью в выборе
  * обложки (CoverPicker) — уменьшенной копией, тем же кодом. */
-export function CabinetHubHeader({ me }: { me: AccountIdentity }) {
+export function CabinetHubHeader({
+  me,
+  editable = false,
+}: {
+  me: AccountIdentity;
+  /* Живые аватарка и камера — только на настоящей странице. Этот же блок
+   * рендерит уменьшенное превью в выборе обложки: оно aria-hidden и
+   * pointer-events-none, и кнопки там были бы мёртвыми контролами. */
+  editable?: boolean;
+}) {
   return (
     <>
-      {/* Аватар свисает с обложки; кольцо цвета холста отделяет его от фото. */}
+      {/* Аватар свисает с обложки; кольцо цвета холста отделяет его от фото.
+        * Камера — сосед аватарки, а не вложенная в неё кнопка. */}
       <div className="relative -mt-8 flex items-end gap-3">
-        <Avatar
-          src={me.image}
-          name={me.name}
-          size={72}
-          className="shadow-[0_0_0_3px_var(--color-background)]"
-        />
+        {editable ? (
+          <div className="relative shrink-0">
+            <AvatarViewer
+              src={me.image}
+              name={me.name}
+              size={72}
+              className="shadow-[0_0_0_3px_var(--color-background)]"
+            />
+            <AvatarPickerButton
+              image={me.image}
+              name={me.name}
+              className="absolute bottom-0 right-0 z-10"
+            />
+          </div>
+        ) : (
+          <Avatar
+            src={me.image}
+            name={me.name}
+            size={72}
+            className="shadow-[0_0_0_3px_var(--color-background)]"
+          />
+        )}
         <div className="min-w-0 flex-1 pb-1">
           <div className="truncate font-display text-xl font-bold">
             {me.name ?? "Без имени"}

@@ -8,9 +8,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), back: nav.back, push: nav.push }),
 }));
 
-// Кнопка смены обложки тянет server action, а тот — весь стек auth: под jsdom
-// он не собирается, да и тестируем здесь разметку каркаса, а не сохранение.
-vi.mock("@/server/actions/profile", () => ({ updateCover: vi.fn() }));
+// Кнопки смены обложки и аватарки тянут server actions, а те — весь стек auth:
+// под jsdom он не собирается, да и тестируем здесь разметку каркаса, а не
+// сохранение. updateAvatar в моке держится про запас: сегодня тесты до него не
+// доходят (тело окна рисуется только открытым), и его отсутствие ничего не
+// ломает — но тест, который откроет окно, упал бы на undefined.
+vi.mock("@/server/actions/profile", () => ({ updateCover: vi.fn(), updateAvatar: vi.fn() }));
 
 import { AccountShell } from "@/components/account/AccountShell";
 import { RealtimeContext } from "@/components/realtime/context";

@@ -140,9 +140,12 @@ export function AccountShell({
       )}
 
       <div className={`mx-auto w-full max-w-6xl px-4 pb-6 ${identity ? "" : "pt-6"} ${identity && !isHub && !isChat ? "max-md:pt-3" : ""} ${isChat ? "max-md:pb-0" : ""}`}>
-        {identity && <AccountHero me={identity} pendingCount={pendingCount} />}
+        {/* editable — это своя личная зона, поэтому аватарку здесь можно и
+          * открыть, и сменить. Тот же герой в превью выбора обложки рисуется
+          * без этого флага. */}
+        {identity && <AccountHero me={identity} pendingCount={pendingCount} editable />}
         {identity && isHub && (
-          <CabinetHub me={identity} groups={groupsWithLive} icons={ICONS} signOut={signOut} />
+          <CabinetHub me={identity} groups={groupsWithLive} icons={ICONS} signOut={signOut} editable />
         )}
 
         {/* Без identity (админка) разделы на мобайле по-прежнему едут лентой. */}

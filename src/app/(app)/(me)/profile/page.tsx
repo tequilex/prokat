@@ -5,6 +5,7 @@ import { getUserProfile, getCabinetIdentity } from "@/server/me";
 import { getActiveCities } from "@/server/catalog";
 import { countNewRequests } from "@/server/owner";
 import { ProfileForm } from "@/components/me/ProfileForm";
+import { ProfileAvatarField } from "@/components/me/ProfileAvatarField";
 import { ProfileCoverField } from "@/components/me/ProfileCoverField";
 import { ChangePasswordForm } from "@/components/me/ChangePasswordForm";
 
@@ -54,6 +55,10 @@ export default async function ProfilePage() {
           cityGone={Boolean(user.cityId) && !cities.some((c) => c.id === user.cityId)}
           cities={cities.map((c) => ({ id: c.id, name: c.name, slug: c.slug }))}
         />
+        <div className="mt-5">
+          <h3 className="mb-2 text-sm font-medium">Аватарка</h3>
+          <ProfileAvatarField image={user.image} name={user.name} />
+        </div>
         <div className="mt-5">
           <h3 className="mb-2 text-sm font-medium">Обложка профиля</h3>
           <ProfileCoverField me={identity} pendingCount={newCount} />

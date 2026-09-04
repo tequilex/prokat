@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { BadgeCheck, Plus, Settings } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { AvatarViewer } from "@/components/ui/AvatarViewer";
+import { AvatarPickerButton } from "@/components/account/AvatarPicker";
 import { Button } from "@/components/ui/button";
 import { ruPlural } from "@/lib/plural";
 import type { AccountIdentity } from "@/components/account/identity";
@@ -12,19 +14,42 @@ import type { AccountIdentity } from "@/components/account/identity";
 export function AccountHero({
   me,
   pendingCount,
+  editable = false,
 }: {
   me: AccountIdentity;
   pendingCount: number;
+  /* Живые аватарка и камера — только на настоящей странице. Этого же героя
+   * рендерит уменьшенное превью в выборе обложки: оно aria-hidden и
+   * pointer-events-none, и кнопки там были бы мёртвыми контролами. */
+  editable?: boolean;
 }) {
   return (
     <div className="relative -mt-14 hidden items-end gap-5 md:flex">
-      {/* Кольцо цвета холста отделяет аватар от фотографии. */}
-      <Avatar
-        src={me.image}
-        name={me.name}
-        size={96}
-        className="shadow-[0_0_0_4px_var(--color-background)]"
-      />
+      {/* Кольцо цвета холста отделяет аватар от фотографии. Кнопка-камера —
+        * сосед аватарки, а не вложенная в неё: кнопка внутри кнопки это
+        * невалидная разметка и предупреждение гидратации. */}
+      {editable ? (
+        <div className="relative shrink-0">
+          <AvatarViewer
+            src={me.image}
+            name={me.name}
+            size={96}
+            className="shadow-[0_0_0_4px_var(--color-background)]"
+          />
+          <AvatarPickerButton
+            image={me.image}
+            name={me.name}
+            className="absolute bottom-0 right-0 z-10"
+          />
+        </div>
+      ) : (
+        <Avatar
+          src={me.image}
+          name={me.name}
+          size={96}
+          className="shadow-[0_0_0_4px_var(--color-background)]"
+        />
+      )}
 
       <div className="min-w-0 flex-1 pb-1.5">
         <div className="flex flex-wrap items-center gap-2.5">

@@ -11,7 +11,7 @@ import {
 } from "@/server/catalog";
 import { buildAvailabilityByListing } from "@/lib/catalog/availability";
 import { todayStr, addDaysStr, formatMonthYearGen } from "@/lib/catalog/dates";
-import { Avatar } from "@/components/ui/Avatar";
+import { AvatarViewer } from "@/components/ui/AvatarViewer";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
 import { ListingCard } from "@/components/catalog/ListingCard";
 import { ProfileCover } from "@/components/account/ProfileCover";
@@ -79,10 +79,10 @@ export default async function SellerProfilePage({ params }: Props) {
           {/* Размер аватара у Avatar задан пропом (инлайновые width/height),
             * поэтому на брейкпоинте не масштабируется классом — рендерим два. */}
           <span className="md:hidden">
-            <Avatar src={seller.image} name={seller.name} size={72} className="shadow-[0_0_0_3px_var(--color-background)]" />
+            <AvatarViewer src={seller.image} name={seller.name} size={72} className="shadow-[0_0_0_3px_var(--color-background)]" />
           </span>
           <span className="hidden md:block">
-            <Avatar src={seller.image} name={seller.name} size={120} className="shadow-[0_0_0_4px_var(--color-background)]" />
+            <AvatarViewer src={seller.image} name={seller.name} size={120} className="shadow-[0_0_0_4px_var(--color-background)]" />
           </span>
           <div className="min-w-0 flex-1 md:pb-1.5">
             <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-display text-2xl font-extrabold tracking-tight md:text-[32px] md:leading-tight">

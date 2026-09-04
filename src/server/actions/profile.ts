@@ -102,3 +102,53 @@ export async function updateCover(url: string | null): Promise<ActionResult> {
   revalidatePath(`/u/${userId}`);
   return { ok: true, data: undefined };
 }
+
+/* Аватарка. Адрес проверяется тем же способом, что и обложка: он обязан быть
+ * строкой из uploads, принадлежащей этому же человеку. Пресетов здесь нет —
+ * либо своя загрузка, либо null.
+ *
+ * Кадрирование делает браузер, сюда приезжает уже квадрат: /api/upload с его
+ * `fit: "inside"` картинку меньше 2560 не трогает. См. docs/media.md.
+ *
+ * Вход проверяется вручную, а не zod'ом, в отличие от updateProfile: значение
+ * скалярное, схема свелась бы к тому же typeof, а расхождение с соседним
+ * updateCover читалось бы как «здесь что-то иначе».
+ *
+ * null возвращает буквенный кружок. Для тех, кто вошёл через Яндекс или VK,
+ * это необратимо: адаптер Auth.js пишет профиль только при создании
+ * пользователя и на повторных входах image не обновляет — поэтому интерфейс
+ * предупреждает об этом до нажатия. */
+export async function updateAvatar(url: string | null): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "auth_required" };
+  const userId = session.user.id;
+  if (session.user.bannedAt) return { ok: false, error: "auth_required" };
+
+  if (url !== null && typeof url !== "string") return { ok: false, error: "unknown_image" };
+
+  if (url !== null) {
+    const rows = await getDb()
+      .select({ id: uploads.id })
+      .from(uploads)
+      .where(and(eq(uploads.publicUrl, url), eq(uploads.userId, userId)))
+      .limit(1);
+    if (rows.length === 0) return { ok: false, error: "unknown_image" };
+  }
+
+  await getDb().update(users).set({ image: url }).where(eq(users.id, userId));
+
+  // Те же layout'ы, что у обложки, плюс переписка: в /chat аватарки в списке и
+  // в шапке диалога — собеседника, но общий каркас личной зоны рисует и героя
+  // со своей.
+  //
+  // Полного покрытия тут нет и быть не может: своя аватарка висит ещё на
+  // карточках объявлений и в блоке владельца на страницах товара. Все они
+  // force-dynamic, так что этот вызов чистит фактически клиентский Router Cache
+  // того, кто менял, — остальные получат свежую на следующем запросе и так.
+  revalidatePath("/cabinet", "layout");
+  revalidatePath("/profile", "layout");
+  revalidatePath("/requests", "layout");
+  revalidatePath("/chat", "layout");
+  revalidatePath(`/u/${userId}`);
+  return { ok: true, data: undefined };
+}
