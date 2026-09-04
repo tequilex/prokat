@@ -1,12 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BadgeCheck, ImageOff } from "lucide-react";
+import { ArrowLeftRight, BadgeCheck, ImageOff, MapPin, Truck } from "lucide-react";
 import { listingPhotos, type Listing, type ListingWithOwner } from "@/server/catalog";
-import { formatPrice } from "@/lib/catalog/format";
+import { formatDeposit, formatHandoverShort, formatPrice } from "@/lib/catalog/format";
 import { listingPath } from "@/lib/catalog/listing-path";
 import { freeQty, type AvailabilityMap } from "@/lib/catalog/availability";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/button";
 
 function priceParts(l: Listing): { amount: string; unit: string } | null {
   if (l.priceDay !== null) return { amount: formatPrice(l.priceDay), unit: "в сутки" };
@@ -15,39 +14,26 @@ function priceParts(l: Listing): { amount: string; unit: string } | null {
   return null;
 }
 
-// Значение для строки «Залог», а не готовая фраза: слева уже стоит подпись.
-function depositValue(l: Listing): string {
-  if (l.depositType === "none") return "нет";
-  if (l.depositType === "document") return "документ";
-  return l.depositAmount ? formatPrice(l.depositAmount) : "есть";
-}
-
-// Подписи держим короткими: в две колонки на мобайле карточке достаётся около
-// 140px под содержимое, и длинная подпись со значением в одну строку не встают.
-function SpecRow({
-  label, value, tone, inline, className = "",
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-  /** Списком характеристики идут строкой подряд, а не колонкой с выключкой. */
-  inline?: boolean;
-  className?: string;
-}) {
-  return (
-    <div className={`${inline
-      ? "flex items-baseline gap-1.5"
-      : "flex items-baseline justify-between gap-2 sm:gap-3"} ${className}`}>
-      <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className={`min-w-0 truncate ${inline ? "" : "text-right"} ${tone ?? "text-foreground"}`}>
-        {value}
-      </dd>
-    </div>
-  );
+// Словарь дизайн-пакета: обмен — оба способа, грузовик — доставка, булавка —
+// самовывоз. Булавка же достаётся случаю «ни одного способа»: место встречи
+// всё равно обсуждают, и это ближе к правде, чем грузовик или пустота.
+//
+// NB: в блоке брони на странице позиции у того же свойства другой набор
+// значков (Truck / Package / Handshake). Расхождение известно и осознано —
+// здесь набор из макета карточки.
+function HandoverIcon({ pickup, delivery }: { pickup: boolean; delivery: boolean }) {
+  const Icon = pickup && delivery ? ArrowLeftRight : delivery ? Truck : MapPin;
+  return <Icon className="h-[15px] w-[15px] shrink-0 text-accent" aria-hidden="true" />;
 }
 
 // Единая карточка товара для всего проекта (главная, каталог, поиск, профиль).
-// Фото с плашками занятости и продавца, цена, характеристики, кнопка.
+// Фото с плашками занятости и продавца, название, цена с залогом одной строкой
+// и подвал со способом получения.
+//
+// Кликается целиком: ссылка названия растянута псевдоэлементом на всю карточку
+// (`after:inset-0`), поэтому отдельной кнопки «Подробнее» больше нет, а фото —
+// не ссылка: два якоря на один адрес дали бы лишнюю остановку табуляции.
+// Плата за приём — текст внутри карточки не выделяется мышью.
 //
 // availabilityMap и from обязательны: занятость — половина смысла карточки,
 // и необязательный проп молча вырождал бы её на страницах, где загрузку
@@ -82,14 +68,24 @@ export function ListingCard({
   const tone = busy ? "text-muted-foreground" : partial ? "text-accent" : "text-primary";
   const dot = busy ? "bg-muted-foreground" : partial ? "bg-accent" : "bg-primary";
 
+  const handover = formatHandoverShort(listing.handoverPickup, listing.handoverDelivery);
+  // Приглушение второй ступенью только в тёмной теме. В светлой
+  // --color-muted-fg уже #5F6165 и подобран ровно под контраст 4.5 — шаг ниже
+  // увёл бы город под норму.
+  const placeTone = "dark:text-muted-foreground/70";
+
   return (
     // Скошенные углы — подпись выдачи, поэтому они перебивают радиус .surface:
     // четыре длинные записи (border-top-left-radius и соседи) ложатся поверх
     // короткой border-radius из компонентного слоя. overflow-hidden обрезает по
     // ним фотографию — она верх карточки и повторяет её форму.
+    //
+    // relative — контейнер для растянутой ссылки названия; group — чтобы фото
+    // увеличивалось при наведении на любую точку карточки, а не только на сам
+    // снимок (он больше не ссылка и своего ховера не имеет).
     <article
-      className={`surface overflow-hidden rounded-tl-[26px] rounded-tr-[8px] rounded-bl-[8px] rounded-br-[26px] ${
-        list ? "flex flex-row" : "flex flex-col"
+      className={`surface group relative overflow-hidden rounded-tl-[26px] rounded-tr-[8px] rounded-bl-[8px] rounded-br-[26px] ${
+        list ? "flex min-h-[96px] flex-row sm:min-h-[150px]" : "flex flex-col"
       }`}
     >
       {/* Обёртка, а не ссылка: плашка продавца ведёт в его профиль, а вложенная
@@ -100,9 +96,8 @@ export function ListingCard({
           * делать нельзя: при заданном aspect-[4/3] высота начинает определять
           * ШИРИНУ, и фото вылезает из колонки поверх текста. Поэтому оно
           * absolute и растягивается по обёртке, а пропорция снимается. */}
-        <Link
-          href={href as never}
-          className={`group block overflow-hidden bg-muted ${
+        <div
+          className={`block overflow-hidden bg-muted ${
             list ? "absolute inset-0" : "relative aspect-[4/3]"
           }`}
         >
@@ -120,7 +115,7 @@ export function ListingCard({
               <span className="sr-only">Без фото</span>
             </span>
           )}
-        </Link>
+        </div>
 
         {/* Плашки лежат на фотографии, поэтому .glass-photo: она тёмная в обеих
           * темах — снимок о теме интерфейса не знает.
@@ -135,10 +130,15 @@ export function ListingCard({
         </span>
 
         {/* max-w и truncate: длинное имя режется многоточием, а не распирает
-          * плашку за край фотографии. */}
+          * плашку за край фотографии.
+          *
+          * z-10 поднимает плашку над растянутой ссылкой названия — без него
+          * профиль продавца стал бы некликабельным. Именно z-10, без relative:
+          * плашка absolute, а relative в Tailwind объявлен позже при той же
+          * специфичности и уронил бы её из фото в поток. */}
         <Link
           href={`/u/${listing.ownerUserId}` as never}
-          className="glass-photo absolute bottom-2 right-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-sm py-0.5 pl-0.5 pr-2 transition-opacity hover:opacity-90 sm:bottom-2.5 sm:right-2.5 sm:max-w-[calc(100%-1.25rem)] sm:gap-1.5 sm:py-1 sm:pl-1 sm:pr-2.5"
+          className="glass-photo absolute bottom-2 right-2 z-10 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-sm py-0.5 pl-0.5 pr-2 transition-opacity hover:opacity-90 sm:bottom-2.5 sm:right-2.5 sm:max-w-[calc(100%-1.25rem)] sm:gap-1.5 sm:py-1 sm:pl-1 sm:pr-2.5"
         >
           {/* Размер аватара — инлайновые width/height от пропа, классом на
             * брейкпоинте его не ужать; поэтому два, как на витрине продавца.
@@ -163,63 +163,69 @@ export function ListingCard({
         </Link>
       </div>
 
-      <div className={`flex min-w-0 flex-1 p-3 ${
-        list
-          ? "flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
-          : "flex-col gap-2.5 sm:gap-3 sm:p-4"
-      }`}>
-        {/* display:contents в сетке — обёртка не участвует в раскладке, и
-          * колонка остаётся ровно такой, какой была. В списке она становится
-          * настоящей колонкой, чтобы кнопка встала рядом, а не под ней. */}
-        <div className={list ? "flex min-w-0 flex-1 flex-col gap-2" : "contents"}>
-        <div>
-          {/* Одна строка с многоточием: карточки в ряду обязаны быть одной
-            * высоты, иначе вторая строка у одного названия сдвигает вниз цену и
-            * характеристики только в этой колонке. */}
-          <Link href={href as never} className="block min-w-0">
-            <h3 className="truncate text-sm font-semibold leading-snug text-foreground hover:underline sm:text-base">
-              {listing.title}
-            </h3>
-          </Link>
+      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
+        {/* Одна строка с многоточием: карточки в ряду обязаны быть одной
+          * высоты, иначе вторая строка у одного названия сдвигает вниз цену
+          * только в этой колонке.
+          *
+          * after:inset-0 растягивает эту ссылку на всю карточку. Подсветка
+          * названия висит на group от <article>, а не на hover самой ссылки:
+          * ховер от псевдоэлемента до h3 не доходит — тот потомок, а не
+          * предок. */}
+        <Link href={href as never} className="block min-w-0 after:absolute after:inset-0">
+          <h3 className="truncate text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-accent sm:text-base">
+            {listing.title}
+          </h3>
+        </Link>
+
+        {/* Цена и залог одной строкой: «500 ₽ в сутки · залог 3 000 ₽».
+          * Разделитель — отдельный span, а не часть текста: на узкой карточке
+          * строка переносится по нему, а не рвётся посреди фразы. */}
+        <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
           {price && (
-            <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
-              <span className="font-mark text-xl font-bold sm:text-2xl">{price.amount}</span>
+            <>
+              <span className="font-mark text-lg font-bold tracking-mark sm:text-xl">
+                {price.amount}
+              </span>
               <span className="text-xs text-muted-foreground sm:text-sm">{price.unit}</span>
-            </p>
+              <span aria-hidden="true" className="text-xs text-muted-foreground sm:text-sm">·</span>
+            </>
           )}
-        </div>
+          <span className="text-xs text-muted-foreground sm:text-sm">
+            {formatDeposit(listing.depositType, listing.depositAmount)}
+          </span>
+        </p>
 
-        <dl
-          className={`border-t border-border text-xs sm:text-sm ${
-            list
-              ? "flex flex-wrap gap-x-4 gap-y-1 pt-2"
-              : "flex flex-col gap-1.5 pt-2.5 sm:pt-3"
-          }`}
-        >
-          {/* Списком на узком экране остаётся только залог — он решает, брать
-            * вещь или нет, а три пары в оставшиеся ~200px не встают. С sm
-            * ширины хватает, и показываем всё.
-            * В значении голое число: «Количество — 3» читается как соседние
-            * «Залог — 3 000 ₽» и «Город — Казань». */}
-          <SpecRow label="Залог" value={depositValue(listing)} inline={list} />
-          <SpecRow
-            label="Количество" value={String(listing.quantity)} inline={list}
-            className={list ? "hidden sm:flex" : ""}
-          />
-          <SpecRow
-            label="Город" value={cityName} inline={list}
-            className={list ? "hidden sm:flex" : ""}
-          />
-        </dl>
-        </div>
-
-        {/* Сеткой mt-auto держит кнопки на одной линии при названиях разной
-          * длины. Списком прижимать не к чему — кнопка стоит справа. */}
-        <Button asChild size={list ? "sm" : "default"}
-          className={list ? "w-full shrink-0 sm:w-fit sm:px-6" : "mt-auto w-full"}>
-          <Link href={href as never}>Подробнее</Link>
-        </Button>
+        {/* Списком подвала нет — карточка горизонтальна, и волосяная линия
+          * через неё делила бы не зоны, а колонки. Поэтому способ получения
+          * идёт отдельной строкой под ценой: в саму строку цены он не встаёт,
+          * та выключена по базовой линии и иконка села бы на неё криво. */}
+        {list && (
+          <p className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+            <HandoverIcon
+              pickup={listing.handoverPickup}
+              delivery={listing.handoverDelivery}
+            />
+            <span className="min-w-0 truncate">{handover}</span>
+            <span className={`shrink-0 ${placeTone}`}>· {cityName}</span>
+          </p>
+        )}
       </div>
+
+      {/* Подвал сеткой: способ получения слева, город справа. Город виден и на
+        * телефоне — он короткий, и когда рядом не помещается «Самовывоз или
+        * доставка», обрезается многоточием именно способ получения: он длиннее
+        * и переживает обрезку понятнее, чем название города. */}
+      {!list && (
+        <div className="flex items-center gap-2 border-t border-border px-3 py-3 text-xs text-muted-foreground sm:px-4 sm:text-sm">
+          <HandoverIcon
+            pickup={listing.handoverPickup}
+            delivery={listing.handoverDelivery}
+          />
+          <span className="min-w-0 truncate">{handover}</span>
+          <span className={`ml-auto shrink-0 pl-2 ${placeTone}`}>{cityName}</span>
+        </div>
+      )}
     </article>
   );
 }

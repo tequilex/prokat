@@ -21,7 +21,8 @@ import {
 import { unavailableDates, type DayLoad } from "@/lib/catalog/availability";
 import { field } from "@/components/ui/field";
 import { formatDayMonth } from "@/lib/catalog/dates";
-import { formatPrice } from "@/lib/catalog/format";
+import { formatHandover, formatPrice } from "@/lib/catalog/format";
+import { Handshake, Package, Truck } from "lucide-react";
 
 export interface BookingWidgetProps {
   listingId: string;
@@ -38,11 +39,25 @@ export interface BookingWidgetProps {
   priceWeek: number | null;
   priceHour: number | null;
   depositLabel: string;
+  // Флагами, а не готовой строкой: от них зависит ещё и иконка, а depositLabel
+  // рядом показывает, чем кончается «отдадим строку» — его тут разбирают
+  // регуляркой обратно.
+  handoverPickup: boolean;
+  handoverDelivery: boolean;
   sellerName: string;
   sellerHref: string;
   sellerLocation: string | null;
   isAuthed: boolean;
   authProps: AuthPanelProps;
+}
+
+// Грузовик берётся, как только доставка есть: она и есть отличие от обычного
+// «приезжайте забирать». Коробка — когда способ один и он самовывоз. Ни одного
+// способа — рукопожатие: «по договорённости» коробкой не подписать, это было бы
+// прямой неправдой.
+function HandoverIcon({ pickup, delivery }: { pickup: boolean; delivery: boolean }) {
+  const Icon = delivery ? Truck : pickup ? Package : Handshake;
+  return <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />;
 }
 
 export function BookingWidget(props: BookingWidgetProps) {
@@ -223,6 +238,23 @@ export function BookingWidget(props: BookingWidgetProps) {
           </div>
         </div>
       )}
+
+      {/* Способ получения — своим блоком под виджетом, как и цены: это свойство
+        * самой вещи, а не параметр брони, и в ряд плиток он не встаёт — там
+        * flex-1 без min-w-0, и текстовое значение на узком экране распёрло бы
+        * ряд до горизонтального скролла.
+        * Значение не приглушено: способ получения решает, подойдёт ли вещь
+        * вообще. Иконка идёт от флагов, по общему словарю проекта — коробка
+        * самовывоз, грузовик доставка (те же в фильтрах и в форме). */}
+      <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3 text-sm">
+        <span className="text-muted-foreground">Получение</span>
+        <span className="flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
+          <HandoverIcon pickup={props.handoverPickup} delivery={props.handoverDelivery} />
+          <span className="truncate">
+            {formatHandover(props.handoverPickup, props.handoverDelivery)}
+          </span>
+        </span>
+      </div>
 
       {/* Mobile: прилипшая к низу кнопка */}
       {/* Верхний ярус той же карточки, что и таб-бар: полоса садится вплотную на
