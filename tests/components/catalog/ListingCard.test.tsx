@@ -45,11 +45,20 @@ function card(over: Record<string, unknown> = {}, props: Record<string, unknown>
 }
 
 describe("ListingCard", () => {
-  it("показывает цену и залог одной строкой", () => {
+  // Сумма с единицей — первой строкой, залог — второй. Разведены намеренно: в
+  // одну строку они не влезают на реальных числах, а перенос делал карточки в
+  // ряду разной высоты.
+  it("показывает сумму с единицей, а залог — строкой ниже", () => {
     render(card());
     expect(screen.getByText("500 ₽")).toBeInTheDocument();
     expect(screen.getByText("в сутки")).toBeInTheDocument();
     expect(screen.getByText("залог 3 000 ₽")).toBeInTheDocument();
+  });
+
+  it("без цены остаётся один залог", () => {
+    render(card({ priceDay: null }));
+    expect(screen.getByText("залог 3 000 ₽")).toBeInTheDocument();
+    expect(screen.queryByText(/в сутки/)).toBeNull();
   });
 
   // Три служебные строки и кнопка съедали высоту, ничего не решая: остаток

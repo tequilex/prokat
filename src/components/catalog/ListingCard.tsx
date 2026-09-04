@@ -169,22 +169,25 @@ export function ListingCard({
           </h3>
         </Link>
 
-        {/* Цена и залог одной строкой: «500 ₽ в сутки · залог 3 000 ₽».
-          * Разделитель — отдельный span, а не часть текста: на узкой карточке
-          * строка переносится по нему, а не рвётся посреди фразы. */}
-        <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
-          {price && (
-            <>
-              <span className="font-mark text-lg font-bold tracking-mark sm:text-xl">
-                {price.amount}
-              </span>
-              <span className="text-xs text-muted-foreground sm:text-sm">{price.unit}</span>
-              <span aria-hidden="true" className="text-xs text-muted-foreground sm:text-sm">·</span>
-            </>
-          )}
-          <span className="text-xs text-muted-foreground sm:text-sm">
-            {formatDeposit(listing.depositType, listing.depositAmount)}
-          </span>
+        {/* Две строки всегда: сумма с единицей, под ней залог. Одной строкой
+          * они не помещаются на реальных числах — «3 334 ₽ в сутки · залог
+          * 3 242 ₽» переносило залог, и высота карточек в ряду начинала
+          * зависеть от длины суммы. Единица остаётся при сумме: «в сутки»
+          * относится к ней, а залог — отдельный факт.
+          * Строка суммы не переносится (flex без wrap), длинная единица
+          * обрезается многоточием. */}
+        {price && (
+          <p className="mt-1 flex items-baseline gap-x-1.5">
+            <span className="shrink-0 font-mark text-lg font-bold leading-snug tracking-mark sm:text-xl">
+              {price.amount}
+            </span>
+            <span className="truncate text-xs text-muted-foreground sm:text-sm">
+              {price.unit}
+            </span>
+          </p>
+        )}
+        <p className="truncate text-xs text-muted-foreground sm:text-sm">
+          {formatDeposit(listing.depositType, listing.depositAmount)}
         </p>
 
         {/* Списком подвала нет — карточка горизонтальна, и волосяная линия
