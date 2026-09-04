@@ -15,10 +15,16 @@ function isProtected(pathname: string): boolean {
 }
 
 // Edge middleware без обращения к БД. Делает два дела:
-// 1) Прокидывает x-pathname в RSC (для layout'ов, которым нужен текущий URL).
-// 2) Проверяет ПРИСУТСТВИЕ session-cookie на protected-роутах — это убирает
+// 1) Проверяет ПРИСУТСТВИЕ session-cookie на protected-роутах — это убирает
 //    вспышку UI при анонимном заходе в кабинет. Валидность cookie проверит
 //    page-level requireAuthState() (defence-in-depth для протухших сессий).
+// 2) Прокидывает в RSC флаг x-has-session (зачем — у самой строки ниже).
+//
+// Адрес страницы сюда намеренно НЕ прокидывается, хотя приём известный: дать
+// его через заголовок можно, а пользы корневому layout'у от этого нет — он при
+// клиентской навигации не перерисовывается, и прочитанный им путь остаётся от
+// первой загрузки. Текущий адрес берут клиентские компоненты хуками, см.
+// src/components/layout/use-current-city.ts.
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
@@ -30,7 +36,6 @@ export function middleware(req: NextRequest) {
   }
 
   const headers = new Headers(req.headers);
-  headers.set("x-pathname", pathname);
   // Корневой layout по этому флагу решает, поднимать ли сокет. Наличие cookie
   // не означает живую сессию — валидность проверит сам сокет на рукопожатии;
   // здесь важно лишь не открывать соединение анонимам. Альтернативой был бы
