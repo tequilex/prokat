@@ -14,6 +14,9 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+      # Нужна Caddy для img-src в CSP: часть картинок отдаётся прямыми <img>
+      # мимо next/image, то есть прямо с домена хранилища.
+      - STORAGE_PUBLIC_BASE=${STORAGE_PUBLIC_BASE}
     depends_on: [app, realtime]
 
   app:

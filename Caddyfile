@@ -38,6 +38,32 @@ www.{$DOMAIN} {
 	}
 	header @static Cache-Control "public, max-age=31536000, immutable"
 
+	# CSP — второй контур вокруг пользовательского контента. Инлайн-скрипт он не
+	# остановит: 'unsafe-inline' обязателен, пока Next вставляет RSC-данные
+	# инлайном, а nonce требует генерации в middleware (отложено, см.
+	# docs/BACKLOG.md). Зато режет всё типовое продолжение такой инъекции —
+	# подгрузку чужого скрипта, <base>, <object>, форму сбора паролей и вынос
+	# данных фетчем на чужой хост.
+	#
+	# Внешние источники взяты из кода, а не на глаз:
+	#   mc.yandex.ru — tag.js и noscript-пиксель Метрики; frame-src нужен её
+	#     скрытому iframe. Метрика поднимается только в production с заданным
+	#     YANDEX_METRIKA_ID, но заголовок общий.
+	#   wss://{$DOMAIN} — сокет realtime, это handle /ws выше.
+	#   {$STORAGE_PUBLIC_BASE} — плитка «своё фото» в выборе обложки
+	#     (CoverPicker) рисуется прямым <img> с домена хранилища. Всё остальное
+	#     — фото объявлений, аватарки, сама обложка — идёт через next/image, то
+	#     есть со своего домена. Переменная приходит из docker-compose; незаданной
+	#     она на проде не бывает (без хранилища не работает и загрузка), а если
+	#     всё же пуста — политика становится строже: остаётся невалидный источник
+	#     `/`, который браузер отбрасывает.
+	#     Записей две намеренно: путь без завершающего слэша CSP сверяет
+	#     точно, а не префиксом, поэтому один только `.../bucket` разрешил бы
+	#     ровно этот адрес и ни одной картинки внутри. Вариант со слэшем даёт
+	#     префикс; вариант без — страхует значение, уже пришедшее со слэшем.
+	# Одной строкой намеренно: перенос внутри значения заголовка недопустим.
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mc.yandex.ru {$STORAGE_PUBLIC_BASE} {$STORAGE_PUBLIC_BASE}/; connect-src 'self' wss://{$DOMAIN} https://mc.yandex.ru; frame-src https://mc.yandex.ru; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options nosniff

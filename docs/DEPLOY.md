@@ -268,10 +268,10 @@ YANDEX_METRIKA_ID=          # опционально, пусто = метрик�
 chmod 600 .env
 ```
 
-> `STORAGE_PUBLIC_BASE` используется дважды: в рантайме (ссылки на картинки)
-> и **на этапе сборки** (allow-list хостов next/image). docker-compose
-> прокидывает его в билд как build arg автоматически — просто заполни `.env`
-> до первого `docker compose build`.
+> `STORAGE_PUBLIC_BASE` читают трое: рантайм, сборка и `caddy` — подробности в
+> [environment.md](environment.md). docker-compose прокидывает его во все три
+> места сам, от тебя нужно только заполнить `.env` до первого
+> `docker compose build`.
 
 ### 7.2. Первый запуск
 
@@ -300,6 +300,9 @@ docker compose logs caddy | grep -i "certificate obtained"
 ```bash
 curl -I https://example.ru
 # HTTP/2 200 + strict-transport-security + x-frame-options: DENY
+# content-security-policy: в img-src обязан стоять адрес из STORAGE_PUBLIC_BASE,
+# в connect-src — wss://example.ru. Одинокий `/` вместо адреса = переменная не
+# доехала до контейнера caddy.
 ```
 
 В браузере (**в инкогнито** — обычная вкладка может держать кеш от локального
@@ -314,6 +317,10 @@ dev-стека и сыпать "Failed to find Server Action"):
   в другом браузере перестаёт работать
 - `@node-rs/argon2` — нативный модуль: убедиться, что контейнер стартует и
   регистрация внутри него проходит (трассировка standalone-сборки)
+- Консоль браузера чиста от `Refused to load` / `Refused to connect` — это CSP.
+  Пройти главную, карточку объявления, чат (сокет) и выбор обложки в кабинете:
+  первые три задевают Метрику и `wss://`, последний — единственную картинку,
+  которая грузится прямо с домена хранилища, мимо next/image
 
 ## 8. Post-deploy ручные шаги
 
@@ -403,9 +410,11 @@ docker compose build app && docker compose up -d app
 # app и наоборот, потому что общаются они только через базу.
 docker compose build realtime && docker compose up -d realtime
 
-# Caddyfile примонтирован файлом: смена его содержимого сама по себе контейнер
-# не пересоздаёт, а маршруты /ws появились именно там.
-docker compose restart caddy
+# Caddyfile примонтирован файлом, поэтому compose видит сервис неизменным и сам
+# по себе контейнер не трогает — отсюда --force-recreate. Просто restart тоже не
+# годится: он поднимает контейнер со старым окружением, а переменные (например
+# STORAGE_PUBLIC_BASE для CSP) фиксируются при создании.
+docker compose up -d --force-recreate caddy
 ```
 
 Миграции применятся сами при старте контейнера `app`.
@@ -430,6 +439,7 @@ curl -sS https://example.ru/realtime-health   # {"ok":true,...}
 
 ```bash
 docker compose up -d --force-recreate app realtime
+# STORAGE_PUBLIC_BASE читает ещё и caddy (img-src в CSP) — тогда и его.
 ```
 
 ### Сиды на проде
@@ -472,7 +482,8 @@ exist` — app после сброса не поднялся и миграции
 `docker compose ps` и логи, либо накатить руками тем же способом, что сид
 (`npx tsx scripts/migrate.ts` с тем же `DATABASE_URL`).
 
-Если менялся `STORAGE_PUBLIC_BASE` — нужен ещё и rebuild (он запечён в билд).
+Если менялся `STORAGE_PUBLIC_BASE` — нужен ещё и rebuild (он запечён в билд) и
+пересоздание `caddy` (адрес стоит в `img-src` политики CSP).
 
 ### Логи
 
@@ -497,7 +508,7 @@ docker compose logs backup --tail=50
 | Upload фото → 500, в логах `sharp ... ERR_DLOPEN_FAILED libvips` | Версия sharp в package.json ≠ версии, которую Next несёт как optional dep → standalone-трейс не кладёт libvips | Держать sharp той же minor-версии, что у Next (см. `pnpm why sharp`); `.npmrc` с `node-linker=hoisted` — в репо |
 | Картинка `/_next/image?url=...` → 400, хотя прямая ссылка на файл открывается | `STORAGE_PUBLIC_BASE` не был доступен при сборке → S3-хост не в remotePatterns | Заполнить `.env` до сборки; compose прокидывает build arg сам |
 | `app` контейнер `unhealthy`, но сайт работает | Next standalone биндился на `$HOSTNAME` (= container ID), healthcheck по localhost не проходил | Исправлено: `ENV HOSTNAME=0.0.0.0` в Dockerfile |
-| Поменял `.env`, но ничего не изменилось | `restart` не перечитывает env_file | `up -d --force-recreate app realtime` |
+| Поменял `.env`, но ничего не изменилось | `restart` не перечитывает env_file | `up -d --force-recreate app realtime`; для `STORAGE_PUBLIC_BASE` ещё и `caddy` |
 | `acme: error` в Caddy | DNS ещё не указывает на VPS / 80,443 закрыты | `dig +short example.ru @1.1.1.1`; `ufw status` |
 | `Failed to find Server Action` в браузере | Кеш вкладки от другого билда/стека | Инкогнито или hard reload |
 | Регистрация → «Не удалось отправить письмо», в логах `[mail] send failed ... Connection timeout` | Timeweb режет исходящие 25/465/587/2525 | §6.1 — заявка в поддержку; код и `.env` ни при чём |
