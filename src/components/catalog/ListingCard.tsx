@@ -6,6 +6,7 @@ import { formatDeposit, formatHandoverShort, formatPrice } from "@/lib/catalog/f
 import { listingPath } from "@/lib/catalog/listing-path";
 import { freeQty, type AvailabilityMap } from "@/lib/catalog/availability";
 import { Avatar } from "@/components/ui/Avatar";
+import { cardFrame } from "@/components/ui/card-frame";
 import { HandoverIcon } from "@/components/catalog/HandoverIcon";
 
 function priceParts(l: Listing): { amount: string; unit: string } | null {
@@ -17,9 +18,11 @@ function priceParts(l: Listing): { amount: string; unit: string } | null {
 
 const HANDOVER_ICON = "h-[15px] w-[15px] shrink-0 text-accent";
 
-// Единая карточка товара для всего проекта (главная, каталог, поиск, профиль).
-// Фото с плашками занятости и продавца, название, цена с залогом одной строкой
-// и подвал со способом получения.
+// Карточка товара на публичных страницах: главная, каталог, поиск, профиль
+// продавца. Фото с плашками занятости и продавца, название, цена с залогом и
+// подвал со способом получения. У кабинета своя — CabinetListingCard: там
+// вместо продавца статус, вместо способа получения органы управления. Общий у
+// них только вид рамки, он вынесен в ui/card-frame.
 //
 // Кликается целиком: ссылка названия растянута псевдоэлементом на всю карточку
 // (`after:inset-0`), поэтому отдельной кнопки «Подробнее» больше нет, а фото —
@@ -66,16 +69,11 @@ export function ListingCard({
   const placeTone = "dark:text-muted-foreground/70";
 
   return (
-    // Скошенные углы — подпись выдачи, поэтому они перебивают радиус .surface:
-    // четыре длинные записи (border-top-left-radius и соседи) ложатся поверх
-    // короткой border-radius из компонентного слоя. overflow-hidden обрезает по
-    // ним фотографию — она верх карточки и повторяет её форму.
-    //
     // relative — контейнер для растянутой ссылки названия; group — чтобы фото
     // увеличивалось при наведении на любую точку карточки, а не только на сам
     // снимок (он больше не ссылка и своего ховера не имеет).
     <article
-      className={`surface group relative overflow-hidden rounded-tl-[26px] rounded-tr-[8px] rounded-bl-[8px] rounded-br-[26px] ${
+      className={`${cardFrame} group relative ${
         list ? "flex min-h-[96px] flex-row sm:min-h-[150px]" : "flex flex-col"
       }`}
     >

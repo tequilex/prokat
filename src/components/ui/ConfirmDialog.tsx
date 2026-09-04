@@ -21,18 +21,30 @@ export function ConfirmDialog({
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputId = useId();
 
   const canConfirm = typedConfirm ? input === typedConfirm : true;
 
+  // Неудача оставляет окно открытым и показывает причину. Раньше окно
+  // закрывалось всегда, и отказ сервера выглядел как «ничего не произошло» —
+  // особенно там, где рядом с кнопкой нет ни строчки текста.
   const handle = async () => {
     setBusy(true);
-    try { await onConfirm(); setOpen(false); setInput(""); }
-    finally { setBusy(false); }
+    setError(null);
+    try {
+      await onConfirm();
+      setOpen(false);
+      setInput("");
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "Не удалось выполнить действие.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) setInput(""); }}>
+    <Modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setInput(""); setError(null); } }}>
       <ModalTrigger asChild>{trigger}</ModalTrigger>
       <ModalContent className="md:w-[min(90vw,420px)]">
           <ModalTitle className="font-display text-lg mb-2">{title}</ModalTitle>
@@ -51,6 +63,9 @@ export function ConfirmDialog({
                 className={`${field} w-full px-3 py-2 text-sm`}
               />
             </div>
+          )}
+          {error && (
+            <p className="mb-3 text-sm text-destructive" role="alert">{error}</p>
           )}
           <div className="flex justify-end gap-2">
             <ModalClose asChild>

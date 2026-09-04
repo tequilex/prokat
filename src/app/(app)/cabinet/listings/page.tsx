@@ -1,31 +1,27 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
-import { ImageOff } from "lucide-react";
+import { Archive } from "lucide-react";
 import { requireAuthState } from "@/lib/auth/guard";
 import { getOwnerListings } from "@/server/owner";
-import { getActiveCities, getAllCategories, listingPhotos } from "@/server/catalog";
+import { getActiveCities, getAllCategories, getAvailabilityRows } from "@/server/catalog";
 import { listingPath } from "@/lib/catalog/listing-path";
-import { formatPrice } from "@/lib/catalog/format";
+import { buildAvailabilityByListing } from "@/lib/catalog/availability";
+import { todayStr } from "@/lib/catalog/dates";
+import { ruPlural } from "@/lib/plural";
 import { Button } from "@/components/ui/button";
-import { ListingStatusButtons } from "@/components/cabinet/ListingStatusButtons";
+import { CabinetListingCard } from "@/components/cabinet/CabinetListingCard";
+import { ListingCardActions } from "@/components/cabinet/ListingCardActions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Мои объявления", robots: { index: false } };
-
-const STATUS_LABEL: Record<string, string> = {
-  active: "Активно",
-  hidden: "Скрыто",
-  archived: "Архив",
-};
 
 export default async function CabinetListingsPage() {
   const session = await requireAuthState();
   if (!session) redirect("/login?from=/cabinet");
 
-  const [items, cities, cats] = await Promise.all([
+  const [all, cities, cats] = await Promise.all([
     getOwnerListings(session.user.id),
     getActiveCities(),
     getAllCategories(),
@@ -33,59 +29,74 @@ export default async function CabinetListingsPage() {
   const citySlug = new Map(cities.map((c) => [c.id, c.slug]));
   const catSlug = new Map(cats.map((c) => [c.id, c.slug]));
 
+  // Архивные живут в своём разделе. Всё на странице считается по видимому
+  // списку, а не по `all`: заархивировав последнее объявление, иначе получаешь
+  // счётчик «3 объявления» над пустой сеткой и ни одного слова на экране.
+  const items = all.filter((l) => l.status !== "archived");
+  const archivedCount = all.length - items.length;
+
+  // Занятость — одним запросом на страницу и только по активным: у скрытых
+  // плашки нет, а без строк занятости freeQty вернул бы всё количество и
+  // нарисовал бы им зелёное «Свободно».
+  const from = todayStr();
+  const activeIds = items.filter((l) => l.status === "active").map((l) => l.id);
+  const availByListing = buildAvailabilityByListing(
+    await getAvailabilityRows(activeIds, from, from),
+  );
+
   return (
     <section aria-label="Мои объявления">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{items.length} объявлений</p>
-        <Button asChild size="sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-sm text-muted-foreground">
+            {items.length} {ruPlural(items.length, "объявление", "объявления", "объявлений")}
+          </p>
+          {archivedCount > 0 && (
+            <Link
+              href="/cabinet/listings/archive"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              <Archive className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Архив · {archivedCount}
+            </Link>
+          )}
+        </div>
+        {/* На десктопе разместить можно из шапки сайта и из блока над кабинетом,
+          * поэтому третья кнопка здесь — шум. На мобиле шапочной кнопки нет, и
+          * убирать эту нельзя. Пустой список — исключение: там кнопка и есть
+          * призыв к действию. */}
+        <Button asChild size="sm" className={items.length > 0 ? "md:hidden" : undefined}>
           <Link href={"/cabinet/listings/new" as never}>+ Разместить</Link>
         </Button>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState>Разместите первое объявление — оно появится в каталоге.</EmptyState>
+        <EmptyState>
+          {archivedCount > 0
+            ? "Все объявления в архиве — верните любое оттуда или разместите новое."
+            : "Разместите первое объявление — оно появится в каталоге."}
+        </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
+        // Две колонки на телефоне: подвал у карточки исчез, действия уехали на
+        // фото, и в ~156px она помещается. Дальше ширину считает сама сетка.
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] md:gap-4">
           {items.map((l) => {
-            const photo = listingPhotos(l)[0];
             const cSlug = citySlug.get(l.cityId);
             const catS = catSlug.get(l.categoryId);
+            // Слага может не быть: город деактивировали. Публичная страница
+            // такого объявления всё равно отдаст 404 — ссылки не строим.
+            const publicHref = cSlug && catS ? listingPath(cSlug, catS, l.slug, l.id) : null;
             return (
-              <li key={l.id} className="flex gap-3 rounded-lg border border-border bg-card p-3">
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-                  {photo ? (
-                    <Image src={photo.url} alt={l.title} fill sizes="80px" className="object-cover" />
-                  ) : (
-                    <span className="flex h-full items-center justify-center text-muted-foreground">
-                      <ImageOff className="h-6 w-6" aria-hidden="true" />
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <Link href={`/cabinet/listings/${l.id}` as never} className="font-medium hover:underline underline-offset-2">
-                      {l.title}
-                    </Link>
-                    <span className="rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {STATUS_LABEL[l.status] ?? l.status}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {l.priceDay !== null ? `${formatPrice(l.priceDay)}/сутки` : "—"}
-                    {" · "}{l.quantity} шт.
-                    {cSlug && catS && l.status === "active" && (
-                      <>
-                        {" · "}
-                        <Link href={listingPath(cSlug, catS, l.slug, l.id) as never} className="hover:text-foreground underline-offset-2 hover:underline">
-                          посмотреть в каталоге
-                        </Link>
-                      </>
-                    )}
-                  </p>
-                  <div className="mt-1">
-                    <ListingStatusButtons listingId={l.id} status={l.status} />
-                  </div>
-                </div>
+              <li key={l.id}>
+                <CabinetListingCard
+                  listing={l}
+                  publicHref={publicHref}
+                  availabilityMap={availByListing.get(l.id) ?? new Map()}
+                  from={from}
+                  actions={
+                    <ListingCardActions listingId={l.id} status={l.status} title={l.title} />
+                  }
+                />
               </li>
             );
           })}

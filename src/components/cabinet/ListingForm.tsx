@@ -70,9 +70,16 @@ function HandoverChip({
 
 export function ListingForm({
   mode, listingId, cities, categories, initial, sellerName: initialSellerName = "",
+  returnHref = "/cabinet/listings",
 }: {
   mode: "create" | "edit";
   listingId?: string;
+  /**
+   * Куда уйти после сохранения. По умолчанию список объявлений, но правка
+   * архивного возвращает в архив: статус форма не меняет, и в общем списке
+   * такого объявления нет — человек попадал бы в никуда.
+   */
+  returnHref?: string;
   cities: Array<{ id: string; name: string }>;
   // Подкатегории (или корневые без детей) — позиция вешается на лист дерева.
   categories: Array<{ id: string; name: string }>;
@@ -141,7 +148,7 @@ export function ListingForm({
         ? await createListing(input)
         : await updateListing(listingId!, input);
       if (!r.ok) { setError(r.error); return; }
-      router.push("/cabinet/listings");
+      router.push(returnHref as never);
     });
   };
 

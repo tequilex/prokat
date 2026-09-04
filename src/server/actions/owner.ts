@@ -11,6 +11,7 @@
 // - blocked_qty — ручные закрытия владельцем, не пересекается с booked_qty.
 
 import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import {
@@ -124,6 +125,14 @@ export async function updateListing(listingId: string, input: unknown): Promise<
   return { ok: true, data: undefined };
 }
 
+// Статус приходит извне и типу не соответствует автоматически: экшен доступен
+// по сети напрямую, а произвольная строка доехала бы до enum-колонки и дала 500
+// вместо внятного отказа.
+const setStatusSchema = z.object({
+  listingId: z.string().min(1),
+  status: z.enum(["active", "hidden", "archived"]),
+});
+
 export async function setListingStatus(
   listingId: string,
   status: "active" | "hidden" | "archived",
@@ -131,9 +140,12 @@ export async function setListingStatus(
   const owner = await requireUser();
   if (!owner) return { ok: false, error: "auth_required" };
 
+  const parsed = setStatusSchema.safeParse({ listingId, status });
+  if (!parsed.success) return { ok: false, error: "bad_status" };
+
   const res = await getDb().update(listings)
-    .set({ status, updatedAt: new Date() })
-    .where(and(eq(listings.id, listingId), eq(listings.ownerUserId, owner.userId)))
+    .set({ status: parsed.data.status, updatedAt: new Date() })
+    .where(and(eq(listings.id, parsed.data.listingId), eq(listings.ownerUserId, owner.userId)))
     .returning({ id: listings.id });
   if (res.length === 0) return { ok: false, error: "not_found" };
 
