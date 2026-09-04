@@ -50,9 +50,10 @@ export function CitySelector({ cities }: { cities: CityOption[] }) {
     // страницы. См. тот же приём в UserMenu.
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger className="inline-flex h-9 min-w-0 items-center gap-1 rounded-sm px-2 text-sm text-foreground transition-colors hoverable md:px-3">
-        {/* На узком экране имя города режется сильнее: рядом стоит поиск, и
-          * длинное название («Петропавловск-Камчатский») съело бы его поле. */}
-        <span className="min-w-0 max-w-[5.5rem] truncate sm:max-w-[8rem]">
+        {/* На узком экране имя города режется сильнее: рядом стоят знак и
+          * поиск, и длинное название («Петропавловск-Камчатский») съело бы
+          * поле поиска целиком. Платит за место название, а не бренд. */}
+        <span className="min-w-0 max-w-[4.5rem] truncate sm:max-w-[8rem]">
           {current?.name ?? content.nav.city}
         </span>
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />

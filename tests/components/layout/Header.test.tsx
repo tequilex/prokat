@@ -12,8 +12,11 @@ vi.mock("next/navigation", () => ({
 }));
 // City row is untyped in the mock: only slug/name are read; no need to satisfy the
 // full City type (real rows have more columns).
+const activeCities = vi.hoisted(() => ({
+  current: [{ id: "1", slug: "msk", name: "Москва" }] as { id: string; slug: string; name: string }[],
+}));
 vi.mock("@/server/catalog", () => ({
-  getActiveCities: vi.fn(async () => [{ id: "1", slug: "msk", name: "Москва" }]),
+  getActiveCities: vi.fn(async () => activeCities.current),
 }));
 
 // Экшен выбора города ходит в куки и в базу — в jsdom его не поднять.
@@ -33,5 +36,30 @@ describe("Header", () => {
     expect(screen.getByRole("button", { name: /Москва/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Разместить/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Войти/ })).toBeInTheDocument();
+  });
+
+  // Знак — не то, чем платят за селектор. Пока город один, выбирать в нём
+  // нечего, и на телефоне он молчит; с двумя городами появляется, а место ему
+  // уступает название города, которое режется по ширине.
+  it("keeps the wordmark and hides the lone city selector on phones", async () => {
+    activeCities.current = [{ id: "1", slug: "msk", name: "Москва" }];
+    render(<CityPreferenceProvider initialSlug="msk">{await Header()}</CityPreferenceProvider>);
+
+    expect(screen.getByText("inrenta")).toBeInTheDocument();
+    // Обёртка селектора, а не разделитель рядом: тот тоже hidden md:block.
+    const wrapper = screen.getByRole("button", { name: /Москва/ }).parentElement;
+    expect(wrapper?.className).toContain("hidden");
+    expect(wrapper?.className).toContain("md:block");
+  });
+
+  it("shows the city selector on phones once there is a choice", async () => {
+    activeCities.current = [
+      { id: "1", slug: "msk", name: "Москва" },
+      { id: "2", slug: "spb", name: "Санкт-Петербург" },
+    ];
+    render(<CityPreferenceProvider initialSlug="msk">{await Header()}</CityPreferenceProvider>);
+
+    const wrapper = screen.getByRole("button", { name: /Москва/ }).parentElement;
+    expect(wrapper?.className).not.toContain("hidden");
   });
 });

@@ -38,26 +38,26 @@ export async function Header() {
         <div className="flex h-[var(--header-h)] items-center gap-2 rounded-lg border border-border bg-header px-3 md:gap-3 md:px-4">
           {/* Бренд и город. Город виден и на мобайле: другого способа сменить
            * его с телефона нет — таб-бар города не показывает, а чипа в ленте
-           * фильтров, который здесь когда-то обещали, никогда не было. На узком
-           * экране прячется словесная часть знака, а не город. */}
-          <div className="flex min-w-0 shrink-0 items-center gap-1.5 md:gap-3">
+           * фильтров, который здесь когда-то обещали, никогда не было. Место
+           * под него уступает не знак, а название города: оно режется по ширине
+           * (см. CitySelector), знак остаётся целиком. */}
+          <div className="flex min-w-0 shrink-0 items-center gap-1 md:gap-3">
             {/* flex, а не просто shrink-0: знак — inline-flex, и внутри строки
              * он садится на baseline с пустотой под ним, из-за чего ряд
              * центрирует ссылку вместе с этим «хвостом». */}
-            {/* Знак нарисован дважды: со словом и без — на телефоне рядом
-              * встал город, и слову места нет. Оба помечены aria-hidden, имя
-              * ссылке даёт её собственный aria-label — иначе скринридер читал
-              * бы «inrenta» трижды. */}
             <Link href="/" className="flex shrink-0 items-center" aria-label={content.site.name}>
-              <span aria-hidden="true" className="flex md:hidden">
-                <Logo size={20} word={content.site.name} showWord={false} />
-              </span>
-              <span aria-hidden="true" className="hidden md:flex">
-                <Logo size={20} word={content.site.name} />
-              </span>
+              <Logo size={20} word={content.site.name} />
             </Link>
             <span className="hidden h-5 w-px shrink-0 bg-border md:block" aria-hidden="true" />
-            <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />
+            {/* Пока город в системе один, на телефоне селектор молчит: выбрать
+              * в нём нечего, а место он отнимает у поиска и у знака. На
+              * десктопе место есть, и там он полезен даже с одним городом —
+              * сообщает, чью выдачу вы смотрите. Появится второй город —
+              * появится и на мобайле, тогда за место платит название города:
+              * оно режется, знак остаётся целиком. */}
+            <div className={cities.length > 1 ? "min-w-0" : "hidden min-w-0 md:block"}>
+              <CitySelector cities={cities.map((c) => ({ slug: c.slug, name: c.name }))} />
+            </div>
           </div>
 
           {/* Поиск занимает всё оставшееся место в ряду. */}
