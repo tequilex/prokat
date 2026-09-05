@@ -24,6 +24,9 @@ function humanError(code: string): string {
   if (code.startsWith("dates_taken:")) {
     return "Выбранные даты уже заняты — обновите страницу и выберите другие.";
   }
+  if (code === "dates_stale") {
+    return "Пока форма была открыта, начался новый день — обновите страницу и выберите даты заново.";
+  }
   if (code === "listing_not_found") return "Позиция больше не доступна.";
   if (code === "auth_required") return "Войдите, чтобы отправить заявку.";
   return code.length < 200 ? code : "Не получилось отправить заявку.";

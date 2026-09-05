@@ -88,6 +88,8 @@ export function DateRangeFilter({
           * своей ширины нет, и без этого календарь растягивается во всю
           * доступную и рассыпается. */}
         <div className="rdp-theme w-[19rem]">
+          {/* today явно — см. BookingCalendar: своё «сегодня» DayPicker берёт
+            * из времени браузера, а не с сервера. */}
           <DayPicker
             mode="range"
             locale={ru}
@@ -95,6 +97,7 @@ export function DateRangeFilter({
             onSelect={setRange}
             disabled={{ before: parse(today) }}
             defaultMonth={range?.from ?? parse(today)}
+            today={parse(today)}
           />
         </div>
         <div className="mt-3 flex items-center gap-2">

@@ -20,7 +20,7 @@ import { auth } from "@/lib/auth";
 import { newId } from "@/lib/id";
 import { checkLimit } from "@/lib/rate-limit";
 import { bookingFormSchema } from "@/lib/booking/validation";
-import { parseBookingParams } from "@/lib/booking/params";
+import { isSelectionShifted, parseBookingParams } from "@/lib/booking/params";
 import { unavailableDates, type AvailabilityMap } from "@/lib/catalog/availability";
 import { isPubliclyVisible } from "@/lib/catalog/visibility";
 import { canTransition, availabilityDelta } from "@/lib/catalog/booking-status";
@@ -71,11 +71,18 @@ export async function createBookingRequest(
   }
   const listing = row.listing;
 
-  // Кламп дат к [today, horizon] — форма могла пролежать открытой.
+  // Кламп дат к [today, horizon] — форма могла пролежать открытой. Если он
+  // что-то сдвинул, заявку не создаём: диалог показывает только «готово», и
+  // человек, открывший карточку до полуночи, молча отправил бы владельцу
+  // другие даты, чем выбрал.
   const sel = parseBookingParams(
     { from: form.from, to: form.to, qty: String(form.qty) },
     { today: todayStr(), maxQty: listing.quantity },
   );
+  // TODO: qty клампится к quantity по-прежнему молча. Владелец может уменьшить
+  // количество, пока форма открыта, и заявка уйдёт на меньшее число единиц, чем
+  // человек видел в диалоге, — тот же класс, что dates_stale.
+  if (isSelectionShifted(form, sel)) return { ok: false, error: "dates_stale" };
 
   const availRows = await db.select().from(availability).where(and(
     eq(availability.listingId, listing.id),

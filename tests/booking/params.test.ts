@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildBookingQuery, parseBookingParams, rentalDaysCount,
+  buildBookingQuery, isSelectionShifted, parseBookingParams, rentalDaysCount,
 } from "@/lib/booking/params";
 
 const TODAY = "2026-07-16";
@@ -42,6 +42,27 @@ describe("parseBookingParams()", () => {
   it("мусор в датах и qty — дефолты", () => {
     const sel = parseBookingParams({ from: "garbage", to: "2026-99-99", qty: "abc" }, OPTS);
     expect(sel).toEqual({ from: TODAY, to: TODAY, qty: 1 });
+  });
+});
+
+describe("isSelectionShifted()", () => {
+  it("выбор, переживший кламп, сдвигом не считается", () => {
+    const requested = { from: "2026-07-20", to: "2026-07-22" };
+    expect(isSelectionShifted(requested, parseBookingParams(requested, OPTS))).toBe(false);
+  });
+
+  it("форма, пролежавшая через полночь, ловится", () => {
+    // Карточка открыта 15 июля: человек выбрал 15–17. Отправка ушла уже 16-го,
+    // кламп подтянул from к новому «сегодня» — заявка была бы на 16–17.
+    const requested = { from: "2026-07-15", to: "2026-07-17" };
+    expect(isSelectionShifted(requested, parseBookingParams(requested, OPTS))).toBe(true);
+  });
+
+  it("qty клампу не мешаем — он к датам отношения не имеет", () => {
+    const requested = { from: "2026-07-20", to: "2026-07-22" };
+    const clamped = parseBookingParams({ ...requested, qty: "99" }, OPTS);
+    expect(clamped.qty).toBe(3);
+    expect(isSelectionShifted(requested, clamped)).toBe(false);
   });
 });
 

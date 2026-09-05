@@ -32,9 +32,11 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://app:${DB_PASSWORD}@db:5432/app
-      # Без неё контейнер живёт в UTC, и все даты в интерфейсе — заявки,
-      # календарь, время сообщений — показываются на три часа раньше.
-      # toLocaleString берёт зону процесса, а не хоста.
+      # Без неё контейнер живёт в UTC, и моменты времени в интерфейсе — срок
+      # заявки, время сообщений — показываются на три часа раньше.
+      # toLocaleString берёт зону процесса, а не хоста. Календарный день от
+      # неё не зависит: он считается в Europe/Moscow независимо от TZ,
+      # см. docs/decisions/0013-single-business-timezone.md.
       TZ: ${TZ:-Europe/Moscow}
     depends_on:
       db:

@@ -52,6 +52,17 @@ export function buildBookingQuery(sel: BookingSelection, today: string): string 
   return q.toString();
 }
 
+// Сдвинул ли кламп присланные даты. На странице сдвиг уместен — мусор в URL не
+// должен ронять выдачу; в мутации нет: форма, пролежавшая открытой через
+// полночь, отправила бы владельцу не те даты, которые человек видел на экране,
+// а диалог показывает только «готово».
+export function isSelectionShifted(
+  requested: { from: string; to: string },
+  clamped: BookingSelection,
+): boolean {
+  return clamped.from !== requested.from || clamped.to !== requested.to;
+}
+
 export function rentalDaysCount(sel: BookingSelection): number {
   const ms = Date.parse(`${sel.to}T00:00:00Z`) - Date.parse(`${sel.from}T00:00:00Z`);
   return ms / (24 * 60 * 60 * 1000) + 1;

@@ -1,12 +1,46 @@
 import { ruPlural } from "@/lib/plural";
-// Дата-хелперы каталога. Работаем в UTC: занятость считается по календарным
-// дням, а не по часам, поэтому смещение зоны сервера роли не играет —
-// важно лишь единообразие с eachDate() из availability.ts.
+// Дата-хелперы каталога. Календарный день — строка "YYYY-MM-DD" без зоны:
+// занятость считается по дням, а не по часам. Хелперы строка→строка парсят
+// вход как T00:00:00Z и читают UTC-компоненты — инстанта в цепочке нет, зоне
+// взяться неоткуда, и это должно таким остаться (единообразие с eachDate()
+// из availability.ts).
+//
+// Зона нужна ровно там, где день выводят ИЗ момента времени: todayStr и
+// formatMonthYearGen. Берётся деловая зона сервиса, а не зона процесса:
+// у TZ есть дефолт, и доменный ответ не должен от неё зависеть.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Одна зона на весь сервис, включая города восточнее Москвы —
+// docs/decisions/0013-single-business-timezone.md.
+const APP_TIME_ZONE = "Europe/Moscow";
+
+// Форматтер ленивый: модуль тянут и клиентские компоненты (BookingWidget,
+// DateRangeFilter) — ради строковых хелперов, а конструктор на верхнем уровне
+// они бы всё равно исполнили при загрузке чанка.
+//
+// Локаль, календарь и система счисления прибиты явно: на дефолтной локали
+// процесса fa-IR дал бы персидский календарь и не-латинские цифры.
+let zonedFormat: Intl.DateTimeFormat | undefined;
+
+function zonedParts(date: Date): { year: number; month: number; day: number } {
+  zonedFormat ??= new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIME_ZONE,
+    calendar: "gregory",
+    numberingSystem: "latn",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = zonedFormat.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  return { year: part("year"), month: part("month"), day: part("day") };
+}
+
 export function todayStr(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
+  const { year, month, day } = zonedParts(now);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export function addDaysStr(dateStr: string, days: number): string {
@@ -47,9 +81,11 @@ export function formatDayMonth(dateStr: string): string {
 
 /* «августа 2026» — для оборотов вида «на сайте с …». Родительный падеж:
  * Intl без числа дня даёт именительный («август 2026»), и получается
- * «с август». UTC — как у соседей выше, чтобы не зависеть от TZ сервера. */
+ * «с август». Месяц берётся в деловой зоне: регистрация 1 сентября в 01:00
+ * МСК по UTC-компонентам показывалась как «на сайте с августа». */
 export function formatMonthYearGen(date: Date): string {
-  return `${MONTHS_GEN[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  const { year, month } = zonedParts(date);
+  return `${MONTHS_GEN[month - 1]} ${year}`;
 }
 
 /* Сколько осталось до срока, словами: «2 ч 40 мин», «6 ч», «завтра».

@@ -42,6 +42,10 @@ export function BookingCalendar({
 
   return (
     <div className="rdp-theme">
+      {/* today передаём явно: своё «сегодня» DayPicker считает по времени
+        * браузера, и у человека восточнее Москвы подсветка разошлась бы с
+        * серверным today — вплоть до подсвеченного дня, тут же залоченного
+        * как прошлый. */}
       <DayPicker
         locale={ru}
         mode="range"
@@ -53,6 +57,7 @@ export function BookingCalendar({
         modifiersClassNames={{ booked: "rdp-booked", past: "rdp-past" }}
         startMonth={parse(today)}
         endMonth={parse(maxDate)}
+        today={parse(today)}
         weekStartsOn={1}
         showOutsideDays
       />
