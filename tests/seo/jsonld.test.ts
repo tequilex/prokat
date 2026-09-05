@@ -23,11 +23,6 @@ describe("buildProductJsonLd()", () => {
     expect(ld.offers.seller.name).toBe("Артём");
   });
 
-  it("без цены за сутки — без offers", () => {
-    const ld = buildProductJsonLd({ ...base, priceDay: null });
-    expect(ld.offers).toBeUndefined();
-  });
-
   it("занятая позиция — OutOfStock", () => {
     const ld = buildProductJsonLd({ ...base, available: false });
     expect(ld.offers.availability).toBe("https://schema.org/OutOfStock");

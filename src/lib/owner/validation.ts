@@ -6,6 +6,26 @@ const priceField = z.union([z.literal(""), z.coerce.number().int().min(0).max(10
   .optional()
   .transform((v) => (v === "" || v === undefined ? null : v));
 
+// Цена за сутки обязательна и строго больше нуля. preprocess сводит все формы
+// «не заполнено» к undefined, чтобы они дошли до required_error: форма шлёт
+// строки, а z.coerce.number() превращает и "", и " ", и null в ноль — человек
+// с пустым полем получил бы «должна быть больше нуля» вместо «укажите цену».
+// Ноль запрещён намеренно: это старое «цены нет» в новой обёртке — такое
+// объявление утянуло бы вниз границу фильтра цены на весь раздел и уехало бы
+// в разметку для поисковиков как «бесплатно».
+const priceDayField = z.preprocess(
+  (v) => (v === null || v === undefined || (typeof v === "string" && v.trim() === "")
+    ? undefined
+    : v),
+  z.coerce.number({
+    required_error: "Укажите цену за сутки",
+    invalid_type_error: "Укажите цену за сутки",
+  })
+    .int("Цена — целое число рублей")
+    .min(1, "Цена должна быть больше нуля")
+    .max(10_000_000, "Слишком большая цена"),
+);
+
 const handoverField = z.boolean({
   required_error: "Форма устарела — обновите страницу",
   invalid_type_error: "Форма устарела — обновите страницу",
@@ -17,9 +37,7 @@ export const listingFormSchema = z.object({
   cityId: z.string().min(1, "Выберите город"),
   description: z.string().trim().max(3000).optional().default(""),
   location: z.string().trim().max(120).optional().default(""),  // район/ориентир, опц.
-  priceDay: priceField,
-  priceHour: priceField,
-  priceWeek: priceField,
+  priceDay: priceDayField,
   depositType: z.enum(["money", "document", "none"]),
   depositAmount: priceField,
   quantity: z.coerce.number().int().min(1).max(1000),
@@ -37,9 +55,6 @@ export const listingFormSchema = z.object({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
   })).max(10).default([]),
-}).refine((v) => v.priceDay !== null || v.priceHour !== null || v.priceWeek !== null, {
-  message: "Укажите хотя бы одну цену",
-  path: ["priceDay"],
 }).refine((v) => v.handoverPickup || v.handoverDelivery, {
   message: "Выберите хотя бы один способ получения",
   path: ["handoverPickup"],

@@ -40,7 +40,7 @@ export function BookingFormDialog({
   listingId: string;
   listingTitle: string;
   sel: BookingSelection;
-  priceDay: number | null;
+  priceDay: number;
   initialPhone: string;
 }) {
   const [phone, setPhone] = useState(initialPhone);
@@ -50,7 +50,7 @@ export function BookingFormDialog({
   const [pending, startTransition] = useTransition();
 
   const days = rentalDaysCount(sel);
-  const estimate = priceDay !== null ? priceDay * days * sel.qty : null;
+  const estimate = priceDay * days * sel.qty;
   const period = sel.from === sel.to
     ? formatDayMonth(sel.from)
     : `${formatDayMonth(sel.from)} — ${formatDayMonth(sel.to)}`;

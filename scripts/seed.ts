@@ -250,7 +250,6 @@ async function main() {
       slug: slugify(title),
       description: `${title}. Тестовый товар из сидов.`,
       priceDay,
-      priceWeek: priceDay * 5, // недельная скидка ~30%
       depositAmount,
       depositType,
       quantity,

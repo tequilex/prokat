@@ -23,6 +23,35 @@ describe("listingFormSchema", () => {
     expect(r.success).toBe(true);
   });
 
+  // Цена за сутки — единственная: аренда посуточная, других тарифов у брони
+  // нет. Пустое поле и ноль разводятся по сообщениям: форма шлёт строки, и
+  // «» без обработки стало бы нулём, то есть незаполненная цена жаловалась бы
+  // на величину вместо отсутствия.
+  it("требует цену за сутки и отличает пустое поле от нуля", () => {
+    const { priceDay: _p, ...withoutPrice } = base;
+    // null и пробелы — тоже «не заполнено»: Number() сводит их к нулю, и без
+    // обработки человек получил бы жалобу на величину вместо отсутствия.
+    // Из формы такое не придёт, но payload мутации приходит извне.
+    const empty = [withoutPrice, { ...base, priceDay: "" }, { ...base, priceDay: null },
+      { ...base, priceDay: "   " }];
+    for (const input of empty) {
+      const r = listingFormSchema.safeParse(input);
+      expect(r.success).toBe(false);
+      expect(r.error?.issues[0]?.message).toBe("Укажите цену за сутки");
+    }
+
+    const zero = listingFormSchema.safeParse({ ...base, priceDay: 0 });
+    expect(zero.success).toBe(false);
+    expect(zero.error?.issues[0]?.message).toBe("Цена должна быть больше нуля");
+  });
+
+  // Цена приходит из формы строкой — приведение обязано её принять.
+  it("принимает цену строкой, как её шлёт форма", () => {
+    const r = listingFormSchema.safeParse({ ...base, priceDay: "500" });
+    expect(r.success).toBe(true);
+    expect(r.data?.priceDay).toBe(500);
+  });
+
   // Объявление, которое нельзя ни забрать, ни получить доставкой, — не
   // объявление. Форма такого не отправит, но payload приходит извне.
   it("не пропускает объявление без единого способа получения", () => {

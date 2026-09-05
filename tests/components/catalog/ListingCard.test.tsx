@@ -23,8 +23,6 @@ function card(over: Record<string, unknown> = {}, props: Record<string, unknown>
       title: "Перфоратор Bosch GBH 2-26",
       quantity: 3,
       priceDay: 500,
-      priceHour: null,
-      priceWeek: null,
       depositType: "money",
       depositAmount: 3000,
       location: "Ново-Савиновский",
@@ -53,12 +51,6 @@ describe("ListingCard", () => {
     expect(screen.getByText("500 ₽")).toBeInTheDocument();
     expect(screen.getByText("в сутки")).toBeInTheDocument();
     expect(screen.getByText("залог 3 000 ₽")).toBeInTheDocument();
-  });
-
-  it("без цены остаётся один залог", () => {
-    render(card({ priceDay: null }));
-    expect(screen.getByText("залог 3 000 ₽")).toBeInTheDocument();
-    expect(screen.queryByText(/в сутки/)).toBeNull();
   });
 
   // Три служебные строки и кнопка съедали высоту, ничего не решая: остаток

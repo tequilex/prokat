@@ -152,9 +152,8 @@ export const listings = pgTable("listings", {
   slug: varchar("slug", { length: 80 }).notNull(),
   description: text("description"),
   location: varchar("location", { length: 120 }),   // район/ориентир выдачи, опц.
-  priceDay: integer("price_day"),
-  priceHour: integer("price_hour"),
-  priceWeek: integer("price_week"),
+  // Цена одна: аренда посуточная — см. docs/BACKLOG.md о снятых тарифах.
+  priceDay: integer("price_day").notNull(),
   depositAmount: integer("deposit_amount"),
   depositType: depositType("deposit_type").notNull().default("none"),
   quantity: integer("quantity").notNull().default(1),

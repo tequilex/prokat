@@ -33,8 +33,6 @@ function cardWith(pickup: boolean, delivery: boolean) {
       title: "Перфоратор Bosch",
       quantity: 1,
       priceDay: 500,
-      priceHour: null,
-      priceWeek: null,
       depositType: "none",
       depositAmount: null,
       location: null,
@@ -65,8 +63,6 @@ function widgetWith(pickup: boolean, delivery: boolean) {
     availability={{}}
     quantity={1}
     priceDay={500}
-    priceWeek={null}
-    priceHour={null}
     depositLabel="без залога"
     handoverPickup={pickup}
     handoverDelivery={delivery}

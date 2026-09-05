@@ -89,7 +89,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       alternates: { canonical: `${siteConfig.url}/${r.city.slug}/${seg}/${sub}` },
     };
   }
-  const priceBit = r.listing.priceDay !== null ? ` от ${formatPrice(r.listing.priceDay)}/сутки` : "";
+  const priceBit = ` от ${formatPrice(r.listing.priceDay)}/сутки`;
   const canonical = listingPath(r.city.slug, r.category.slug, r.listing.slug, r.listing.id);
   return {
     // Город в хвосте, а не перед ценой: без падежа получалось бы «аренда,
@@ -326,8 +326,6 @@ async function ListingPage({
             availability={availabilityRecord}
             quantity={listing.quantity}
             priceDay={listing.priceDay}
-            priceWeek={listing.priceWeek}
-            priceHour={listing.priceHour}
             depositLabel={formatDeposit(listing.depositType, listing.depositAmount)}
             handoverPickup={listing.handoverPickup}
             handoverDelivery={listing.handoverDelivery}

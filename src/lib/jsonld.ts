@@ -15,7 +15,7 @@ const stripSlash = (s: string) => s.replace(/\/$/, "");
 export function buildProductJsonLd(input: {
   title: string;
   description: string | null;
-  priceDay: number | null;
+  priceDay: number;
   photoUrls: string[];
   url: string;            // абсолютный URL карточки позиции
   sellerName: string;
@@ -29,20 +29,18 @@ export function buildProductJsonLd(input: {
   };
   if (input.description) ld.description = input.description;
   if (input.photoUrls.length > 0) ld.image = input.photoUrls;
-  if (input.priceDay !== null) {
-    ld.offers = {
-      "@type": "Offer",
-      price: input.priceDay,
-      priceCurrency: "RUB",
-      // Аренда посуточная: цена за день, бизнес-модель LeaseOut.
-      businessFunction: "http://purl.org/goodrelations/v1#LeaseOut",
-      availability: input.available
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-      url: input.url,
-      seller: { "@type": "Person", name: input.sellerName },
-    };
-  }
+  ld.offers = {
+    "@type": "Offer",
+    price: input.priceDay,
+    priceCurrency: "RUB",
+    // Аренда посуточная: цена за день, бизнес-модель LeaseOut.
+    businessFunction: "http://purl.org/goodrelations/v1#LeaseOut",
+    availability: input.available
+      ? "https://schema.org/InStock"
+      : "https://schema.org/OutOfStock",
+    url: input.url,
+    seller: { "@type": "Person", name: input.sellerName },
+  };
   return ld;
 }
 

@@ -27,7 +27,7 @@ export function ThreadTopBar({ header, viewerId }: { header: ThreadHeader; viewe
 
   // Цена и залог собираются общими форматтерами: второй реализации денежного
   // формата в проекте быть не должно. Залог бывает трёх видов, не только суммой.
-  const price = header.listingPriceDay ? `${formatPrice(header.listingPriceDay)}/сутки` : null;
+  const price = `${formatPrice(header.listingPriceDay)}/сутки`;
   const deposit = formatDeposit(header.listingDepositType, header.listingDepositAmount);
 
   const chipInner = (
@@ -46,7 +46,7 @@ export function ThreadTopBar({ header, viewerId }: { header: ThreadHeader; viewe
           {header.listingTitle}
         </span>
         <span className="block font-mark text-2xs text-muted-foreground">
-          {[price, deposit].filter(Boolean).join(" · ")}
+          {[price, deposit].join(" · ")}
         </span>
       </span>
     </>
@@ -108,9 +108,9 @@ export function ThreadListingBar({ header }: { header: ThreadHeader }) {
         <p className="truncate text-xs font-medium">{header.listingTitle}</p>
         <p className="font-mark text-2xs text-muted-foreground">
           {[
-            header.listingPriceDay ? `${formatPrice(header.listingPriceDay)}/сутки` : null,
+            `${formatPrice(header.listingPriceDay)}/сутки`,
             formatDeposit(header.listingDepositType, header.listingDepositAmount),
-          ].filter(Boolean).join(" · ")}
+          ].join(" · ")}
         </p>
       </div>
       {header.listingStatus === "active" && (

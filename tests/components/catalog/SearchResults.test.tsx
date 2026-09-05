@@ -24,7 +24,7 @@ function item(id: string, title: string) {
   return {
     listing: {
       id, ownerUserId: "u1", slug: `l-${id}`, title,
-      quantity: 1, priceDay: 500, priceHour: null, priceWeek: null,
+      quantity: 1, priceDay: 500,
       depositType: "money", depositAmount: 3000, location: "Центр",
       handoverPickup: true, handoverDelivery: false, photosJson: [],
     },

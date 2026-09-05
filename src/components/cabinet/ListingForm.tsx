@@ -20,8 +20,6 @@ export interface ListingFormValues {
   location: string;
   description: string;
   priceDay: string;
-  priceHour: string;
-  priceWeek: string;
   depositType: "money" | "document" | "none";
   depositAmount: string;
   quantity: string;
@@ -105,7 +103,7 @@ export function ListingForm({
       [
         v.title.trim().length >= 3 && v.categoryId !== "",
         v.photos.length > 0,
-        [v.priceDay, v.priceHour, v.priceWeek].some((p) => Number(p) > 0),
+        Number(v.priceDay) > 0,
         v.cityId !== "" && Number(v.quantity) > 0
           && (v.handoverPickup || v.handoverDelivery),
       ].filter(Boolean).length,
@@ -208,26 +206,13 @@ export function ListingForm({
       </FormBlock>
 
       <FormBlock title="Цена и залог" hint="залог возвращается арендатору">
-        <fieldset className="flex flex-col gap-1 text-sm">
-          <legend className="mb-1">Цены, ₽ (заполните хотя бы одну)</legend>
-          <div className="flex flex-wrap gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              За сутки
-              <input type="number" min={0} value={v.priceDay}
-                onChange={(e) => set({ priceDay: e.target.value })} className={INPUT} />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              За час
-              <input type="number" min={0} value={v.priceHour}
-                onChange={(e) => set({ priceHour: e.target.value })} className={INPUT} />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              За неделю
-              <input type="number" min={0} value={v.priceWeek}
-                onChange={(e) => set({ priceWeek: e.target.value })} className={INPUT} />
-            </label>
-          </div>
-        </fieldset>
+        {/* Одно поле — обычный label, без fieldset: группировать нечего.
+          * Аренда посуточная, других тарифов у брони нет. */}
+        <label className="flex flex-col gap-1 text-sm">
+          Цена за сутки, ₽
+          <input type="number" min={1} required value={v.priceDay}
+            onChange={(e) => set({ priceDay: e.target.value })} className={INPUT} />
+        </label>
 
         <div className="flex flex-wrap gap-2">
           <label className="flex flex-1 flex-col gap-1 text-sm">

@@ -56,7 +56,7 @@ export type ThreadHeader = {
    *  formatPrice/formatDeposit из lib/catalog/format — второй реализации
    *  денежного формата в проекте быть не должно. */
   listingImage: string | null;
-  listingPriceDay: number | null;
+  listingPriceDay: number;
   listingDepositType: "money" | "document" | "none";
   listingDepositAmount: number | null;
   ownerUserId: string;

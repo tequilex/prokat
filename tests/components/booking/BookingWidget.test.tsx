@@ -27,8 +27,6 @@ const base = {
   availability: {},
   quantity: 1,
   priceDay: 500,
-  priceWeek: null,
-  priceHour: null,
   depositLabel: "без залога",
   sellerName: "Артём",
   sellerHref: "/u/01ARZ3NDEKTSV4RRFFQ69G5FAV",

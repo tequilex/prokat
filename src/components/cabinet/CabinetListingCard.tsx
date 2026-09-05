@@ -12,13 +12,6 @@ const STATUS_LABEL: Record<Listing["status"], string> = {
   archived: "Архив",
 };
 
-function priceParts(l: Listing): { amount: string; unit: string } | null {
-  if (l.priceDay !== null) return { amount: formatPrice(l.priceDay), unit: "в сутки" };
-  if (l.priceHour !== null) return { amount: formatPrice(l.priceHour), unit: "в час" };
-  if (l.priceWeek !== null) return { amount: formatPrice(l.priceWeek), unit: "в неделю" };
-  return null;
-}
-
 // Карточка объявления в кабинете. Вид тот же, что на витрине (общая рамка из
 // ui/card-frame), смысл другой: вместо плашки продавца — статус, вместо подвала
 // со способом получения — органы управления.
@@ -43,7 +36,7 @@ export function CabinetListingCard({
   actions: React.ReactNode;
 }) {
   const photo = listingPhotos(listing)[0];
-  const price = priceParts(listing);
+  const price = formatPrice(listing.priceDay);
   const editHref = `/cabinet/listings/${listing.id}`;
   const isActive = listing.status === "active";
 
@@ -139,14 +132,12 @@ export function CabinetListingCard({
           </h3>
         </Link>
 
-        {price && (
-          <p className="mt-1 flex items-baseline gap-x-1.5">
-            <span className="shrink-0 font-mark text-lg font-bold leading-snug tracking-mark sm:text-xl">
-              {price.amount}
-            </span>
-            <span className="truncate text-xs text-muted-foreground sm:text-sm">{price.unit}</span>
-          </p>
-        )}
+        <p className="mt-1 flex items-baseline gap-x-1.5">
+          <span className="shrink-0 font-mark text-lg font-bold leading-snug tracking-mark sm:text-xl">
+            {price}
+          </span>
+          <span className="truncate text-xs text-muted-foreground sm:text-sm">в сутки</span>
+        </p>
         <p className="truncate text-xs text-muted-foreground sm:text-sm">
           {formatDeposit(listing.depositType, listing.depositAmount)}
         </p>

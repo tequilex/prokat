@@ -25,8 +25,6 @@ function card({
     status,
     quantity,
     priceDay: 500,
-    priceHour: null,
-    priceWeek: null,
     depositType: "money",
     depositAmount: 3000,
     photosJson: [],

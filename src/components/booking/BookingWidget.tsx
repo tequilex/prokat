@@ -35,9 +35,7 @@ export interface BookingWidgetProps {
   // Занятость по дням на весь горизонт (plain object: Map не проходит RSC-границу).
   availability: Record<string, DayLoad>;
   quantity: number;
-  priceDay: number | null;
-  priceWeek: number | null;
-  priceHour: number | null;
+  priceDay: number;
   depositLabel: string;
   // Флагами, а не готовой строкой: от них зависит ещё и иконка, а depositLabel
   // рядом показывает, чем кончается «отдадим строку» — его тут разбирают
@@ -89,7 +87,7 @@ export function BookingWidget(props: BookingWidgetProps) {
 
   const days = hasComplete ? rentalDaysCount(sel) : 0;
   const estimate = useMemo(() => {
-    if (props.priceDay === null || !hasComplete) return null;
+    if (!hasComplete) return null;
     return props.priceDay * days * sel.qty;
   }, [props.priceDay, hasComplete, days, sel.qty]);
 
@@ -127,17 +125,17 @@ export function BookingWidget(props: BookingWidgetProps) {
     setTouched(true);
   };
 
-  // Цены за периоды + залог — блоками внизу (как у Hygglo). Значения — уже строки.
+  // Цена и залог — блоками внизу (как у Hygglo). Значения — уже строки.
+  // Обе плитки безусловны: цена за сутки у объявления обязательна, а залог
+  // «без залога» тоже показывается — это ответ на вопрос, а не его отсутствие.
   const depositValue =
     props.depositLabel === "без залога" ? "Нет"
       : props.depositLabel === "залог: документ" ? "Документ"
         : props.depositLabel.replace(/^залог\s*/, "");
   const priceBoxes: { value: string; label: string }[] = [
-    props.priceHour !== null ? { value: formatPrice(props.priceHour), label: "час" } : null,
-    props.priceDay !== null ? { value: formatPrice(props.priceDay), label: "сутки" } : null,
-    props.priceWeek !== null ? { value: formatPrice(props.priceWeek), label: "неделя" } : null,
+    { value: formatPrice(props.priceDay), label: "сутки" },
     { value: depositValue, label: "залог" },
-  ].filter((b): b is { value: string; label: string } => b !== null);
+  ];
 
   return (
     <>
@@ -213,22 +211,20 @@ export function BookingWidget(props: BookingWidgetProps) {
         {bookButton("mt-3 w-full")}
       </div>
 
-      {/* Цены за периоды + залог — отдельным блоком под виджетом (не на подложке) */}
-      {priceBoxes.length > 0 && (
-        <div className="mt-2">
-          <div className="mb-2 text-center font-mono text-2xs font-medium uppercase tracking-mono text-muted-foreground">
-            Цены за периоды
-          </div>
-          <div className="flex gap-2">
-            {priceBoxes.map((b) => (
-              <div key={b.label} className="flex-1 rounded-lg border border-border bg-card p-3 text-center">
-                <div className="font-mark font-bold">{b.value}</div>
-                <div className="text-xs text-muted-foreground">{b.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* Цена и залог — отдельным блоком под виджетом (не на подложке) */}
+      <div className="mt-2">
+        <div className="mb-2 text-center font-mono text-2xs font-medium uppercase tracking-mono text-muted-foreground">
+          Цена и залог
         </div>
-      )}
+        <div className="flex gap-2">
+          {priceBoxes.map((b) => (
+            <div key={b.label} className="flex-1 rounded-lg border border-border bg-card p-3 text-center">
+              <div className="font-mark font-bold">{b.value}</div>
+              <div className="text-xs text-muted-foreground">{b.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Способ получения — своим блоком под виджетом, как и цены: это свойство
         * самой вещи, а не параметр брони, и в ряд плиток он не встаёт — там
@@ -261,7 +257,7 @@ export function BookingWidget(props: BookingWidgetProps) {
             <span className="block font-mark text-base font-bold">
               {estimate !== null
                 ? `≈ ${formatPrice(estimate)}`
-                : props.priceDay !== null ? `${formatPrice(props.priceDay)}/сутки` : ""}
+                : `${formatPrice(props.priceDay)}/сутки`}
             </span>
             {hasComplete && (
               <span className="block text-2xs text-muted-foreground">

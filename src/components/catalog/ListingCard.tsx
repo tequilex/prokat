@@ -9,13 +9,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { cardFrame } from "@/components/ui/card-frame";
 import { HandoverIcon } from "@/components/catalog/HandoverIcon";
 
-function priceParts(l: Listing): { amount: string; unit: string } | null {
-  if (l.priceDay !== null) return { amount: formatPrice(l.priceDay), unit: "в сутки" };
-  if (l.priceHour !== null) return { amount: formatPrice(l.priceHour), unit: "в час" };
-  if (l.priceWeek !== null) return { amount: formatPrice(l.priceWeek), unit: "в неделю" };
-  return null;
-}
-
 const HANDOVER_ICON = "h-[15px] w-[15px] shrink-0 text-accent";
 
 // Карточка товара на публичных страницах: главная, каталог, поиск, профиль
@@ -50,7 +43,7 @@ export function ListingCard({
   const { listing, ownerName, ownerImage, ownerIsVerified, categorySlug, cityName } = item;
   const photo = listingPhotos(listing)[0];
   const href = listingPath(citySlug, categorySlug, listing.slug, listing.id);
-  const price = priceParts(listing);
+  const price = formatPrice(listing.priceDay);
   // Карточке нужен только сегодняшний день: дату «свободно с» она больше не
   // показывает, а календарь на самой позиции скажет точнее.
   const free = freeQty(listing.quantity, availabilityMap.get(from));
@@ -174,16 +167,14 @@ export function ListingCard({
           * относится к ней, а залог — отдельный факт.
           * Строка суммы не переносится (flex без wrap), длинная единица
           * обрезается многоточием. */}
-        {price && (
-          <p className="mt-1 flex items-baseline gap-x-1.5">
-            <span className="shrink-0 font-mark text-lg font-bold leading-snug tracking-mark sm:text-xl">
-              {price.amount}
-            </span>
-            <span className="truncate text-xs text-muted-foreground sm:text-sm">
-              {price.unit}
-            </span>
-          </p>
-        )}
+        <p className="mt-1 flex items-baseline gap-x-1.5">
+          <span className="shrink-0 font-mark text-lg font-bold leading-snug tracking-mark sm:text-xl">
+            {price}
+          </span>
+          <span className="truncate text-xs text-muted-foreground sm:text-sm">
+            в сутки
+          </span>
+        </p>
         <p className="truncate text-xs text-muted-foreground sm:text-sm">
           {formatDeposit(listing.depositType, listing.depositAmount)}
         </p>

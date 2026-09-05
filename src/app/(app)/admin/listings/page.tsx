@@ -33,7 +33,7 @@ export default async function AdminListingsPage() {
               </Link>
               <p className="text-sm text-muted-foreground">
                 {ownerName ?? "—"}
-                {listing.priceDay !== null ? ` · ${formatPrice(listing.priceDay)}/сутки` : ""}
+                {` · ${formatPrice(listing.priceDay)}/сутки`}
                 {" · "}{STATUS_LABEL[listing.status] ?? listing.status}
                 {listing.hiddenByBan ? " (баном)" : ""}
               </p>

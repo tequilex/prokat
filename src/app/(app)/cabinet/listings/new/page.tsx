@@ -29,7 +29,7 @@ export default async function NewListingPage() {
         categories={leafCategories(cats)}
         initial={{
           title: "", cityId: ownCity?.id ?? "", categoryId: "", location: "", description: "",
-          priceDay: "", priceHour: "", priceWeek: "",
+          priceDay: "",
           depositType: "money", depositAmount: "", quantity: "1",
           handoverPickup: true, handoverDelivery: false,
           photos: [],
